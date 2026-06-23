@@ -1,0 +1,232 @@
+*pdfport.nvim.txt*  PDF extraction and display for Neovim
+
+==============================================================================
+CONTENTS                                             *pdfport.nvim-contents*
+
+  1. Introduction ........................ |pdfport.nvim-intro|
+  2. Requirements ........................ |pdfport.nvim-requirements|
+  3. Setup ............................... |pdfport.nvim-setup|
+  4. Configuration ....................... |pdfport.nvim-config|
+  5. Commands ............................ |pdfport.nvim-commands|
+  6. Lua API ............................. |pdfport.nvim-api|
+  7. Backends ............................ |pdfport.nvim-backends|
+  8. Renderers ........................... |pdfport.nvim-renderers|
+  9. File-tree integrations .............. |pdfport.nvim-filetrees|
+ 10. Fuzzy-finder integrations ........... |pdfport.nvim-fuzzyfinders|
+ 11. Health check ........................ |pdfport.nvim-health|
+
+==============================================================================
+1. INTRODUCTION                                        *pdfport.nvim-intro*
+
+pdfport.nvim extracts text from PDF files and displays it inside Neovim.
+It uses a pluggable backend/renderer architecture so you can choose the
+extraction tool that suits your workflow — from the fast built-in pdftotext
+to AI-powered cloud and local backends.
+
+==============================================================================
+2. REQUIREMENTS                                  *pdfport.nvim-requirements*
+
+- Neovim >= 0.9
+- At least one extraction backend installed (see |pdfport.nvim-backends|)
+
+==============================================================================
+3. SETUP                                               *pdfport.nvim-setup*
+
+With lazy.nvim: >lua
+  {
+    "StefanBartl/pdfport.nvim",
+    cmd  = {
+      "PdfPort", "PdfPortText", "PdfPortFloat",
+      "PdfPortSystem", "PdfPortTerminal", "PdfPortHealth"
+    },
+    opts = { default_backend = "auto" },
+  }
+<
+
+Manual: >lua
+  require("pdfport_nvim").setup({ default_backend = "auto" })
+<
+
+==============================================================================
+4. CONFIGURATION                                      *pdfport.nvim-config*
+
+Pass a table to |pdfport_nvim.setup()|.  All keys are optional.
+
+  default_backend    string    "auto" or a backend id (default: "auto")
+  fallback_chain     string[]  Backend ids tried in order for "auto"
+  extract_opts       table
+    max_pages        integer?  Pages to extract (nil = all)
+    timeout_ms       integer   Per-backend timeout in ms (default: 30000)
+  render_opts        table
+    mode             string    "buffer"|"float"|"terminal"|"system"
+    split            string    "vsplit"|"split"|"tab"|"current"
+    focus            boolean   Focus the output window (default: true)
+  claude_api_key     string?   Overrides $ANTHROPIC_API_KEY
+  ollama_host        string    Ollama API URL (default: localhost:11434)
+  ollama_model       string    Ollama model name (default: "llava")
+  debug              boolean   Emit debug notifications (default: false)
+
+==============================================================================
+5. COMMANDS                                        *pdfport.nvim-commands*
+
+                                                              *:PdfPort*
+:PdfPort [path]
+  Open a PDF with an interactive mode/backend picker.
+  Path falls back to <cfile> and then the current buffer name.
+
+                                                          *:PdfPortText*
+:PdfPortText [path]
+  Extract text to a scratch buffer using the auto backend chain.
+
+                                                         *:PdfPortFloat*
+:PdfPortFloat [path]
+  Extract text and display in a centered floating window.
+
+                                                        *:PdfPortSystem*
+:PdfPortSystem [path]
+  Open the PDF with the operating system's default application.
+
+                                                      *:PdfPortTerminal*
+:PdfPortTerminal [path]
+  Rasterize and display the first page as a terminal image.
+  Requires pdftoppm and one of: chafa, ueberzugpp, kitten, imgcat.
+
+                                                        *:PdfPortHealth*
+:PdfPortHealth
+  Shortcut for |:checkhealth| pdfport_nvim.
+
+==============================================================================
+6. LUA API                                             *pdfport.nvim-api*
+
+                                                    *pdfport_nvim.setup()*
+require("pdfport_nvim").setup({opts})
+  Initialize the plugin. Registers backends, renderers, and user commands.
+  Safe to call multiple times; later calls override earlier configuration.
+
+                                                     *pdfport_nvim.open()*
+require("pdfport_nvim").open({opts})
+  Extract text and render it. {opts} fields:
+
+    path        string    (required) Absolute path to the PDF
+    mode        string    "buffer"|"float"|"terminal"|"system"
+    backend_id  string?   Specific backend; nil = use fallback chain
+    split       string?   "vsplit"|"split"|"tab"|"current"
+    focus       boolean?  Focus the output window
+
+                                                  *pdfport_nvim.extract()*
+require("pdfport_nvim").extract({opts})
+  Extract text only, no rendering. {opts} fields:
+
+    path        string    (required) Absolute path to the PDF
+    max_pages   integer?  Page limit
+    backend_id  string?   Specific backend
+    __callback  function  Called as callback(result: PdfPort.Result)
+
+  PdfPort.Result fields:
+    status          "ok"|"error"
+    text            string?
+    format          "text"|"markdown"
+    backend         string
+    pages_processed integer?
+    error           string?
+
+                                              *pdfport_nvim.register_backend()*
+require("pdfport_nvim").register_backend({backend})
+  Register a custom extraction backend. {backend} fields:
+
+    id          string    Unique identifier
+    name        string    Human-readable name
+    available   function  Returns true when the backend is usable
+    extract     function  function(path, opts) — must call opts.__callback
+
+==============================================================================
+7. BACKENDS                                        *pdfport.nvim-backends*
+
+  pdftotext   Requires pdftotext (poppler-utils). Plain text output.
+  pdfplumber  Requires Python + pdfplumber. Plain text output.
+  marker      Requires marker_single (pip install marker-pdf). Markdown.
+  docling     Requires Python + docling (pip install docling). Markdown.
+  claude      Requires curl, base64, ANTHROPIC_API_KEY. Markdown.
+  ollama      Requires ollama, pdftoppm, curl. Markdown.
+
+The fallback chain is tried in order until one succeeds.
+
+==============================================================================
+8. RENDERERS                                      *pdfport.nvim-renderers*
+
+  buffer      Opens a scratch buffer (supports split/vsplit/tab).
+  float       Opens a centered floating window. Press q or <Esc> to close.
+  system      Opens the original PDF with the OS default application.
+  terminal    Rasterizes via pdftoppm and displays with chafa/kitty/imgcat.
+
+==============================================================================
+9. FILE-TREE INTEGRATIONS                        *pdfport.nvim-filetrees*
+
+All integrations share the same default keymaps:
+  <leader>po  — Mode picker (interactive)
+  <leader>pt  — Extract to buffer (vsplit)
+  <leader>ps  — Open with system application
+  <leader>pi  — Terminal image preview
+
+neo-tree: >lua
+  local neo = require("pdfport_nvim.integrations.neotree")
+  -- Inside your neo-tree setup() opts:
+  commands = vim.tbl_extend("force", {}, neo.commands()),
+  filesystem.window.mappings = vim.tbl_extend("force", {}, neo.keymaps()),
+<
+
+nvim-tree: >lua
+  require("pdfport_nvim.integrations.nvim_tree").setup()
+<
+
+netrw: >lua
+  require("pdfport_nvim.integrations.netrw").setup()
+<
+
+oil.nvim: >lua
+  require("pdfport_nvim.integrations.oil").setup()
+<
+
+Unified auto-detect: >lua
+  require("pdfport_nvim.integrations").open_current({ split = "vsplit" })
+<
+
+==============================================================================
+10. FUZZY-FINDER INTEGRATIONS                  *pdfport.nvim-fuzzyfinders*
+
+Telescope — single picker: >lua
+  require("telescope.builtin").find_files({
+    previewer = require("pdfport_nvim.integrations.telescope").previewer(),
+  })
+<
+
+Telescope — global hook: >lua
+  require("telescope").setup({
+    defaults = {
+      preview = {
+        filetype_hook = require("pdfport_nvim.integrations.telescope").filetype_hook,
+      },
+    },
+  })
+<
+
+fzf-lua: >lua
+  require("fzf-lua").files({
+    preview = require("pdfport_nvim.integrations.fzf").preview_fn({ max_pages = 3 }),
+  })
+<
+
+==============================================================================
+11. HEALTH CHECK                                     *pdfport.nvim-health*
+
+:checkhealth pdfport_nvim
+
+Reports:
+  - Core module load status
+  - Backend availability (tool executables, Python modules, API keys)
+  - Renderer availability (system open command, image renderer)
+  - Integration status (neo-tree, nvim-tree, oil.nvim, telescope, fzf-lua)
+  - Live registry: all registered backends with available() result
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:
