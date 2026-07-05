@@ -3,6 +3,27 @@
 Ideas and candidates for future work. Nothing here is committed to a release; move an
 item up when you actually start it.
 
+## Checklist audits & implementation plan
+
+pdfport.nvim was audited against the project checklists. Full per-rule status:
+- [Zentral-Prinzipien.md](ROADMAP/Zentral-Prinzipien.md)
+- [Arch&Coding.md](ROADMAP/Arch%26Coding.md)
+- [Checklist.md](ROADMAP/Checklist.md)
+- Reusable patterns for filetree.nvim: [NEOTREE_FEATURES.md](ROADMAP/NEOTREE_FEATURES.md)
+
+**Prioritized action items surfaced by the audits:**
+1. **Add automated test coverage** — the one gap all three audits agree on. No `test/`
+   directory exists at all today. A `test/smoke.lua` in the shape of `filetree.nvim`'s
+   (headless `require()` chain + a stub/fake backend) should cover `setup()`, dispatcher
+   resolution, and the disable/which-key keymap logic added in the 2026-07 checklist pass.
+2. **Make backend loading truly lazy** — `backends/init.lua`'s `M.load_all()` `require`s
+   all six backend modules unconditionally at `setup()` time. Defer each backend's
+   `require` to the point the resolver actually picks it, instead of loading all six
+   upfront.
+3. **(minor) Unified window-lifecycle helper** — `buffer`/`float`/`terminal` renderers each
+   hand-roll their own window creation/validity checks. Only worth centralizing if a fourth
+   window-based renderer is added; not an active problem today.
+
 ## Features
 
 - [ ] OCR fallback backend for scanned/image-only PDFs without a vision model (e.g. `tesseract`).
