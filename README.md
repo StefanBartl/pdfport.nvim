@@ -1,6 +1,22 @@
+```
+      _  __             _                   _
+ _ __ | |/ _|_ __   ___ | |_ __ _ __      __(_)_ __ ___
+| '_ \| | |_| '_ \ / _ \| __/ _` |\ \ /\ / /| | '_ ` _ \
+| |_) | |  _| |_) | (_) | || (_| | \ V  V / | | | | | | |
+| .__/|_|_| | .__/ \___/ \__\__,_|  \_/\_/  |_|_| |_| |_|
+|_|         |_|
+```
+
+[![Neovim](https://img.shields.io/badge/Neovim-%3E%3D%200.9-57A143?logo=neovim&logoColor=white)](https://neovim.io)
+[![Lua](https://img.shields.io/badge/Lua-blue?logo=lua&logoColor=white)](https://www.lua.org)
+
 # pdfport.nvim
 
 A Neovim plugin for extracting and displaying PDF content using a pluggable backend/renderer architecture.
+
+> Pairs well with [StefanBartl/lib.nvim](https://github.com/StefanBartl/lib.nvim) — pdfport.nvim
+> automatically uses its `hover_select` UI for a nicer mode picker when it's installed, falling
+> back to `vim.ui.select` otherwise.
 
 ## Features
 
@@ -9,7 +25,11 @@ A Neovim plugin for extracting and displaying PDF content using a pluggable back
 - **File-tree integrations** — neo-tree, nvim-tree, netrw, oil.nvim; unified `open_current()` auto-detects the active tree
 - **Fuzzy-finder integrations** — Telescope previewer, fzf-lua preview function
 - **Lazy-load friendly** — guard in `plugin/`, commands registered on first `setup()` call
+- **which-key support** — every keymap gets a description under the `<leader>p` group when [which-key.nvim](https://github.com/folke/which-key.nvim) is installed
 - **Health check** — `:checkhealth pdfport_nvim`
+
+See [docs/BINDINGS.md](docs/BINDINGS.md) for the full keymap/command/autocmd cheatsheet and
+[docs/ROADMAP.md](docs/ROADMAP.md) for planned work.
 
 ## Requirements
 
@@ -17,6 +37,10 @@ A Neovim plugin for extracting and displaying PDF content using a pluggable back
 - At least one extraction backend (see below)
 
 ## Installation
+
+pdfport.nvim only does anything once one of its commands or its Lua API is invoked, so it
+should always be loaded lazily — via `cmd = {...}` (recommended) rather than `lazy = false`
+or `event = "VeryLazy"`.
 
 ### lazy.nvim
 
@@ -29,6 +53,42 @@ A Neovim plugin for extracting and displaying PDF content using a pluggable back
     fallback_chain  = { "pdftotext", "pdfplumber", "marker", "docling", "ollama", "claude" },
   },
 }
+```
+
+### packer.nvim
+
+```lua
+use({
+  "StefanBartl/pdfport.nvim",
+  cmd = { "PdfPort", "PdfPortText", "PdfPortFloat", "PdfPortSystem", "PdfPortTerminal", "PdfPortHealth" },
+  config = function()
+    require("pdfport_nvim").setup({
+      default_backend = "auto",
+    })
+  end,
+})
+```
+
+### vim-plug
+
+```vim
+Plug 'StefanBartl/pdfport.nvim'
+```
+
+```lua
+" after plug#end()
+require("pdfport_nvim").setup({ default_backend = "auto" })
+```
+
+vim-plug has no built-in lazy-loading by command; wrap the commands yourself or call
+`setup()` eagerly (`extract`/`open` are cheap until a PDF is actually opened).
+
+### mini.deps
+
+```lua
+local add = MiniDeps.add
+add({ source = "StefanBartl/pdfport.nvim" })
+require("pdfport_nvim").setup({ default_backend = "auto" })
 ```
 
 ## Configuration
@@ -44,9 +104,14 @@ require("pdfport_nvim").setup({
     timeout_ms = 30000,
   },
   render_opts = {
-    mode  = "buffer",                -- "buffer"|"float"|"terminal"|"system"
-    split = "vsplit",                -- "vsplit"|"split"|"tab"|"current"
-    focus = true,
+    mode                = "buffer",  -- "buffer"|"float"|"terminal"|"system"
+    split               = "vsplit",  -- "vsplit"|"split"|"tab"|"current"
+    focus               = true,
+    terminal_dpi        = 216,       -- pdftoppm rasterization DPI (terminal mode)
+    terminal_size_ratio = {          -- fraction of the editor size used by the image
+      width  = 0.9,
+      height = 0.8,
+    },
   },
   claude_api_key = nil,              -- or set ANTHROPIC_API_KEY env var
   ollama_host    = "http://localhost:11434",
@@ -54,6 +119,10 @@ require("pdfport_nvim").setup({
   debug          = false,
 })
 ```
+
+See [lua/pdfport_nvim/config/DEFAULTS.lua](lua/pdfport_nvim/config/DEFAULTS.lua) for the
+authoritative default values and [lua/pdfport_nvim/@types/init.lua](lua/pdfport_nvim/@types/init.lua)
+for full field types (LSP completion works out of the box via `---@type PdfPort.Config`).
 
 ## Backends
 
@@ -111,6 +180,12 @@ p.register_backend({
 
 ## File-tree integrations
 
+Every integration shares the same four actions (`open`, `open_text`, `open_system`,
+`open_terminal`), defaulting to `<leader>po/pt/ps/pi` — see
+[docs/BINDINGS.md](docs/BINDINGS.md) for the full table. Pass `false` for any action to
+disable that keymap; if [which-key.nvim](https://github.com/folke/which-key.nvim) is
+installed, active keymaps are auto-registered with descriptions under `<leader>p`.
+
 ### neo-tree
 
 ```lua
@@ -120,20 +195,12 @@ require("neo-tree").setup({
   commands = vim.tbl_extend("force", {}, pdfport_neo.commands()),
   filesystem = {
     window = {
+      -- pass { open_system = false } etc. to disable an action
       mappings = vim.tbl_extend("force", {}, pdfport_neo.keymaps()),
     },
   },
 })
 ```
-
-Default keymaps (inside neo-tree buffer):
-
-| Key          | Action                       |
-|--------------|------------------------------|
-| `<leader>po` | Mode picker                  |
-| `<leader>pt` | Extract to buffer (vsplit)   |
-| `<leader>ps` | Open with system application |
-| `<leader>pi` | Terminal image preview       |
 
 ### nvim-tree
 

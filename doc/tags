@@ -16,6 +16,7 @@ pdfport.nvim-intro	pdfport.nvim.txt	/*pdfport.nvim-intro*
 pdfport.nvim-renderers	pdfport.nvim.txt	/*pdfport.nvim-renderers*
 pdfport.nvim-requirements	pdfport.nvim.txt	/*pdfport.nvim-requirements*
 pdfport.nvim-setup	pdfport.nvim.txt	/*pdfport.nvim-setup*
+pdfport.nvim-whichkey	pdfport.nvim.txt	/*pdfport.nvim-whichkey*
 pdfport.nvim.txt	pdfport.nvim.txt	/*pdfport.nvim.txt*
 pdfport_nvim.extract()	pdfport.nvim.txt	/*pdfport_nvim.extract()*
 pdfport_nvim.open()	pdfport.nvim.txt	/*pdfport_nvim.open()*

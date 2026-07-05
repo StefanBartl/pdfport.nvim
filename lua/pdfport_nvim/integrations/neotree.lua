@@ -8,8 +8,15 @@
 ---   opts.filesystem.window.mappings = vim.tbl_extend(
 ---     "force", opts.filesystem.window.mappings, pdfport_neo.keymaps()
 ---   )
+---
+--- Pass `false` for any action to disable that default keymap, e.g.:
+---
+---   pdfport_neo.keymaps({ open_system = false })
 
 local M = {}
+
+local picker  = require("pdfport_nvim.util.picker")
+local keymaps = require("pdfport_nvim.bindings.keymaps")
 
 ---@param state table
 ---@return string|nil
@@ -29,43 +36,6 @@ local function is_pdf(path)
   return path:lower():match("%.pdf$") ~= nil
 end
 
----@param path string
----@return nil
-local function pick_mode_and_open(path)
-  local pdfport = require("pdfport_nvim")
-
-  local choices = {
-    { label = "Plain text  (pdftotext)",  mode = "buffer",   backend = "pdftotext" },
-    { label = "Markdown    (marker)",      mode = "buffer",   backend = "marker"    },
-    { label = "Markdown    (docling)",     mode = "buffer",   backend = "docling"   },
-    { label = "Markdown    (Claude AI)",   mode = "buffer",   backend = "claude"    },
-    { label = "Markdown    (Ollama AI)",   mode = "buffer",   backend = "ollama"    },
-    { label = "Float window (auto)",       mode = "float",    backend = nil         },
-    { label = "Terminal preview",          mode = "terminal", backend = nil         },
-    { label = "System application",        mode = "system",   backend = nil         },
-  }
-
-  local items = { [#choices] = nil }
-  for i, c in ipairs(choices) do items[i] = c.label end
-
-  -- Try hover_select for a richer picker; fall back to vim.ui.select
-  local hover_ok, hover = pcall(require, "lib.nvim.ui.hover_select")
-  local function on_select(_, idx)
-    if not idx then return end
-    local choice = choices[idx]
-    if not choice then return end
-    pdfport.open({ path = path, mode = choice.mode, backend_id = choice.backend, focus = true })
-  end
-
-  if hover_ok then
-    hover.open({ title = "Open PDF as…", items = items, auto_width = true, on_select = on_select })
-  else
-    vim.ui.select(items, { prompt = "Open PDF as:" }, function(_, idx)
-      if idx then on_select(nil, idx) end
-    end)
-  end
-end
-
 ---@return table<string, fun(state: table): nil>
 function M.commands()
   return {
@@ -75,7 +45,7 @@ function M.commands()
         vim.notify("pdfport_nvim: not a PDF file", vim.log.levels.WARN)
         return
       end
-      pick_mode_and_open(path)
+      picker.pick_and_open(path)
     end,
 
     pdfport_text = function(state)
@@ -98,14 +68,25 @@ function M.commands()
   }
 end
 
+---@type table<string, string>
+local COMMAND_NAMES = {
+  open          = "pdfport_open",
+  open_text     = "pdfport_text",
+  open_system   = "pdfport_system",
+  open_terminal = "pdfport_terminal",
+}
+
+---@param opts? PdfPort.KeymapOpts
 ---@return table<string, string>
-function M.keymaps()
-  return {
-    ["<leader>po"] = "pdfport_open",
-    ["<leader>pt"] = "pdfport_text",
-    ["<leader>ps"] = "pdfport_system",
-    ["<leader>pi"] = "pdfport_terminal",
-  }
+function M.keymaps(opts)
+  local resolved = keymaps.resolve(opts)
+  keymaps.register_which_key(resolved)
+
+  local map = {}
+  for action, lhs in pairs(resolved) do
+    if lhs then map[lhs] = COMMAND_NAMES[action] end
+  end
+  return map
 end
 
 return M

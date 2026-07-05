@@ -57,13 +57,27 @@
 ---| "system"    -- OS default application
 ---| "float"     -- Floating window
 
+---@alias PdfPort.RendererSplit
+---| "vsplit"   -- Open to the right
+---| "split"    -- Open below
+---| "tab"      -- Open in a new tab
+---| "current"  -- Replace the current window
+
+---@alias PdfPort.TerminalTool "ueberzug"|"chafa"|"kitty"|"imgcat"
+
+---@class PdfPort.TerminalSizeRatio
+---@field width number   # Fraction of vim.o.columns (0.0–1.0)
+---@field height number  # Fraction of vim.o.lines (0.0–1.0)
+
 ---@class PdfPort.RenderOpts
 ---@field mode PdfPort.RendererMode
 ---@field path? string
 ---@field backend_id? PdfPort.BackendId
----@field split? "vsplit"|"split"|"tab"|"current"
+---@field split? PdfPort.RendererSplit
 ---@field float_opts? table
----@field terminal_tool? "ueberzug"|"chafa"|"kitty"|"imgcat"
+---@field terminal_tool? PdfPort.TerminalTool
+---@field terminal_dpi? integer
+---@field terminal_size_ratio? PdfPort.TerminalSizeRatio
 ---@field focus? boolean
 ---@field pages? integer[]
 

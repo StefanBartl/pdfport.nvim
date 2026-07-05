@@ -21,7 +21,7 @@ local M = {
 
 ---@return boolean
 function M.available()
-  return platform.has("python3") and platform.has_python_module("pdfplumber")
+  return platform.python() ~= nil and platform.has_python_module("pdfplumber")
 end
 
 ---@param path string
@@ -84,7 +84,16 @@ with pdfplumber.open(path) as pdf:
     vim.fn.delete(script_file)
   end
 
-  local handle = uv.spawn("python3", {
+  local python = platform.python()
+  if not python then
+    vim.fn.delete(script_file)
+    return {
+      status = "error", text = nil, format = "plain", backend = "pdfplumber",
+      pages_processed = nil, error = "pdfplumber: no python interpreter found on PATH",
+    }
+  end
+
+  local handle = uv.spawn(python, {
     args  = { script_file },
     stdio = { nil, stdout, stderr },
   }, function(code, _)
@@ -108,7 +117,7 @@ with pdfplumber.open(path) as pdf:
     vim.fn.delete(script_file)
     return {
       status = "error", text = nil, format = "plain", backend = "pdfplumber",
-      pages_processed = nil, error = "pdfplumber: failed to spawn python3",
+      pages_processed = nil, error = "pdfplumber: failed to spawn " .. python,
     }
   end
 
