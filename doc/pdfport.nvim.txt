@@ -13,7 +13,8 @@ CONTENTS                                             *pdfport.nvim-contents*
   8. Renderers ........................... |pdfport.nvim-renderers|
   9. File-tree integrations .............. |pdfport.nvim-filetrees|
  10. Fuzzy-finder integrations ........... |pdfport.nvim-fuzzyfinders|
- 11. Health check ........................ |pdfport.nvim-health|
+ 11. Which-key ............................ |pdfport.nvim-whichkey|
+ 12. Health check ........................ |pdfport.nvim-health|
 
 ==============================================================================
 1. INTRODUCTION                                        *pdfport.nvim-intro*
@@ -61,10 +62,15 @@ Pass a table to |pdfport_nvim.setup()|.  All keys are optional.
     mode             string    "buffer"|"float"|"terminal"|"system"
     split            string    "vsplit"|"split"|"tab"|"current"
     focus            boolean   Focus the output window (default: true)
+  render_opts.terminal_dpi          integer  pdftoppm DPI, terminal mode (default: 216)
+  render_opts.terminal_size_ratio   table    { width, height } fraction of editor size
+                                             used by the terminal image (default: 0.9/0.8)
   claude_api_key     string?   Overrides $ANTHROPIC_API_KEY
   ollama_host        string    Ollama API URL (default: localhost:11434)
   ollama_model       string    Ollama model name (default: "llava")
   debug              boolean   Emit debug notifications (default: false)
+
+See lua/pdfport_nvim/config/DEFAULTS.lua for the authoritative defaults.
 
 ==============================================================================
 5. COMMANDS                                        *pdfport.nvim-commands*
@@ -168,6 +174,10 @@ All integrations share the same default keymaps:
   <leader>ps  — Open with system application
   <leader>pi  — Terminal image preview
 
+Pass `false` for any action (open/open_text/open_system/open_terminal) to disable
+that keymap. See docs/BINDINGS.md in the repo for the full cheatsheet, and section
+|pdfport.nvim-whichkey| below for which-key integration.
+
 neo-tree: >lua
   local neo = require("pdfport_nvim.integrations.neotree")
   -- Inside your neo-tree setup() opts:
@@ -217,7 +227,14 @@ fzf-lua: >lua
 <
 
 ==============================================================================
-11. HEALTH CHECK                                     *pdfport.nvim-health*
+11. WHICH-KEY                                       *pdfport.nvim-whichkey*
+
+If which-key.nvim (folke/which-key.nvim) is installed, every active file-tree
+keymap is automatically registered with a description under the <leader>p
+group. No configuration required; this is a no-op when which-key is absent.
+
+==============================================================================
+12. HEALTH CHECK                                     *pdfport.nvim-health*
 
 :checkhealth pdfport_nvim
 
@@ -225,7 +242,7 @@ Reports:
   - Core module load status
   - Backend availability (tool executables, Python modules, API keys)
   - Renderer availability (system open command, image renderer)
-  - Integration status (neo-tree, nvim-tree, oil.nvim, telescope, fzf-lua)
+  - Integration status (neo-tree, nvim-tree, oil.nvim, telescope, fzf-lua, which-key)
   - Live registry: all registered backends with available() result
 
 ==============================================================================

@@ -71,8 +71,9 @@ end
 
 ---@param png_path string
 ---@param tool "ueberzug"|"chafa"|"kitty"|"imgcat"|nil
+---@param size_ratio { width: number, height: number }
 ---@return nil
-local function display_png(png_path, tool)
+local function display_png(png_path, tool, size_ratio)
   tool = tool or platform.best_terminal_renderer()
   if not tool then
     vim.notify("pdfport_nvim terminal: no image renderer (install chafa or ueberzug++)", vim.log.levels.ERROR)
@@ -87,8 +88,8 @@ local function display_png(png_path, tool)
     end
 
     local escaped = vim.fn.shellescape(png_path)
-    local width   = math.floor(vim.o.columns * 0.9)
-    local height  = math.floor(vim.o.lines   * 0.8)
+    local width   = math.floor(vim.o.columns * size_ratio.width)
+    local height  = math.floor(vim.o.lines   * size_ratio.height)
 
     if tool == "chafa" or tool == "ueberzug" then
       if not platform.has("chafa") then
@@ -121,9 +122,10 @@ function M.render(_result, opts)
     return
   end
 
-  local pages = (opts.pages and #opts.pages > 0) and opts.pages or { 1 }
-  local tool  = opts.terminal_tool or platform.best_terminal_renderer()
-  local dpi   = 216
+  local pages      = (opts.pages and #opts.pages > 0) and opts.pages or { 1 }
+  local tool       = opts.terminal_tool or platform.best_terminal_renderer()
+  local dpi        = opts.terminal_dpi or 216
+  local size_ratio = opts.terminal_size_ratio or { width = 0.9, height = 0.8 }
 
   local function render_next(idx)
     if idx > #pages then return end
@@ -136,7 +138,7 @@ function M.render(_result, opts)
         vim.notify("pdfport_nvim terminal: rasterizer returned no PNG", vim.log.levels.ERROR)
         return
       end
-      display_png(png, tool)
+      display_png(png, tool, size_ratio)
       vim.defer_fn(function() render_next(idx + 1) end, 500)
     end)
   end

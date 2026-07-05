@@ -9,9 +9,15 @@
 ---
 ---   require("pdfport_nvim.integrations.netrw").setup()
 ---
---- The setup call creates a FileType autocmd for "netrw".
+--- Pass `false` for any action to disable that default keymap, e.g.:
+---
+---   require("pdfport_nvim.integrations.netrw").setup({ open_system = false })
 
 local M = {}
+
+local picker   = require("pdfport_nvim.util.picker")
+local autocmds = require("pdfport_nvim.bindings.autocmds")
+local keymaps  = require("pdfport_nvim.bindings.keymaps")
 
 ---@return string|nil
 local function current_node_path()
@@ -29,85 +35,46 @@ local function is_pdf(path)
   return path:lower():match("%.pdf$") ~= nil
 end
 
----@param path string
-local function pick_mode_and_open(path)
-  local pdfport = require("pdfport_nvim")
-  local choices = {
-    { label = "Plain text  (pdftotext)",  mode = "buffer",   backend = "pdftotext" },
-    { label = "Markdown    (marker)",      mode = "buffer",   backend = "marker"    },
-    { label = "Markdown    (docling)",     mode = "buffer",   backend = "docling"   },
-    { label = "Markdown    (Claude AI)",   mode = "buffer",   backend = "claude"    },
-    { label = "Markdown    (Ollama AI)",   mode = "buffer",   backend = "ollama"    },
-    { label = "Float window (auto)",       mode = "float",    backend = nil         },
-    { label = "Terminal preview",          mode = "terminal", backend = nil         },
-    { label = "System application",        mode = "system",   backend = nil         },
-  }
-  local items = {}
-  for i, c in ipairs(choices) do items[i] = c.label end
-
-  local hover_ok, hover = pcall(require, "lib.nvim.ui.hover_select")
-  local function on_select(_, idx)
-    if not idx then return end
-    local choice = choices[idx]
-    if not choice then return end
-    pdfport.open({ path = path, mode = choice.mode, backend_id = choice.backend, focus = true })
-  end
-
-  if hover_ok then
-    hover.open({ title = "Open PDF as…", items = items, auto_width = true, on_select = on_select })
-  else
-    vim.ui.select(items, { prompt = "Open PDF as:" }, function(_, idx)
-      if idx then on_select(nil, idx) end
-    end)
-  end
-end
-
----@param opts? { open?: string, open_text?: string, open_system?: string, open_terminal?: string }
+---@param opts? PdfPort.KeymapOpts
 ---@return nil
 function M.setup(opts)
-  opts = opts or {}
-  local km_open     = opts.open         or "<leader>po"
-  local km_text     = opts.open_text    or "<leader>pt"
-  local km_system   = opts.open_system  or "<leader>ps"
-  local km_terminal = opts.open_terminal or "<leader>pi"
+  local resolved = keymaps.resolve(opts)
 
-  vim.api.nvim_create_autocmd("FileType", {
-    pattern  = "netrw",
-    group    = vim.api.nvim_create_augroup("pdfport_netrw", { clear = true }),
-    callback = function(ev)
-      local buf = ev.buf
-      local function map(key, fn)
-        vim.keymap.set("n", key, fn, { buffer = buf, silent = true, noremap = true })
+  autocmds.on_filetype("netrw", "pdfport_netrw", function(buf)
+    local function map(key, fn, desc)
+      if not key then return end
+      vim.keymap.set("n", key, fn, { buffer = buf, silent = true, noremap = true, desc = desc })
+    end
+
+    map(resolved.open, function()
+      local path = current_node_path()
+      if not path or not is_pdf(path) then
+        vim.notify("pdfport_nvim: not a PDF file", vim.log.levels.WARN)
+        return
       end
+      picker.pick_and_open(path)
+    end, keymaps.DESCRIPTIONS.open)
 
-      map(km_open, function()
-        local path = current_node_path()
-        if not path or not is_pdf(path) then
-          vim.notify("pdfport_nvim: not a PDF file", vim.log.levels.WARN)
-          return
-        end
-        pick_mode_and_open(path)
-      end)
+    map(resolved.open_text, function()
+      local path = current_node_path()
+      if not path or not is_pdf(path) then return end
+      require("pdfport_nvim").open({ path = path, mode = "buffer", split = "vsplit", focus = true })
+    end, keymaps.DESCRIPTIONS.open_text)
 
-      map(km_text, function()
-        local path = current_node_path()
-        if not path or not is_pdf(path) then return end
-        require("pdfport_nvim").open({ path = path, mode = "buffer", split = "vsplit", focus = true })
-      end)
+    map(resolved.open_system, function()
+      local path = current_node_path()
+      if not path or not is_pdf(path) then return end
+      require("pdfport_nvim").open({ path = path, mode = "system" })
+    end, keymaps.DESCRIPTIONS.open_system)
 
-      map(km_system, function()
-        local path = current_node_path()
-        if not path or not is_pdf(path) then return end
-        require("pdfport_nvim").open({ path = path, mode = "system" })
-      end)
+    map(resolved.open_terminal, function()
+      local path = current_node_path()
+      if not path or not is_pdf(path) then return end
+      require("pdfport_nvim").open({ path = path, mode = "terminal" })
+    end, keymaps.DESCRIPTIONS.open_terminal)
+  end)
 
-      map(km_terminal, function()
-        local path = current_node_path()
-        if not path or not is_pdf(path) then return end
-        require("pdfport_nvim").open({ path = path, mode = "terminal" })
-      end)
-    end,
-  })
+  keymaps.register_which_key(resolved)
 end
 
 return M

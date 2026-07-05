@@ -54,18 +54,31 @@ function M.first_available(executables)
   return nil
 end
 
+---@type string|nil
+local _python_cache = nil
+---@type boolean
+local _python_resolved = false
+
+---@return string|nil
+function M.python()
+  if _python_resolved then return _python_cache end
+  _python_resolved = true
+  _python_cache = M.first_available({ "python3", "python", "py" })
+  return _python_cache
+end
+
 ---@param module string
 ---@return boolean
 function M.has_python_module(module)
   local cache_key = "pymod:" .. module
   if _exe_cache[cache_key] ~= nil then return _exe_cache[cache_key] end
-  if not M.has("python3") then
+  local python = M.python()
+  if not python then
     _exe_cache[cache_key] = false
     return false
   end
-  local cmd = string.format("python3 -c 'import %s' 2>/dev/null", module)
-  local exit = os.execute(cmd)
-  local result = (exit == 0)
+  vim.fn.system({ python, "-c", "import " .. module })
+  local result = (vim.v.shell_error == 0)
   _exe_cache[cache_key] = result
   return result
 end
@@ -93,8 +106,10 @@ function M.best_terminal_renderer()
 end
 
 function M.reset_cache()
-  _exe_cache = {}
-  _os_cache  = nil
+  _exe_cache      = {}
+  _os_cache       = nil
+  _python_cache   = nil
+  _python_resolved = false
 end
 
 return M

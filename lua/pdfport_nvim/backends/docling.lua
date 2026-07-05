@@ -22,7 +22,7 @@ local M = {
 
 ---@return boolean
 function M.available()
-  return platform.has("python3") and platform.has_python_module("docling")
+  return platform.python() ~= nil and platform.has_python_module("docling")
 end
 
 ---@param path string
@@ -86,7 +86,16 @@ except Exception as e:
     vim.fn.delete(script_file)
   end
 
-  local handle = uv.spawn("python3", {
+  local python = platform.python()
+  if not python then
+    vim.fn.delete(script_file)
+    return {
+      status = "error", text = nil, format = "markdown", backend = "docling",
+      pages_processed = nil, error = "docling: no python interpreter found on PATH",
+    }
+  end
+
+  local handle = uv.spawn(python, {
     args  = { script_file },
     stdio = { nil, stdout, stderr },
   }, function(code, _)
@@ -110,7 +119,7 @@ except Exception as e:
     vim.fn.delete(script_file)
     return {
       status = "error", text = nil, format = "markdown", backend = "docling",
-      pages_processed = nil, error = "docling: failed to spawn python3",
+      pages_processed = nil, error = "docling: failed to spawn " .. python,
     }
   end
 

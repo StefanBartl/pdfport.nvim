@@ -65,15 +65,16 @@ local function check_backends()
   end
 
   -- pdfplumber
-  if platform.has("python3") then
-    h_ok("python3 found")
+  local python = platform.python()
+  if python then
+    h_ok(python .. " found")
     if platform.has_python_module("pdfplumber") then
       h_ok("pdfplumber: available")
     else
       h_warn("pdfplumber: not installed  (pip install pdfplumber)")
     end
   else
-    h_warn("python3 NOT found – pdfplumber/docling/marker unavailable")
+    h_warn("no python interpreter found (python3/python/py) – pdfplumber/docling unavailable")
   end
 
   -- marker
@@ -95,8 +96,9 @@ local function check_backends()
   -- ollama
   if check_exe("ollama", false) then
     h_ok("ollama binary found")
-    local code = vim.fn.system("curl -s -o /dev/null -w '%{http_code}' http://localhost:11434/api/tags 2>/dev/null")
-    if code and code:match("^200") then
+    local out = vim.fn.system({ "curl", "-s", "-w", "\n%{http_code}", "http://localhost:11434/api/tags" })
+    local code = out and out:match("(%d%d%d)%s*$")
+    if code == "200" then
       h_ok("ollama daemon running on localhost:11434")
     else
       h_warn("ollama daemon not running  (ollama serve)")
@@ -162,6 +164,7 @@ local function check_integrations()
   probe("oil",                "oil.nvim")
   probe("telescope",          "telescope.nvim")
   probe("fzf-lua",            "fzf-lua")
+  probe("which-key",          "which-key.nvim")
 
   -- netrw is built-in, always available
   h_ok("netrw: built-in (always available)")
