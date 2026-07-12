@@ -1,7 +1,7 @@
 ---@module 'pdfport_nvim.util.picker'
 ---@brief Shared "open PDF as…" mode picker used by all file-tree integrations.
 ---@description
---- Falls back to vim.ui.select when lib.nvim's hover_select is not installed.
+--- Falls back to vim.ui.select when lib.nvim's kit.select is not installed.
 
 local M = {}
 
@@ -32,9 +32,9 @@ function M.pick_and_open(path)
     pdfport.open({ path = path, mode = choice.mode, backend_id = choice.backend, focus = true })
   end
 
-  local hover_ok, hover = pcall(require, "lib.nvim.ui.hover_select")
-  if hover_ok then
-    hover.open({ title = "Open PDF as…", items = items, auto_width = true, on_select = on_select })
+  local kit_ok, kit = pcall(require, "lib.nvim.ui.kit")
+  if kit_ok and type(kit.select) == "function" then
+    kit.select({ title = "Open PDF as…", items = items, on_select = on_select })
   else
     vim.ui.select(items, { prompt = "Open PDF as:" }, function(_, idx)
       if idx then on_select(nil, idx) end
