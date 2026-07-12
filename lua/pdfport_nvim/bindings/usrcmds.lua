@@ -78,9 +78,9 @@ function M.register(pdfport)
       pdfport.open({ path = path, mode = c.mode, backend_id = c.backend, focus = true })
     end
 
-    local hover_ok, hover = pcall(require, "lib.nvim.ui.hover_select")
-    if hover_ok then
-      hover.open({ title = "pdfport – open as", items = items, auto_width = true, on_select = on_select })
+    local kit_ok, kit = pcall(require, "lib.nvim.ui.kit")
+    if kit_ok and type(kit.select) == "function" then
+      kit.select({ title = "pdfport – open as", items = items, on_select = on_select })
     else
       vim.ui.select(items, { prompt = "pdfport – open as:" }, function(_, idx)
         if idx then on_select(nil, idx) end

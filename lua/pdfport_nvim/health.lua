@@ -169,11 +169,11 @@ local function check_integrations()
   -- netrw is built-in, always available
   h_ok("netrw: built-in (always available)")
 
-  local hover_ok, _ = pcall(require, "lib.nvim.ui.hover_select")
-  if hover_ok then
-    h_ok("lib.nvim.ui.hover_select found – enhanced mode picker active")
+  local kit_ok, _ = pcall(require, "lib.nvim.ui.kit")
+  if kit_ok then
+    h_ok("lib.nvim.ui.kit found – enhanced mode picker active")
   else
-    h_info("lib.nvim.ui.hover_select not found – using vim.ui.select fallback")
+    h_info("lib.nvim.ui.kit not found – using vim.ui.select fallback")
   end
 end
 
