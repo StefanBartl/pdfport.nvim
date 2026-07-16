@@ -30,22 +30,22 @@ function M.is_wsl()
   return lib_is_wsl()
 end
 
+-- has/first_available delegate to lib.nvim.core, which memoizes per binary
+-- name internally (this module's own version re-checked vim.fn.executable
+-- every call for names not yet in _exe_cache). _exe_cache itself stays —
+-- it's still used below for has_python_module's "pymod:<module>" checks,
+-- a different kind of probe (shells out to `python -c "import module"`).
+
 ---@param exe string
 ---@return boolean
 function M.has(exe)
-  if _exe_cache[exe] ~= nil then return _exe_cache[exe] end
-  local result = vim.fn.executable(exe) == 1
-  _exe_cache[exe] = result
-  return result
+  return require("lib.nvim.core").has_exec(exe)
 end
 
 ---@param executables string[]
 ---@return string|nil
 function M.first_available(executables)
-  for i = 1, #executables do
-    if M.has(executables[i]) then return executables[i] end
-  end
-  return nil
+  return require("lib.nvim.core").first_available(executables)
 end
 
 ---@type string|nil
