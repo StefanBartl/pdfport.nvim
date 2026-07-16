@@ -47,6 +47,7 @@ or `event = "VeryLazy"`.
 ```lua
 {
   "StefanBartl/pdfport.nvim",
+  dependencies = { "StefanBartl/lib.nvim" },
   cmd = { "PdfPort", "PdfPortText", "PdfPortFloat", "PdfPortSystem", "PdfPortTerminal", "PdfPortHealth" },
   opts = {
     default_backend = "auto",
@@ -60,6 +61,7 @@ or `event = "VeryLazy"`.
 ```lua
 use({
   "StefanBartl/pdfport.nvim",
+  dependencies = { "StefanBartl/lib.nvim" },
   cmd = { "PdfPort", "PdfPortText", "PdfPortFloat", "PdfPortSystem", "PdfPortTerminal", "PdfPortHealth" },
   config = function()
     require("pdfport_nvim").setup({

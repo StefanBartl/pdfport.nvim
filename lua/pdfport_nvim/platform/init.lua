@@ -6,34 +6,28 @@
 
 local M = {}
 
-local uv = vim.uv or vim.loop
+-- OS/WSL detection delegates to lib.nvim.cross.platform (uname + env-var +
+-- /proc fallback chain — more robust than a single sysname match / a single
+-- /proc/version read, and cached internally there too).
+local lib_is_windows = require("lib.nvim.cross.platform.is_windows")
+local lib_is_macos   = require("lib.nvim.cross.platform.is_macos")
+local lib_is_linux   = require("lib.nvim.cross.platform.is_linux")
+local lib_is_wsl     = require("lib.nvim.cross.platform.is_wsl")
 
 ---@type table<string, boolean>
 local _exe_cache = {}
 
----@type string|nil
-local _os_cache = nil
-
 ---@return "windows"|"macos"|"linux"|"unknown"
 function M.os()
-  if _os_cache then return _os_cache end
-  local sysname = (uv.os_uname() or {}).sysname or ""
-  if     sysname:match("Windows") then _os_cache = "windows"
-  elseif sysname:match("Darwin")  then _os_cache = "macos"
-  elseif sysname:match("Linux")   then _os_cache = "linux"
-  else                                 _os_cache = "unknown"
-  end
-  return _os_cache
+  if lib_is_windows() then return "windows" end
+  if lib_is_macos() then return "macos" end
+  if lib_is_linux() or lib_is_wsl() then return "linux" end
+  return "unknown"
 end
 
 ---@return boolean
 function M.is_wsl()
-  if M.os() ~= "linux" then return false end
-  local f = io.open("/proc/version", "r")
-  if not f then return false end
-  local content = f:read("*a")
-  f:close()
-  return content:lower():find("microsoft") ~= nil
+  return lib_is_wsl()
 end
 
 ---@param exe string
@@ -107,7 +101,6 @@ end
 
 function M.reset_cache()
   _exe_cache      = {}
-  _os_cache       = nil
   _python_cache   = nil
   _python_resolved = false
 end
