@@ -41,16 +41,14 @@ local function build_chain(requested)
     return chain
   end
 
-  local seen  = {}
   local chain = {}
   for i = 1, #global_chain do
-    local id = global_chain[i]
-    if not seen[id] then seen[id] = true; chain[#chain + 1] = id end
+    chain[#chain + 1] = global_chain[i]
   end
   for _, id in ipairs(registry.backend_ids()) do
-    if not seen[id] then seen[id] = true; chain[#chain + 1] = id end
+    chain[#chain + 1] = id
   end
-  return chain
+  return require("lib.lua.tables").dedup_list(chain)
 end
 
 ---@param requested PdfPort.BackendId|"auto"|nil
