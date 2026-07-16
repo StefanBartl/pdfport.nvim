@@ -2,10 +2,11 @@
 ---@brief Extraction backend using IBM docling.
 ---@description
 --- Produces high-quality Markdown preserving tables and document structure.
+--- Runs the docling script asynchronously via lib.nvim.cross.uv.spawn_capture.
 --- Install: pip install docling
 
 local platform = require("pdfport_nvim.platform")
-local uv       = vim.uv or vim.loop
+local spawn_capture = require("lib.nvim.cross.uv.spawn_capture")
 
 ---@type PdfPort.Backend
 local M = {
@@ -57,35 +58,6 @@ except Exception as e:
   f:write(script)
   f:close()
 
-  local stdout_chunks = {}
-  local stderr_chunks = {}
-  local stdout        = uv.new_pipe(false)
-  local stderr        = uv.new_pipe(false)
-  if not stdout or not stderr then
-    vim.fn.delete(script_file)
-    return {
-      status = "error", text = nil, format = "markdown", backend = "docling",
-      pages_processed = nil, error = "docling: failed to create process pipes",
-    }
-  end
-
-  local timeout_ms = opts.timeout_ms or 120000
-  local timer      = uv.new_timer()
-  if not timer then
-    vim.fn.delete(script_file)
-    return {
-      status = "error", text = nil, format = "markdown", backend = "docling",
-      pages_processed = nil, error = "docling: failed to create timeout timer",
-    }
-  end
-
-  local function cleanup()
-    if timer  and not timer:is_closing()  then timer:stop(); timer:close() end
-    if stdout and not stdout:is_closing() then stdout:close() end
-    if stderr and not stderr:is_closing() then stderr:close() end
-    vim.fn.delete(script_file)
-  end
-
   local python = platform.python()
   if not python then
     vim.fn.delete(script_file)
@@ -95,48 +67,30 @@ except Exception as e:
     }
   end
 
-  local handle = uv.spawn(python, {
-    args  = { script_file },
-    stdio = { nil, stdout, stderr },
-  }, function(code, _)
-    cleanup()
-    local text     = table.concat(stdout_chunks)
-    local err_text = table.concat(stderr_chunks)
-    vim.schedule(function()
-      local result = code == 0 and {
-        status = "ok",    text = text, format = "markdown", backend = "docling",
-        pages_processed = max_pages > 0 and max_pages or nil, error = nil,
-      } or {
-        status = "error", text = nil, format = "markdown", backend = "docling",
-        pages_processed = nil,
-        error = string.format("docling exited %d: %s", code, err_text),
-      }
-      if type(opts.__callback) == "function" then opts.__callback(result) end
-    end)
-  end)
+  local timeout_ms = opts.timeout_ms or 120000
 
-  if not handle then
+  spawn_capture({ python, script_file }, { timeout_ms = timeout_ms }, function(spawn_result)
     vim.fn.delete(script_file)
-    return {
-      status = "error", text = nil, format = "markdown", backend = "docling",
-      pages_processed = nil, error = "docling: failed to spawn " .. python,
-    }
-  end
-
-  stdout:read_start(function(_, data) if data then stdout_chunks[#stdout_chunks + 1] = data end end)
-  stderr:read_start(function(_, data) if data then stderr_chunks[#stderr_chunks + 1] = data end end)
-
-  timer:start(timeout_ms, 0, function()
-    if handle and not handle:is_closing() then handle:kill(15) end
-    cleanup()
-    vim.schedule(function()
-      local result = {
+    local result
+    if spawn_result.timed_out then
+      result = {
         status = "error", text = nil, format = "markdown", backend = "docling",
         pages_processed = nil,
         error = string.format("docling: timed out after %d ms", timeout_ms),
       }
-      if type(opts.__callback) == "function" then opts.__callback(result) end
-    end)
+    elseif spawn_result.ok then
+      result = {
+        status = "ok", text = spawn_result.stdout, format = "markdown", backend = "docling",
+        pages_processed = max_pages > 0 and max_pages or nil, error = nil,
+      }
+    else
+      result = {
+        status = "error", text = nil, format = "markdown", backend = "docling",
+        pages_processed = nil,
+        error = string.format("docling exited %d: %s", spawn_result.code, spawn_result.stderr),
+      }
+    end
+    if type(opts.__callback) == "function" then opts.__callback(result) end
   end)
 
   return nil

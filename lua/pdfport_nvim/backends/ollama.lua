@@ -2,10 +2,11 @@
 ---@brief Extraction backend using a local ollama multimodal model.
 ---@description
 --- Rasterizes each PDF page via pdftoppm and sends images to the ollama API.
+--- Runs curl asynchronously via lib.nvim.cross.uv.spawn_capture.
 --- Requires: ollama daemon running, pdftoppm, curl.
 
 local platform = require("pdfport_nvim.platform")
-local uv       = vim.uv or vim.loop
+local spawn_capture = require("lib.nvim.cross.uv.spawn_capture")
 
 ---@type PdfPort.ConfigurableBackend
 local M = {
@@ -92,81 +93,45 @@ local function query_ollama(b64, prompt, model, host, timeout_ms, callback)
   if not f then callback(nil, "ollama: failed to write temp request file"); return end
   f:write(body); f:close()
 
-  local response_chunks = {}
-  local stderr_chunks   = {}
-  local stdout          = uv.new_pipe(false)
-  local stderr          = uv.new_pipe(false)
-  if not stdout or not stderr then
+  local argv = { "curl", "-s", "-X", "POST", host .. "/api/generate", "-H", "Content-Type: application/json", "-d", "@" .. body_file }
+
+  spawn_capture(argv, { timeout_ms = timeout_ms }, function(spawn_result)
     vim.fn.delete(body_file)
-    callback(nil, "ollama: failed to create process pipes")
-    return
-  end
 
-  local timer = uv.new_timer()
-  if not timer then
-    vim.fn.delete(body_file)
-    callback(nil, "ollama: failed to create timeout timer")
-    return
-  end
-
-  local function cleanup()
-    if timer  and not timer:is_closing()  then timer:stop(); timer:close() end
-    if stdout and not stdout:is_closing() then stdout:close() end
-    if stderr and not stderr:is_closing() then stderr:close() end
-    vim.schedule(function() vim.fn.delete(body_file) end)
-  end
-
-  local handle = uv.spawn("curl", {
-    args  = { "-s", "-X", "POST", host .. "/api/generate", "-H", "Content-Type: application/json", "-d", "@" .. body_file },
-    stdio = { nil, stdout, stderr },
-  }, function(code, _)
-    cleanup()
-    local raw = table.concat(response_chunks)
-    local err = table.concat(stderr_chunks)
-    vim.schedule(function()
-      if code ~= 0 then callback(nil, string.format("curl exited %d: %s", code, err)); return end
-      -- check for ollama-level error
-      local first = vim.trim((vim.split(raw, "\n", { plain = true })[1]) or "")
-      if first ~= "" then
-        local ok_e, e_obj = pcall(vim.json.decode, first)
-        if ok_e and type(e_obj) == "table" and type(e_obj.error) == "string" then
-          callback(nil, "ollama error: " .. e_obj.error); return
-        end
-      end
-      local lines = vim.split(raw, "\n", { plain = true })
-      local text  = nil
-      for i = #lines, 1, -1 do
-        local line = vim.trim(lines[i])
-        if line ~= "" then
-          local ok_j, decoded = pcall(vim.json.decode, line)
-          if ok_j and type(decoded) == "table" and type(decoded.response) == "string" then
-            text = decoded.response; break
-          end
-        end
-      end
-      if not text then
-        callback(nil, "ollama: response field missing. Raw: " .. raw:sub(1, 300))
-        return
-      end
-      callback(text, nil)
-    end)
-  end)
-
-  if not handle then
-    vim.fn.delete(body_file)
-    callback(nil, "ollama: failed to spawn curl")
-    return
-  end
-
-  stdout:read_start(function(_, data) if data then response_chunks[#response_chunks + 1] = data end end)
-  stderr:read_start(function(_, data) if data then stderr_chunks[#stderr_chunks + 1] = data end end)
-
-  timer:start(timeout_ms, 0, function()
-    if handle and not handle:is_closing() then handle:kill(15) end
-    cleanup()
-    vim.schedule(function()
+    if spawn_result.timed_out then
       callback(nil, string.format("ollama: request timed out after %d ms", timeout_ms))
-    end)
+      return
+    end
+    if not spawn_result.ok then
+      callback(nil, string.format("curl exited %d: %s", spawn_result.code, spawn_result.stderr))
+      return
+    end
+
+    local raw = spawn_result.stdout
+    -- check for ollama-level error
+    local first = vim.trim((vim.split(raw, "\n", { plain = true })[1]) or "")
+    if first ~= "" then
+      local ok_e, e_obj = pcall(vim.json.decode, first)
+      if ok_e and type(e_obj) == "table" and type(e_obj.error) == "string" then
+        callback(nil, "ollama error: " .. e_obj.error); return
+      end
+    end
+    local lines = vim.split(raw, "\n", { plain = true })
+    local text  = nil
+    for i = #lines, 1, -1 do
+      local line = vim.trim(lines[i])
+      if line ~= "" then
+        local ok_j, decoded = pcall(vim.json.decode, line)
+        if ok_j and type(decoded) == "table" and type(decoded.response) == "string" then
+          text = decoded.response; break
+        end
+      end
+    end
+    if not text then
+      callback(nil, "ollama: response field missing. Raw: " .. raw:sub(1, 300))
+      return
+    end
+    callback(text, nil)
   end)
 end
 

@@ -2,10 +2,11 @@
 ---@brief Extraction backend using the Anthropic Claude API.
 ---@description
 --- Sends the PDF as a base64-encoded document to the Anthropic Messages API.
+--- Runs curl asynchronously via lib.nvim.cross.uv.spawn_capture.
 --- Requires: ANTHROPIC_API_KEY, curl, internet connection.
 
 local platform = require("pdfport_nvim.platform")
-local uv       = vim.uv or vim.loop
+local spawn_capture = require("lib.nvim.cross.uv.spawn_capture")
 
 ---@type PdfPort.ConfigurableBackend
 local M = {
@@ -117,120 +118,74 @@ function M.extract(path, opts)
   end
   f:write(json_body); f:close()
 
-  local response_chunks = {}
-  local stderr_chunks   = {}
-  local stdout          = uv.new_pipe(false)
-  local stderr          = uv.new_pipe(false)
-  if not stdout or not stderr then
-    vim.fn.delete(body_file)
-    return {
-      status = "error", text = nil, format = "markdown", backend = "claude",
-      pages_processed = nil, error = "claude: failed to create process pipes",
-    }
-  end
-
   local timeout_ms = opts.timeout_ms or 60000
-  local timer      = uv.new_timer()
-  if not timer then
+  local argv = {
+    "curl", "-s", "-X", "POST",
+    "https://api.anthropic.com/v1/messages",
+    "-H", "Content-Type: application/json",
+    "-H", "x-api-key: " .. api_key,
+    "-H", "anthropic-version: 2023-06-01",
+    "-d", "@" .. body_file,
+  }
+
+  spawn_capture(argv, { timeout_ms = timeout_ms }, function(spawn_result)
     vim.fn.delete(body_file)
-    return {
-      status = "error", text = nil, format = "markdown", backend = "claude",
-      pages_processed = nil, error = "claude: failed to create timeout timer",
-    }
-  end
 
-  local function cleanup()
-    if timer  and not timer:is_closing()  then timer:stop(); timer:close() end
-    if stdout and not stdout:is_closing() then stdout:close() end
-    if stderr and not stderr:is_closing() then stderr:close() end
-    vim.fn.delete(body_file)
-  end
-
-  local handle = uv.spawn("curl", {
-    args = {
-      "-s", "-X", "POST",
-      "https://api.anthropic.com/v1/messages",
-      "-H", "Content-Type: application/json",
-      "-H", "x-api-key: " .. api_key,
-      "-H", "anthropic-version: 2023-06-01",
-      "-d", "@" .. body_file,
-    },
-    stdio = { nil, stdout, stderr },
-  }, function(code, _)
-    cleanup()
-    local raw = table.concat(response_chunks)
-    local err = table.concat(stderr_chunks)
-
-    vim.schedule(function()
-      if code ~= 0 then
-        local result = {
-          status = "error", text = nil, format = "markdown", backend = "claude",
-          pages_processed = nil,
-          error = string.format("curl exited %d: %s", code, err),
-        }
-        if type(opts.__callback) == "function" then opts.__callback(result) end
-        return
-      end
-
-      local ok_json, decoded = pcall(vim.json.decode, raw)
-      if not ok_json or type(decoded) ~= "table" then
-        local result = {
-          status = "error", text = nil, format = "markdown", backend = "claude",
-          pages_processed = nil,
-          error = "claude: invalid JSON response: " .. raw:sub(1, 200),
-        }
-        if type(opts.__callback) == "function" then opts.__callback(result) end
-        return
-      end
-
-      if decoded.type == "error" then
-        local api_err = (decoded.error and decoded.error.message) or "unknown API error"
-        local result = {
-          status = "error", text = nil, format = "markdown", backend = "claude",
-          pages_processed = nil, error = "claude API error: " .. api_err,
-        }
-        if type(opts.__callback) == "function" then opts.__callback(result) end
-        return
-      end
-
-      local text_parts = {}
-      for _, block in ipairs(decoded.content or {}) do
-        if block.type == "text" and type(block.text) == "string" then
-          text_parts[#text_parts + 1] = block.text
-        end
-      end
-
-      local result = {
-        status = "ok", text = table.concat(text_parts, "\n"),
-        format = "markdown", backend = "claude",
-        pages_processed = nil, error = nil,
-      }
-      if type(opts.__callback) == "function" then opts.__callback(result) end
-    end)
-  end)
-
-  if not handle then
-    vim.fn.delete(body_file)
-    return {
-      status = "error", text = nil, format = "markdown", backend = "claude",
-      pages_processed = nil, error = "claude: failed to spawn curl",
-    }
-  end
-
-  stdout:read_start(function(_, data) if data then response_chunks[#response_chunks + 1] = data end end)
-  stderr:read_start(function(_, data) if data then stderr_chunks[#stderr_chunks + 1] = data end end)
-
-  timer:start(timeout_ms, 0, function()
-    if handle and not handle:is_closing() then handle:kill(15) end
-    cleanup()
-    vim.schedule(function()
+    if spawn_result.timed_out then
       local result = {
         status = "error", text = nil, format = "markdown", backend = "claude",
         pages_processed = nil,
         error = string.format("claude: HTTP request timed out after %d ms", timeout_ms),
       }
       if type(opts.__callback) == "function" then opts.__callback(result) end
-    end)
+      return
+    end
+
+    if not spawn_result.ok then
+      local result = {
+        status = "error", text = nil, format = "markdown", backend = "claude",
+        pages_processed = nil,
+        error = string.format("curl exited %d: %s", spawn_result.code, spawn_result.stderr),
+      }
+      if type(opts.__callback) == "function" then opts.__callback(result) end
+      return
+    end
+
+    local raw = spawn_result.stdout
+    local ok_json, decoded = pcall(vim.json.decode, raw)
+    if not ok_json or type(decoded) ~= "table" then
+      local result = {
+        status = "error", text = nil, format = "markdown", backend = "claude",
+        pages_processed = nil,
+        error = "claude: invalid JSON response: " .. raw:sub(1, 200),
+      }
+      if type(opts.__callback) == "function" then opts.__callback(result) end
+      return
+    end
+
+    if decoded.type == "error" then
+      local api_err = (decoded.error and decoded.error.message) or "unknown API error"
+      local result = {
+        status = "error", text = nil, format = "markdown", backend = "claude",
+        pages_processed = nil, error = "claude API error: " .. api_err,
+      }
+      if type(opts.__callback) == "function" then opts.__callback(result) end
+      return
+    end
+
+    local text_parts = {}
+    for _, block in ipairs(decoded.content or {}) do
+      if block.type == "text" and type(block.text) == "string" then
+        text_parts[#text_parts + 1] = block.text
+      end
+    end
+
+    local result = {
+      status = "ok", text = table.concat(text_parts, "\n"),
+      format = "markdown", backend = "claude",
+      pages_processed = nil, error = nil,
+    }
+    if type(opts.__callback) == "function" then opts.__callback(result) end
   end)
 
   return nil
