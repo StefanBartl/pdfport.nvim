@@ -1,21 +1,29 @@
 ---@module 'pdfport_nvim.util.notify'
 ---@brief Lightweight vim.notify wrapper for pdfport.nvim.
+---@description
+--- Delegates prefixing and level dispatch to lib.nvim.notify.create(prefix)
+--- (same "<prefix> <msg>" shape this module already used). `debug(msg, cfg)`
+--- has no lib.nvim.notify equivalent — it only emits when `cfg.debug` is
+--- truthy, a plugin-specific gate lib.nvim's own always-emit `.debug()`
+--- doesn't have — so it stays a thin wrapper around the delegated notifier.
+
+local lib_notify = require("lib.nvim.notify")
 
 local M = {}
 
 ---@param prefix string
 ---@return { info: fun(msg: string): nil, warn: fun(msg: string): nil, error: fun(msg: string): nil, debug: fun(msg: string, cfg: table): nil }
 function M.create(prefix)
-  local function notify(msg, level)
-    vim.notify(prefix .. " " .. msg, level)
-  end
+  local notifier = lib_notify.create(prefix)
 
   return {
-    info  = function(msg) notify(msg, vim.log.levels.INFO)  end,
-    warn  = function(msg) notify(msg, vim.log.levels.WARN)  end,
-    error = function(msg) notify(msg, vim.log.levels.ERROR) end,
+    info = notifier.info,
+    warn = notifier.warn,
+    error = notifier.error,
     debug = function(msg, cfg)
-      if cfg and cfg.debug then notify(msg, vim.log.levels.DEBUG) end
+      if cfg and cfg.debug then
+        notifier.debug(msg)
+      end
     end,
   }
 end
