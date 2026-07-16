@@ -51,22 +51,9 @@ end
 ---@param callback fun(exists: boolean): nil
 ---@return nil
 local function wait_for_file(path, interval_ms, max_attempts, callback)
-  local attempts = 0
-  local timer    = uv.new_timer()
-  if not timer then vim.schedule(function() callback(false) end); return end
-
-  timer:start(0, interval_ms, function()
-    attempts = attempts + 1
-    if vim.fn.filereadable(path) == 1 then
-      timer:stop(); timer:close()
-      vim.schedule(function() callback(true) end)
-      return
-    end
-    if attempts >= max_attempts then
-      timer:stop(); timer:close()
-      vim.schedule(function() callback(false) end)
-    end
-  end)
+  require("lib.nvim.cross.uv.wait_until")(function()
+    return vim.fn.filereadable(path) == 1
+  end, { interval_ms = interval_ms, max_attempts = max_attempts }, callback)
 end
 
 ---@param png_path string
