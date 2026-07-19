@@ -1,10 +1,14 @@
 ---@module 'pdfport_nvim.bindings.usrcmds'
----@brief User-command registration for pdfport.nvim.
+---@brief Registers :PdfPort <subcommand>, one verb built via lib.nvim's
+---@brief composer (:Verb sub … + <Tab> completion + Markdown docgen).
 ---@description
---- Registers :PdfPort, :PdfPortText, :PdfPortFloat, :PdfPortSystem,
---- :PdfPortTerminal and :PdfPortHealth. All commands accept an optional path
---- argument; if omitted they fall back to <cfile> and then the current
---- buffer name. See docs/BINDINGS.md for the full cheatsheet.
+--- Bare `:PdfPort [path]` opens the interactive mode picker; `text`/`float`/
+--- `system`/`terminal` open directly in that mode; `health` runs
+--- :checkhealth. All path-taking routes accept an optional path argument; if
+--- omitted they fall back to <cfile> and then the current buffer name. See
+--- docs/BINDINGS.md for the full cheatsheet.
+
+local composer = require("lib.nvim.usercmd.composer")
 
 local M = {}
 
@@ -28,11 +32,19 @@ local function complete_pdf_path(arg_lead)
   return pdfs
 end
 
----@param args table
+-- <cfile>-aware, .pdf-prioritized completion — meaningfully different from
+-- composer's built-in PATH type (plain vim.fn.getcompletion), so it's its
+-- own registered type rather than a fallback to the built-in.
+composer.register_type("PDF_PATH", {
+  validate = function(raw) return true, raw, nil end,
+  complete = function(arg_lead) return complete_pdf_path(arg_lead) end,
+})
+
+---@param explicit string|nil  Already-extracted positional arg, if any
 ---@return string|nil
-local function resolve_path(args)
-  if args.args and args.args ~= "" then
-    return vim.fn.expand(args.args)
+local function resolve_path(explicit)
+  if explicit and explicit ~= "" then
+    return vim.fn.expand(explicit)
   end
   local cfile = vim.fn.expand("<cfile>")
   if cfile and cfile ~= "" then
@@ -48,81 +60,96 @@ end
 ---@param pdfport table  the pdfport_nvim public API module (for M.open())
 ---@return nil
 function M.register(pdfport)
-  local base = { nargs = "?", complete = complete_pdf_path }
+  local path_arg = { { name = "path", type = "PDF_PATH", optional = true } }
 
-  vim.api.nvim_create_user_command("PdfPort", function(args)
-    local path = resolve_path(args)
+  --- Shared "no path found" guard, mirroring the original per-command error text.
+  ---@param ctx Lib.UserCmd.Composer.Ctx
+  ---@param label string
+  ---@return string|nil
+  local function require_path(ctx, label)
+    local path = resolve_path(ctx.args.path)
     if not path or path == "" then
-      vim.notify("PdfPort: no file path (argument, cfile, or current buffer)", vim.log.levels.ERROR)
-      return
+      vim.notify(label .. ": no file path (argument, cfile, or current buffer)", vim.log.levels.ERROR)
+      return nil
     end
+    return path
+  end
 
-    local choices = {
-      { label = "buffer  – auto",                  mode = "buffer",   backend = nil          },
-      { label = "buffer  – pdftotext",             mode = "buffer",   backend = "pdftotext"  },
-      { label = "buffer  – marker (Markdown AI)",  mode = "buffer",   backend = "marker"     },
-      { label = "buffer  – docling",               mode = "buffer",   backend = "docling"    },
-      { label = "buffer  – Claude API",            mode = "buffer",   backend = "claude"     },
-      { label = "buffer  – Ollama",                mode = "buffer",   backend = "ollama"     },
-      { label = "float   – auto",                  mode = "float",    backend = nil          },
-      { label = "terminal image preview",          mode = "terminal", backend = nil          },
-      { label = "system application",              mode = "system",   backend = nil          },
-    }
+  composer.verb("PdfPort", {
+    desc = "Open/preview a PDF (pluggable extraction backends)",
+    routes = {
+      -- Bare `:PdfPort [path]` — the interactive mode picker. `path = {}` is
+      -- the verb's root route: it matches even with no literal subcommand.
+      { path = {}, args = path_arg,
+        desc = "Open PDF (interactive mode picker)",
+        run = function(ctx)
+          local path = require_path(ctx, "PdfPort")
+          if not path then return end
 
-    local items = { [#choices] = nil }
-    for i, c in ipairs(choices) do items[i] = c.label end
+          local choices = {
+            { label = "buffer  – auto",                  mode = "buffer",   backend = nil          },
+            { label = "buffer  – pdftotext",             mode = "buffer",   backend = "pdftotext"  },
+            { label = "buffer  – marker (Markdown AI)",  mode = "buffer",   backend = "marker"     },
+            { label = "buffer  – docling",               mode = "buffer",   backend = "docling"    },
+            { label = "buffer  – Claude API",            mode = "buffer",   backend = "claude"     },
+            { label = "buffer  – Ollama",                mode = "buffer",   backend = "ollama"     },
+            { label = "float   – auto",                  mode = "float",    backend = nil          },
+            { label = "terminal image preview",          mode = "terminal", backend = nil          },
+            { label = "system application",              mode = "system",   backend = nil          },
+          }
 
-    local function on_select(_, idx)
-      local c = choices[idx]
-      if not c then return end
-      pdfport.open({ path = path, mode = c.mode, backend_id = c.backend, focus = true })
-    end
+          local items = { [#choices] = nil }
+          for i, c in ipairs(choices) do items[i] = c.label end
 
-    local kit_ok, kit = pcall(require, "lib.nvim.ui.kit")
-    if kit_ok and type(kit.select) == "function" then
-      kit.select({ title = "pdfport – open as", items = items, on_select = on_select })
-    else
-      vim.ui.select(items, { prompt = "pdfport – open as:" }, function(_, idx)
-        if idx then on_select(nil, idx) end
-      end)
-    end
-  end, vim.tbl_extend("force", base, { desc = "pdfport: open PDF (mode picker)" }))
+          local function on_select(_, idx)
+            local c = choices[idx]
+            if not c then return end
+            pdfport.open({ path = path, mode = c.mode, backend_id = c.backend, focus = true })
+          end
 
-  vim.api.nvim_create_user_command("PdfPortText", function(args)
-    local path = resolve_path(args)
-    if not path or path == "" then
-      vim.notify("PdfPortText: no file path", vim.log.levels.ERROR); return
-    end
-    pdfport.open({ path = path, mode = "buffer", focus = true })
-  end, vim.tbl_extend("force", base, { desc = "pdfport: extract PDF text to buffer" }))
+          local kit_ok, kit = pcall(require, "lib.nvim.ui.kit")
+          if kit_ok and type(kit.select) == "function" then
+            kit.select({ title = "pdfport – open as", items = items, on_select = on_select })
+          else
+            vim.ui.select(items, { prompt = "pdfport – open as:" }, function(_, idx)
+              if idx then on_select(nil, idx) end
+            end)
+          end
+        end },
 
-  vim.api.nvim_create_user_command("PdfPortFloat", function(args)
-    local path = resolve_path(args)
-    if not path or path == "" then
-      vim.notify("PdfPortFloat: no file path", vim.log.levels.ERROR); return
-    end
-    pdfport.open({ path = path, mode = "float", focus = true })
-  end, vim.tbl_extend("force", base, { desc = "pdfport: show PDF text in float window" }))
+      { path = { "text" }, args = path_arg,
+        desc = "Extract PDF text to buffer",
+        run = function(ctx)
+          local path = require_path(ctx, "PdfPort text")
+          if path then pdfport.open({ path = path, mode = "buffer", focus = true }) end
+        end },
 
-  vim.api.nvim_create_user_command("PdfPortSystem", function(args)
-    local path = resolve_path(args)
-    if not path or path == "" then
-      vim.notify("PdfPortSystem: no file path", vim.log.levels.ERROR); return
-    end
-    pdfport.open({ path = path, mode = "system" })
-  end, vim.tbl_extend("force", base, { desc = "pdfport: open PDF with system application" }))
+      { path = { "float" }, args = path_arg,
+        desc = "Show PDF text in float window",
+        run = function(ctx)
+          local path = require_path(ctx, "PdfPort float")
+          if path then pdfport.open({ path = path, mode = "float", focus = true }) end
+        end },
 
-  vim.api.nvim_create_user_command("PdfPortTerminal", function(args)
-    local path = resolve_path(args)
-    if not path or path == "" then
-      vim.notify("PdfPortTerminal: no file path", vim.log.levels.ERROR); return
-    end
-    pdfport.open({ path = path, mode = "terminal" })
-  end, vim.tbl_extend("force", base, { desc = "pdfport: render PDF as terminal image" }))
+      { path = { "system" }, args = path_arg,
+        desc = "Open PDF with system application",
+        run = function(ctx)
+          local path = require_path(ctx, "PdfPort system")
+          if path then pdfport.open({ path = path, mode = "system" }) end
+        end },
 
-  vim.api.nvim_create_user_command("PdfPortHealth", function(_)
-    vim.cmd("checkhealth pdfport_nvim")
-  end, { desc = "pdfport: run health check" })
+      { path = { "terminal" }, args = path_arg,
+        desc = "Render PDF as terminal image",
+        run = function(ctx)
+          local path = require_path(ctx, "PdfPort terminal")
+          if path then pdfport.open({ path = path, mode = "terminal" }) end
+        end },
+
+      { path = { "health" },
+        desc = "Run health check",
+        run = function() vim.cmd("checkhealth pdfport_nvim") end },
+    },
+  })
 end
 
 return M

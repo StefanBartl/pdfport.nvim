@@ -36,18 +36,21 @@ require("pdfport_nvim.integrations.oil").setup({ open_system = false })
 
 ## User commands
 
-Defined in [lua/pdfport_nvim/bindings/usrcmds.lua](../lua/pdfport_nvim/bindings/usrcmds.lua).
-All accept an optional `[path]` argument; if omitted they fall back to `<cfile>` and then
-the current buffer name.
+One command, `:PdfPort [subcommand] [path]` (built via
+[`lib.nvim.usercmd.composer`](https://github.com/StefanBartl/lib.nvim), with
+`<Tab>` completion), defined in
+[lua/pdfport_nvim/bindings/usrcmds.lua](../lua/pdfport_nvim/bindings/usrcmds.lua).
+All path-taking subcommands accept an optional `[path]` argument; if omitted
+they fall back to `<cfile>` and then the current buffer name.
 
 | Command                   | Description                               |
 |----------------------------|-------------------------------------------|
 | `:PdfPort [path]`         | Open PDF with interactive mode picker     |
-| `:PdfPortText [path]`     | Extract to buffer (auto backend)          |
-| `:PdfPortFloat [path]`    | Extract to floating window                |
-| `:PdfPortSystem [path]`   | Open with system application               |
-| `:PdfPortTerminal [path]` | Render as terminal image                   |
-| `:PdfPortHealth`          | Run `:checkhealth pdfport_nvim`            |
+| `:PdfPort text [path]`     | Extract to buffer (auto backend)          |
+| `:PdfPort float [path]`    | Extract to floating window                |
+| `:PdfPort system [path]`   | Open with system application               |
+| `:PdfPort terminal [path]` | Render as terminal image                   |
+| `:PdfPort health`          | Run `:checkhealth pdfport_nvim`            |
 
 ## Autocmds
 

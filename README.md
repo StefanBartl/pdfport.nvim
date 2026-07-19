@@ -14,9 +14,10 @@
 
 A Neovim plugin for extracting and displaying PDF content using a pluggable backend/renderer architecture.
 
-> Pairs well with [StefanBartl/lib.nvim](https://github.com/StefanBartl/lib.nvim) — pdfport.nvim
-> automatically uses its `hover_select` UI for a nicer mode picker when it's installed, falling
-> back to `vim.ui.select` otherwise.
+> Requires [StefanBartl/lib.nvim](https://github.com/StefanBartl/lib.nvim) — the `:PdfPort`
+> command itself is built on `lib.nvim.usercmd.composer`. It also automatically uses
+> lib.nvim's UI kit for a nicer mode picker when available, falling back to `vim.ui.select`
+> otherwise.
 
 ## Features
 
@@ -30,7 +31,7 @@ A Neovim plugin for extracting and displaying PDF content using a pluggable back
 
 ## Quickstart
 
-Requires Neovim >= 0.9 and at least one extraction backend (see
+Requires Neovim >= 0.9, [lib.nvim](https://github.com/StefanBartl/lib.nvim), and at least one extraction backend (see
 [Backends](docs/configuration.md#backends)).
 
 ```lua
@@ -38,7 +39,7 @@ Requires Neovim >= 0.9 and at least one extraction backend (see
 {
   "StefanBartl/pdfport.nvim",
   dependencies = { "StefanBartl/lib.nvim" },
-  cmd = { "PdfPort", "PdfPortText", "PdfPortFloat", "PdfPortSystem", "PdfPortTerminal", "PdfPortHealth" },
+  cmd = { "PdfPort" },
   opts = {
     default_backend = "auto",
     fallback_chain  = { "pdftotext", "pdfplumber", "marker", "docling", "ollama", "claude" },
@@ -47,9 +48,9 @@ Requires Neovim >= 0.9 and at least one extraction backend (see
 ```
 
 ```vim
-:PdfPort            " open PDF with interactive mode picker
-:PdfPortText         " extract to buffer
-:PdfPortHealth       " run :checkhealth pdfport_nvim
+:PdfPort             " open PDF with interactive mode picker
+:PdfPort text        " extract to buffer
+:PdfPort health      " run :checkhealth pdfport_nvim
 ```
 
 ## File-tree integrations

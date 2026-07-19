@@ -3,6 +3,7 @@
 ## Requirements
 
 - Neovim >= 0.9
+- [lib.nvim](https://github.com/StefanBartl/lib.nvim) — required: the `:PdfPort` command is built on `lib.nvim.usercmd.composer`
 - At least one extraction backend (see [Backends](configuration.md#backends))
 
 pdfport.nvim only does anything once one of its commands or its Lua API is invoked, so it
@@ -15,7 +16,7 @@ or `event = "VeryLazy"`.
 {
   "StefanBartl/pdfport.nvim",
   dependencies = { "StefanBartl/lib.nvim" },
-  cmd = { "PdfPort", "PdfPortText", "PdfPortFloat", "PdfPortSystem", "PdfPortTerminal", "PdfPortHealth" },
+  cmd = { "PdfPort" },
   opts = {
     default_backend = "auto",
     fallback_chain  = { "pdftotext", "pdfplumber", "marker", "docling", "ollama", "claude" },
@@ -29,7 +30,7 @@ or `event = "VeryLazy"`.
 use({
   "StefanBartl/pdfport.nvim",
   dependencies = { "StefanBartl/lib.nvim" },
-  cmd = { "PdfPort", "PdfPortText", "PdfPortFloat", "PdfPortSystem", "PdfPortTerminal", "PdfPortHealth" },
+  cmd = { "PdfPort" },
   config = function()
     require("pdfport_nvim").setup({
       default_backend = "auto",
