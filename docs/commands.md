@@ -2,16 +2,21 @@
 
 ## Commands
 
+One command, `:PdfPort [subcommand] [path]` (built via
+[`lib.nvim.usercmd.composer`](https://github.com/StefanBartl/lib.nvim), with
+`<Tab>` completion — `.pdf` files are prioritized, `<cfile>` is suggested when
+completing with no input yet).
+
 | Command                   | Description                               |
 |----------------------------|-------------------------------------------|
 | `:PdfPort [path]`         | Open PDF with interactive mode picker     |
-| `:PdfPortText [path]`     | Extract to buffer (auto backend)          |
-| `:PdfPortFloat [path]`    | Extract to floating window                |
-| `:PdfPortSystem [path]`   | Open with system application               |
-| `:PdfPortTerminal [path]` | Render as terminal image                   |
-| `:PdfPortHealth`          | Run `:checkhealth pdfport_nvim`            |
+| `:PdfPort text [path]`     | Extract to buffer (auto backend)          |
+| `:PdfPort float [path]`    | Extract to floating window                |
+| `:PdfPort system [path]`   | Open with system application               |
+| `:PdfPort terminal [path]` | Render as terminal image                   |
+| `:PdfPort health`          | Run `:checkhealth pdfport_nvim`            |
 
-All commands accept an optional path argument; if omitted they use the word under the cursor (`<cfile>`) or the current buffer.
+All subcommands accept an optional path argument; if omitted they use the word under the cursor (`<cfile>`) or the current buffer.
 
 See [docs/BINDINGS.md](BINDINGS.md) for the full keymap/command/autocmd cheatsheet.
 

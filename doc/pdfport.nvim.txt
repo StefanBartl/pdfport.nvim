@@ -28,6 +28,8 @@ to AI-powered cloud and local backends.
 2. REQUIREMENTS                                  *pdfport.nvim-requirements*
 
 - Neovim >= 0.9
+- lib.nvim (github.com/StefanBartl/lib.nvim) -- required: the :PdfPort
+  command is built on lib.nvim.usercmd.composer
 - At least one extraction backend installed (see |pdfport.nvim-backends|)
 
 ==============================================================================
@@ -36,10 +38,8 @@ to AI-powered cloud and local backends.
 With lazy.nvim: >lua
   {
     "StefanBartl/pdfport.nvim",
-    cmd  = {
-      "PdfPort", "PdfPortText", "PdfPortFloat",
-      "PdfPortSystem", "PdfPortTerminal", "PdfPortHealth"
-    },
+    dependencies = { "StefanBartl/lib.nvim" },
+    cmd  = { "PdfPort" },
     opts = { default_backend = "auto" },
   }
 <
@@ -75,30 +75,28 @@ See lua/pdfport_nvim/config/DEFAULTS.lua for the authoritative defaults.
 ==============================================================================
 5. COMMANDS                                        *pdfport.nvim-commands*
 
+One command, :PdfPort [subcommand] [path] (built via
+lib.nvim.usercmd.composer, with <Tab> completion -- .pdf files prioritized,
+<cfile> suggested when completing with no input yet).
                                                               *:PdfPort*
 :PdfPort [path]
   Open a PDF with an interactive mode/backend picker.
   Path falls back to <cfile> and then the current buffer name.
 
-                                                          *:PdfPortText*
-:PdfPortText [path]
+:PdfPort text [path]                                    *:PdfPort-text*
   Extract text to a scratch buffer using the auto backend chain.
 
-                                                         *:PdfPortFloat*
-:PdfPortFloat [path]
+:PdfPort float [path]                                  *:PdfPort-float*
   Extract text and display in a centered floating window.
 
-                                                        *:PdfPortSystem*
-:PdfPortSystem [path]
+:PdfPort system [path]                                *:PdfPort-system*
   Open the PDF with the operating system's default application.
 
-                                                      *:PdfPortTerminal*
-:PdfPortTerminal [path]
+:PdfPort terminal [path]                            *:PdfPort-terminal*
   Rasterize and display the first page as a terminal image.
   Requires pdftoppm and one of: chafa, ueberzugpp, kitten, imgcat.
 
-                                                        *:PdfPortHealth*
-:PdfPortHealth
+:PdfPort health                                        *:PdfPort-health*
   Shortcut for |:checkhealth| pdfport_nvim.
 
 ==============================================================================

@@ -169,6 +169,15 @@ local function check_integrations()
   -- netrw is built-in, always available
   h_ok("netrw: built-in (always available)")
 
+  -- lib.nvim itself is required (the :PdfPort command is built on
+  -- lib.nvim.usercmd.composer); lib.nvim.ui.kit stays a soft enhancement.
+  local composer_ok = pcall(require, "lib.nvim.usercmd.composer")
+  if composer_ok then
+    h_ok("lib.nvim found – :PdfPort available")
+  else
+    h_err('lib.nvim not found – :PdfPort will fail to load; install "StefanBartl/lib.nvim"')
+  end
+
   local kit_ok, _ = pcall(require, "lib.nvim.ui.kit")
   if kit_ok then
     h_ok("lib.nvim.ui.kit found – enhanced mode picker active")
