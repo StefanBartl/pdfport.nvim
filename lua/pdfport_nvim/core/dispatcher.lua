@@ -7,6 +7,7 @@
 local uv       = vim.uv or vim.loop
 local resolver = require("pdfport_nvim.core.resolver")
 local registry = require("pdfport_nvim.core.registry")
+local notify   = require("pdfport_nvim.util.notify").create("[pdfport_nvim.dispatcher]")
 
 local M = {}
 
@@ -146,16 +147,13 @@ function M.open(opts)
 
   M.dispatch(opts, function(result)
     if result.status == "error" then
-      vim.notify(result.error or "pdfport_nvim: unknown extraction error", vim.log.levels.ERROR)
+      notify.error(result.error or "unknown extraction error")
       return
     end
 
     local renderer = registry.get_renderer(mode)
     if not renderer then
-      vim.notify(
-        string.format("pdfport_nvim: renderer '%s' not registered", mode),
-        vim.log.levels.ERROR
-      )
+      notify.error(string.format("renderer '%s' not registered", mode))
       return
     end
 

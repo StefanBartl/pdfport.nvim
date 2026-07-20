@@ -15,6 +15,8 @@
 
 local M = {}
 
+local map      = require("lib.nvim.map")
+local notify   = require("pdfport_nvim.util.notify").create("[pdfport_nvim.nvim_tree]")
 local picker   = require("pdfport_nvim.util.picker")
 local autocmds = require("pdfport_nvim.bindings.autocmds")
 local keymaps  = require("pdfport_nvim.bindings.keymaps")
@@ -37,7 +39,7 @@ end
 function M.cmd_open()
   local path = current_node_path()
   if not path or not is_pdf(path) then
-    vim.notify("pdfport_nvim: not a PDF file", vim.log.levels.WARN)
+    notify.warn("not a PDF file")
     return
   end
   picker.pick_and_open(path)
@@ -79,7 +81,7 @@ function M.setup(opts)
   autocmds.on_filetype("NvimTree", "pdfport_nvim_tree", function(buf)
     for _, m in ipairs(mappings) do
       if m.key then
-        vim.keymap.set("n", m.key, m.fn, { buffer = buf, silent = true, noremap = true, desc = m.desc })
+        map("n", m.key, m.fn, { buffer = buf }, m.desc)
       end
     end
   end)

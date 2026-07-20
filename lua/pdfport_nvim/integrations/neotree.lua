@@ -15,6 +15,7 @@
 
 local M = {}
 
+local notify  = require("pdfport_nvim.util.notify").create("[pdfport_nvim.neotree]")
 local picker  = require("pdfport_nvim.util.picker")
 local keymaps = require("pdfport_nvim.bindings.keymaps")
 
@@ -42,7 +43,7 @@ function M.commands()
     pdfport_open = function(state)
       local path = node_path(state)
       if not path or not is_pdf(path) then
-        vim.notify("pdfport_nvim: not a PDF file", vim.log.levels.WARN)
+        notify.warn("not a PDF file")
         return
       end
       picker.pick_and_open(path)
