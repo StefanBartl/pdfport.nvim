@@ -12,6 +12,8 @@
 
 local M = {}
 
+local notify = require("pdfport_nvim.util.notify").create("[pdfport_nvim.integrations]")
+
 ---@return string|nil  pdf_path, or nil if cursor is not on a PDF
 function M.current_pdf_path()
   local ok_api, api = pcall(vim.api.nvim_get_current_buf)
@@ -73,11 +75,11 @@ end
 function M.open_current(opts)
   local path = M.current_pdf_path()
   if not path then
-    vim.notify("pdfport_nvim: cursor is not on a PDF (or unsupported file-tree)", vim.log.levels.WARN)
+    notify.warn("cursor is not on a PDF (or unsupported file-tree)")
     return
   end
   if not path:lower():match("%.pdf$") then
-    vim.notify("pdfport_nvim: not a PDF: " .. path, vim.log.levels.WARN)
+    notify.warn("not a PDF: " .. path)
     return
   end
 

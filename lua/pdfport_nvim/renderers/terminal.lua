@@ -5,6 +5,7 @@
 
 local M        = {}
 local platform = require("pdfport_nvim.platform")
+local notify   = require("pdfport_nvim.util.notify").create("[pdfport_nvim.terminal]")
 local uv       = vim.uv or vim.loop
 
 ---@param pdf_path string
@@ -63,14 +64,14 @@ end
 local function display_png(png_path, tool, size_ratio)
   tool = tool or platform.best_terminal_renderer()
   if not tool then
-    vim.notify("pdfport_nvim terminal: no image renderer (install chafa or ueberzug++)", vim.log.levels.ERROR)
+    notify.error("no image renderer (install chafa or ueberzug++)")
     vim.fn.delete(png_path)
     return
   end
 
   wait_for_file(png_path, 50, 40, function(exists)
     if not exists then
-      vim.notify("pdfport_nvim terminal: PNG not found after rasterization", vim.log.levels.ERROR)
+      notify.error("PNG not found after rasterization")
       return
     end
 
@@ -80,7 +81,7 @@ local function display_png(png_path, tool, size_ratio)
 
     if tool == "chafa" or tool == "ueberzug" then
       if not platform.has("chafa") then
-        vim.notify("pdfport_nvim terminal: chafa not installed", vim.log.levels.WARN)
+        notify.warn("chafa not installed")
         vim.fn.delete(png_path)
         return
       end
@@ -105,7 +106,7 @@ end
 function M.render(_result, opts)
   local path = opts.path
   if not path or path == "" then
-    vim.notify("pdfport_nvim terminal: no path provided", vim.log.levels.ERROR)
+    notify.error("no path provided")
     return
   end
 
@@ -118,11 +119,11 @@ function M.render(_result, opts)
     if idx > #pages then return end
     rasterize(path, pages[idx], dpi, function(png, err)
       if err then
-        vim.notify("pdfport_nvim terminal: " .. err, vim.log.levels.ERROR)
+        notify.error(err)
         return
       end
       if not png then
-        vim.notify("pdfport_nvim terminal: rasterizer returned no PNG", vim.log.levels.ERROR)
+        notify.error("rasterizer returned no PNG")
         return
       end
       display_png(png, tool, size_ratio)

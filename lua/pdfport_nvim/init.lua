@@ -27,6 +27,7 @@
 local M = {}
 
 local config = require("pdfport_nvim.config")
+local notify = require("pdfport_nvim.util.notify").create("[pdfport_nvim]")
 
 ---@type boolean
 local _initialized = false
@@ -73,9 +74,7 @@ function M.setup(user_config)
 
   _initialized = true
 
-  if cfg.debug then
-    vim.notify("pdfport_nvim: initialized", vim.log.levels.DEBUG)
-  end
+  notify.debug("initialized", cfg)
 end
 
 -- #############################################################################

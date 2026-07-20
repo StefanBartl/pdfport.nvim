@@ -6,6 +6,8 @@
 --- (re-running setup() clears and re-creates its own augroup instead of
 --- accumulating duplicate autocmds/keymaps).
 
+local autocmd = require("lib.nvim.autocmd")
+
 local M = {}
 
 ---@param pattern string                        vim FileType pattern, e.g. "netrw", "oil", "NvimTree"
@@ -13,10 +15,9 @@ local M = {}
 ---@param callback fun(buf: integer): nil        invoked with the entered buffer number
 ---@return nil
 function M.on_filetype(pattern, augroup_name, callback)
-  vim.api.nvim_create_autocmd("FileType", {
-    pattern  = pattern,
-    group    = vim.api.nvim_create_augroup(augroup_name, { clear = true }),
-    callback = function(ev) callback(ev.buf) end,
+  autocmd.create("FileType", function(ev) callback(ev.buf) end, {
+    pattern = pattern,
+    group   = augroup_name,
   })
 end
 

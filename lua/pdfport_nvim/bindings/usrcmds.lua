@@ -9,6 +9,7 @@
 --- docs/BINDINGS.md for the full cheatsheet.
 
 local composer = require("lib.nvim.usercmd.composer")
+local notify   = require("pdfport_nvim.util.notify").create("[pdfport_nvim.usrcmds]")
 
 local M = {}
 
@@ -69,7 +70,7 @@ function M.register(pdfport)
   local function require_path(ctx, label)
     local path = resolve_path(ctx.args.path)
     if not path or path == "" then
-      vim.notify(label .. ": no file path (argument, cfile, or current buffer)", vim.log.levels.ERROR)
+      notify.error(label .. ": no file path (argument, cfile, or current buffer)")
       return nil
     end
     return path
