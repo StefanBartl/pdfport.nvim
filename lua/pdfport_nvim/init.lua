@@ -82,14 +82,18 @@ end
 -- #############################################################################
 
 ---@param opts PdfPort.OpenOpts
+---@param on_error? fun(msg: string): nil  Defaults to this plugin's own
+---notifier, so existing callers (integrations, the picker) keep seeing
+---errors without having to opt in explicitly. Pass your own to decide
+---presentation yourself (as bindings/usrcmds.lua does).
 ---@return nil
-function M.open(opts)
+function M.open(opts, on_error)
   if not _initialized then M.setup() end
 
   assert(type(opts) == "table", "pdfport_nvim.open: opts must be a table")
   assert(type(opts.path) == "string" and opts.path ~= "", "pdfport_nvim.open: opts.path must be a non-empty string")
 
-  require("pdfport_nvim.core.dispatcher").open(opts)
+  require("pdfport_nvim.core.dispatcher").open(opts, on_error or notify.error)
 end
 
 ---@param opts PdfPort.InternalExtractOpts

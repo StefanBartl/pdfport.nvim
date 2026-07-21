@@ -105,7 +105,7 @@ function M.register(pdfport)
           local function on_select(_, idx)
             local c = choices[idx]
             if not c then return end
-            pdfport.open({ path = path, mode = c.mode, backend_id = c.backend, focus = true })
+            pdfport.open({ path = path, mode = c.mode, backend_id = c.backend, focus = true }, notify.error)
           end
 
           local kit_ok, kit = pcall(require, "lib.nvim.ui.kit")
@@ -122,28 +122,28 @@ function M.register(pdfport)
         desc = "Extract PDF text to buffer",
         run = function(ctx)
           local path = require_path(ctx, "PdfPort text")
-          if path then pdfport.open({ path = path, mode = "buffer", focus = true }) end
+          if path then pdfport.open({ path = path, mode = "buffer", focus = true }, notify.error) end
         end },
 
       { path = { "float" }, args = path_arg,
         desc = "Show PDF text in float window",
         run = function(ctx)
           local path = require_path(ctx, "PdfPort float")
-          if path then pdfport.open({ path = path, mode = "float", focus = true }) end
+          if path then pdfport.open({ path = path, mode = "float", focus = true }, notify.error) end
         end },
 
       { path = { "system" }, args = path_arg,
         desc = "Open PDF with system application",
         run = function(ctx)
           local path = require_path(ctx, "PdfPort system")
-          if path then pdfport.open({ path = path, mode = "system" }) end
+          if path then pdfport.open({ path = path, mode = "system" }, notify.error) end
         end },
 
       { path = { "terminal" }, args = path_arg,
         desc = "Render PDF as terminal image",
         run = function(ctx)
           local path = require_path(ctx, "PdfPort terminal")
-          if path then pdfport.open({ path = path, mode = "terminal" }) end
+          if path then pdfport.open({ path = path, mode = "terminal" }, notify.error) end
         end },
 
       { path = { "health" },
