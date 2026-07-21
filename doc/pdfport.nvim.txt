@@ -45,13 +45,13 @@ With lazy.nvim: >lua
 <
 
 Manual: >lua
-  require("pdfport_nvim").setup({ default_backend = "auto" })
+  require("pdfport").setup({ default_backend = "auto" })
 <
 
 ==============================================================================
 4. CONFIGURATION                                      *pdfport.nvim-config*
 
-Pass a table to |pdfport_nvim.setup()|.  All keys are optional.
+Pass a table to |pdfport.setup()|.  All keys are optional.
 
   default_backend    string    "auto" or a backend id (default: "auto")
   fallback_chain     string[]  Backend ids tried in order for "auto"
@@ -70,7 +70,7 @@ Pass a table to |pdfport_nvim.setup()|.  All keys are optional.
   ollama_model       string    Ollama model name (default: "llava")
   debug              boolean   Emit debug notifications (default: false)
 
-See lua/pdfport_nvim/config/DEFAULTS.lua for the authoritative defaults.
+See lua/pdfport/config/DEFAULTS.lua for the authoritative defaults.
 
 ==============================================================================
 5. COMMANDS                                        *pdfport.nvim-commands*
@@ -97,18 +97,18 @@ lib.nvim.usercmd.composer, with <Tab> completion -- .pdf files prioritized,
   Requires pdftoppm and one of: chafa, ueberzugpp, kitten, imgcat.
 
 :PdfPort health                                        *:PdfPort-health*
-  Shortcut for |:checkhealth| pdfport_nvim.
+  Shortcut for |:checkhealth| pdfport.
 
 ==============================================================================
 6. LUA API                                             *pdfport.nvim-api*
 
-                                                    *pdfport_nvim.setup()*
-require("pdfport_nvim").setup({opts})
+                                                    *pdfport.setup()*
+require("pdfport").setup({opts})
   Initialize the plugin. Registers backends, renderers, and user commands.
   Safe to call multiple times; later calls override earlier configuration.
 
-                                                     *pdfport_nvim.open()*
-require("pdfport_nvim").open({opts})
+                                                     *pdfport.open()*
+require("pdfport").open({opts})
   Extract text and render it. {opts} fields:
 
     path        string    (required) Absolute path to the PDF
@@ -117,8 +117,8 @@ require("pdfport_nvim").open({opts})
     split       string?   "vsplit"|"split"|"tab"|"current"
     focus       boolean?  Focus the output window
 
-                                                  *pdfport_nvim.extract()*
-require("pdfport_nvim").extract({opts})
+                                                  *pdfport.extract()*
+require("pdfport").extract({opts})
   Extract text only, no rendering. {opts} fields:
 
     path        string    (required) Absolute path to the PDF
@@ -134,8 +134,8 @@ require("pdfport_nvim").extract({opts})
     pages_processed integer?
     error           string?
 
-                                              *pdfport_nvim.register_backend()*
-require("pdfport_nvim").register_backend({backend})
+                                              *pdfport.register_backend()*
+require("pdfport").register_backend({backend})
   Register a custom extraction backend. {backend} fields:
 
     id          string    Unique identifier
@@ -177,26 +177,26 @@ that keymap. See docs/BINDINGS.md in the repo for the full cheatsheet, and secti
 |pdfport.nvim-whichkey| below for which-key integration.
 
 neo-tree: >lua
-  local neo = require("pdfport_nvim.integrations.neotree")
+  local neo = require("pdfport.integrations.neotree")
   -- Inside your neo-tree setup() opts:
   commands = vim.tbl_extend("force", {}, neo.commands()),
   filesystem.window.mappings = vim.tbl_extend("force", {}, neo.keymaps()),
 <
 
 nvim-tree: >lua
-  require("pdfport_nvim.integrations.nvim_tree").setup()
+  require("pdfport.integrations.nvim_tree").setup()
 <
 
 netrw: >lua
-  require("pdfport_nvim.integrations.netrw").setup()
+  require("pdfport.integrations.netrw").setup()
 <
 
 oil.nvim: >lua
-  require("pdfport_nvim.integrations.oil").setup()
+  require("pdfport.integrations.oil").setup()
 <
 
 Unified auto-detect: >lua
-  require("pdfport_nvim.integrations").open_current({ split = "vsplit" })
+  require("pdfport.integrations").open_current({ split = "vsplit" })
 <
 
 ==============================================================================
@@ -204,7 +204,7 @@ Unified auto-detect: >lua
 
 Telescope — single picker: >lua
   require("telescope.builtin").find_files({
-    previewer = require("pdfport_nvim.integrations.telescope").previewer(),
+    previewer = require("pdfport.integrations.telescope").previewer(),
   })
 <
 
@@ -212,7 +212,7 @@ Telescope — global hook: >lua
   require("telescope").setup({
     defaults = {
       preview = {
-        filetype_hook = require("pdfport_nvim.integrations.telescope").filetype_hook,
+        filetype_hook = require("pdfport.integrations.telescope").filetype_hook,
       },
     },
   })
@@ -220,7 +220,7 @@ Telescope — global hook: >lua
 
 fzf-lua: >lua
   require("fzf-lua").files({
-    preview = require("pdfport_nvim.integrations.fzf").preview_fn({ max_pages = 3 }),
+    preview = require("pdfport.integrations.fzf").preview_fn({ max_pages = 3 }),
   })
 <
 
@@ -234,7 +234,7 @@ group. No configuration required; this is a no-op when which-key is absent.
 ==============================================================================
 12. HEALTH CHECK                                     *pdfport.nvim-health*
 
-:checkhealth pdfport_nvim
+:checkhealth pdfport
 
 Reports:
   - Core module load status

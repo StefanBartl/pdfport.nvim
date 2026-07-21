@@ -32,7 +32,7 @@ use({
   dependencies = { "StefanBartl/lib.nvim" },
   cmd = { "PdfPort" },
   config = function()
-    require("pdfport_nvim").setup({
+    require("pdfport").setup({
       default_backend = "auto",
     })
   end,
@@ -47,7 +47,7 @@ Plug 'StefanBartl/pdfport.nvim'
 
 ```lua
 " after plug#end()
-require("pdfport_nvim").setup({ default_backend = "auto" })
+require("pdfport").setup({ default_backend = "auto" })
 ```
 
 vim-plug has no built-in lazy-loading by command; wrap the commands yourself or call
@@ -58,5 +58,5 @@ vim-plug has no built-in lazy-loading by command; wrap the commands yourself or 
 ```lua
 local add = MiniDeps.add
 add({ source = "StefanBartl/pdfport.nvim" })
-require("pdfport_nvim").setup({ default_backend = "auto" })
+require("pdfport").setup({ default_backend = "auto" })
 ```

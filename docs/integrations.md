@@ -11,7 +11,7 @@ installed, active keymaps are auto-registered with descriptions under `<leader>p
 ### neo-tree
 
 ```lua
-local pdfport_neo = require("pdfport_nvim.integrations.neotree")
+local pdfport_neo = require("pdfport.integrations.neotree")
 
 require("neo-tree").setup({
   commands = vim.tbl_extend("force", {}, pdfport_neo.commands()),
@@ -27,7 +27,7 @@ require("neo-tree").setup({
 ### nvim-tree
 
 ```lua
-require("pdfport_nvim.integrations.nvim_tree").setup({
+require("pdfport.integrations.nvim_tree").setup({
   open          = "<leader>po",
   open_text     = "<leader>pt",
   open_system   = "<leader>ps",
@@ -38,20 +38,20 @@ require("pdfport_nvim.integrations.nvim_tree").setup({
 ### netrw
 
 ```lua
-require("pdfport_nvim.integrations.netrw").setup()
+require("pdfport.integrations.netrw").setup()
 -- Registers <leader>p* keymaps in every netrw FileType buffer
 ```
 
 ### oil.nvim
 
 ```lua
-require("pdfport_nvim.integrations.oil").setup()
+require("pdfport.integrations.oil").setup()
 ```
 
 ### Unified (auto-detect active tree)
 
 ```lua
-local integrations = require("pdfport_nvim.integrations")
+local integrations = require("pdfport.integrations")
 -- Detects neo-tree / nvim-tree / netrw / oil by buffer filetype
 integrations.open_current({ split = "vsplit" })
 ```
@@ -61,7 +61,7 @@ integrations.open_current({ split = "vsplit" })
 ### Telescope
 
 ```lua
-local pdfport_tel = require("pdfport_nvim.integrations.telescope")
+local pdfport_tel = require("pdfport.integrations.telescope")
 
 -- Single picker
 require("telescope.builtin").find_files({
@@ -79,7 +79,7 @@ require("telescope").setup({
 ### fzf-lua
 
 ```lua
-local pdfport_fzf = require("pdfport_nvim.integrations.fzf")
+local pdfport_fzf = require("pdfport.integrations.fzf")
 require("fzf-lua").files({
   preview = pdfport_fzf.preview_fn({ max_pages = 3 }),
 })

@@ -26,12 +26,12 @@ table — see [README.md](../README.md#file-tree-integrations) for setup snippet
 
 These are buffer-local and only active inside the corresponding file-tree buffer
 (neo-tree, nvim-tree, netrw, oil.nvim). Defaults live in
-[lua/pdfport_nvim/bindings/keymaps.lua](../lua/pdfport_nvim/bindings/keymaps.lua).
+[lua/pdfport/bindings/keymaps.lua](../lua/pdfport/bindings/keymaps.lua).
 
 Disabling an action:
 
 ```lua
-require("pdfport_nvim.integrations.oil").setup({ open_system = false })
+require("pdfport.integrations.oil").setup({ open_system = false })
 ```
 
 ## User commands
@@ -39,7 +39,7 @@ require("pdfport_nvim.integrations.oil").setup({ open_system = false })
 One command, `:PdfPort [subcommand] [path]` (built via
 [`lib.nvim.usercmd.composer`](https://github.com/StefanBartl/lib.nvim), with
 `<Tab>` completion), defined in
-[lua/pdfport_nvim/bindings/usrcmds.lua](../lua/pdfport_nvim/bindings/usrcmds.lua).
+[lua/pdfport/bindings/usrcmds.lua](../lua/pdfport/bindings/usrcmds.lua).
 All path-taking subcommands accept an optional `[path]` argument; if omitted
 they fall back to `<cfile>` and then the current buffer name.
 
@@ -50,12 +50,12 @@ they fall back to `<cfile>` and then the current buffer name.
 | `:PdfPort float [path]`    | Extract to floating window                |
 | `:PdfPort system [path]`   | Open with system application               |
 | `:PdfPort terminal [path]` | Render as terminal image                   |
-| `:PdfPort health`          | Run `:checkhealth pdfport_nvim`            |
+| `:PdfPort health`          | Run `:checkhealth pdfport`            |
 
 ## Autocmds
 
 Registered via the shared helper in
-[lua/pdfport_nvim/bindings/autocmds.lua](../lua/pdfport_nvim/bindings/autocmds.lua). Each
+[lua/pdfport/bindings/autocmds.lua](../lua/pdfport/bindings/autocmds.lua). Each
 integration owns one idempotent augroup — calling `setup()` again clears and re-creates it
 instead of accumulating duplicate keymaps.
 
@@ -63,7 +63,7 @@ instead of accumulating duplicate keymaps.
 |------------------------|------------------|---------------------------------------------------|
 | `pdfport_netrw`       | `netrw`          | `integrations/netrw.lua`                          |
 | `pdfport_oil`         | `oil`            | `integrations/oil.lua`                            |
-| `pdfport_nvim_tree`   | `NvimTree`       | `integrations/nvim_tree.lua`                       |
+| `pdfport_tree`   | `NvimTree`       | `integrations/nvim_tree.lua`                       |
 
 neo-tree does not use autocmds — its commands/keymaps are registered declaratively via
 `opts.commands` / `opts.filesystem.window.mappings`.
@@ -72,5 +72,5 @@ neo-tree does not use autocmds — its commands/keymaps are registered declarati
 
 If [which-key.nvim](https://github.com/folke/which-key.nvim) is installed, every resolved
 keymap is registered with a description under the `<leader>p` group automatically
-(`lua/pdfport_nvim/bindings/keymaps.lua`). No configuration needed; disabled if which-key
+(`lua/pdfport/bindings/keymaps.lua`). No configuration needed; disabled if which-key
 is not present.

@@ -14,7 +14,7 @@ completing with no input yet).
 | `:PdfPort float [path]`    | Extract to floating window                |
 | `:PdfPort system [path]`   | Open with system application               |
 | `:PdfPort terminal [path]` | Render as terminal image                   |
-| `:PdfPort health`          | Run `:checkhealth pdfport_nvim`            |
+| `:PdfPort health`          | Run `:checkhealth pdfport`            |
 
 All subcommands accept an optional path argument; if omitted they use the word under the cursor (`<cfile>`) or the current buffer.
 
@@ -23,7 +23,7 @@ See [docs/BINDINGS.md](BINDINGS.md) for the full keymap/command/autocmd cheatshe
 ## Lua API
 
 ```lua
-local p = require("pdfport_nvim")
+local p = require("pdfport")
 
 -- Open a PDF
 p.open({ path = "/some/file.pdf", mode = "buffer", split = "vsplit" })
@@ -53,7 +53,7 @@ p.register_backend({
 ## Health check
 
 ```
-:checkhealth pdfport_nvim
+:checkhealth pdfport
 ```
 
 Reports status for: core modules, all backends (available/unavailable), renderers, integrations, and the live registry.

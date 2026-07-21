@@ -14,7 +14,7 @@ Status: ✅ good · 🟡 partial / improvable · ❌ gap (action item) · ➖ N/
 | `lib.autocmd` / `lib.augroup` | ❌ | `bindings/autocmds.lua` uses raw `nvim_create_autocmd` / `nvim_create_augroup` (albeit centralized — see §4 below). |
 | `lib.cross` | 🟡 | `platform/init.lua` reimplements OS/tool detection instead of delegating; same posture as `filetree.nvim`'s own `util.platform`. |
 | `lib.hover_select` | ✅ | `util/picker.lua` and `bindings/usrcmds.lua` both `pcall(require, "lib.nvim.ui.hover_select")`, falling back to `vim.ui.select`. |
-| `lib.lazy` | ➖ | no lazy-proxy needed at this scale; `plugin/pdfport_nvim.lua`'s guard + `cmd = {...}` lazy-loading in the README covers it externally. |
+| `lib.lazy` | ➖ | no lazy-proxy needed at this scale; `plugin/pdfport.lua`'s guard + `cmd = {...}` lazy-loading in the README covers it externally. |
 | `lib.memo` | ➖ | no memoization use case beyond `platform.lua`'s own explicit, plugin-lifetime cache (see §7). |
 
 **Note:** unlike `filetree.nvim`, pdfport.nvim does not declare `lib.nvim` as a hard
@@ -31,7 +31,7 @@ autocmd for its own distinct filetype pattern, registered through the shared
 logic itself is centralized rather than duplicated per integration.
 
 **2. Eigene Logik lazy laden** — 🟡
-`plugin/pdfport_nvim.lua` only sets a load guard; nothing else runs until `setup()` or an
+`plugin/pdfport.lua` only sets a load guard; nothing else runs until `setup()` or an
 integration's `setup()` is called explicitly (`cmd = {...}` in the README keeps it out of
 startup entirely). *Gap:* `backends/init.lua`'s `M.load_all()` unconditionally `require`s
 all six backend modules at `setup()` time, rather than deferring each backend's `require`
@@ -71,7 +71,7 @@ happens once per explicit user-triggered `open()`/`extract()` call.
 
 **9. Debugbarkeit eingeplant?** — 🟡
 `config.debug` gates a single `vim.notify(..., DEBUG)` in `init.lua`'s `setup()`, and
-`:checkhealth pdfport_nvim` gives full visibility into registry/backend/renderer state on
+`:checkhealth pdfport` gives full visibility into registry/backend/renderer state on
 demand. *Gap:* no per-dispatch debug tracing (e.g. "resolved backend X for request on path
 Y") — errors are visible via the `PdfPort.Result.error` field, but a successful dispatch
 leaves no debug trail even with `debug = true`.
