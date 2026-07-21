@@ -27,7 +27,7 @@ A Neovim plugin for extracting and displaying PDF content using a pluggable back
 - **Fuzzy-finder integrations** — Telescope previewer, fzf-lua preview function
 - **Lazy-load friendly** — guard in `plugin/`, commands registered on first `setup()` call
 - **which-key support** — every keymap gets a description under the `<leader>p` group when [which-key.nvim](https://github.com/folke/which-key.nvim) is installed
-- **Health check** — `:checkhealth pdfport_nvim`
+- **Health check** — `:checkhealth pdfport`
 
 ## Quickstart
 
@@ -50,7 +50,7 @@ Requires Neovim >= 0.9, [lib.nvim](https://github.com/StefanBartl/lib.nvim), and
 ```vim
 :PdfPort             " open PDF with interactive mode picker
 :PdfPort text        " extract to buffer
-:PdfPort health      " run :checkhealth pdfport_nvim
+:PdfPort health      " run :checkhealth pdfport
 ```
 
 ## File-tree integrations

@@ -1,7 +1,7 @@
 # Configuration
 
 ```lua
-require("pdfport_nvim").setup({
+require("pdfport").setup({
   default_backend = "auto",          -- "auto" | backend id
   fallback_chain  = {                -- order tried when default_backend = "auto"
     "pdftotext", "pdfplumber", "marker", "docling", "ollama", "claude"
@@ -27,8 +27,8 @@ require("pdfport_nvim").setup({
 })
 ```
 
-See [lua/pdfport_nvim/config/DEFAULTS.lua](../lua/pdfport_nvim/config/DEFAULTS.lua) for the
-authoritative default values and [lua/pdfport_nvim/@types/init.lua](../lua/pdfport_nvim/@types/init.lua)
+See [lua/pdfport/config/DEFAULTS.lua](../lua/pdfport/config/DEFAULTS.lua) for the
+authoritative default values and [lua/pdfport/@types/init.lua](../lua/pdfport/@types/init.lua)
 for full field types (LSP completion works out of the box via `---@type PdfPort.Config`).
 
 ## Backends
