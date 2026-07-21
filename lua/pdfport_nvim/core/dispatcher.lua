@@ -7,7 +7,6 @@
 local uv       = vim.uv or vim.loop
 local resolver = require("pdfport_nvim.core.resolver")
 local registry = require("pdfport_nvim.core.registry")
-local notify   = require("pdfport_nvim.util.notify").create("[pdfport_nvim.dispatcher]")
 
 local M = {}
 
@@ -136,10 +135,15 @@ function M.dispatch(opts, callback)
 end
 
 ---@param opts PdfPort.OpenOpts
+---@param on_error? fun(msg: string): nil  Called instead of notifying directly,
+---so the caller (the UI/binding layer) decides how to surface the failure.
+---Defaults to a no-op: callers that don't pass one get silent failure, which
+---matches this module's job of staying decoupled from any particular UI.
 ---@return nil
-function M.open(opts)
+function M.open(opts, on_error)
   assert(type(opts) == "table",       "opts must be a table")
   assert(type(opts.path) == "string", "opts.path must be a string")
+  on_error = on_error or function() end
 
   local cfg_render = (_config and _config.render_opts) or {}
   local mode = opts.mode or cfg_render.mode or "buffer"
@@ -147,13 +151,13 @@ function M.open(opts)
 
   M.dispatch(opts, function(result)
     if result.status == "error" then
-      notify.error(result.error or "unknown extraction error")
+      on_error(result.error or "unknown extraction error")
       return
     end
 
     local renderer = registry.get_renderer(mode)
     if not renderer then
-      notify.error(string.format("renderer '%s' not registered", mode))
+      on_error(string.format("renderer '%s' not registered", mode))
       return
     end
 
