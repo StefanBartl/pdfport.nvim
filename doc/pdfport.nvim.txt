@@ -58,6 +58,8 @@ Pass a table to |pdfport.setup()|.  All keys are optional.
   extract_opts       table
     max_pages        integer?  Pages to extract (nil = all)
     timeout_ms       integer   Per-backend timeout in ms (default: 30000)
+    cache            boolean   Cache successful extractions across sessions,
+                               invalidated by the source file's mtime (default: true)
   render_opts        table
     mode             string    "buffer"|"float"|"terminal"|"system"
     split            string    "vsplit"|"split"|"tab"|"current"
@@ -68,7 +70,13 @@ Pass a table to |pdfport.setup()|.  All keys are optional.
   claude_api_key     string?   Overrides $ANTHROPIC_API_KEY
   ollama_host        string    Ollama API URL (default: localhost:11434)
   ollama_model       string    Ollama model name (default: "llava")
+  auto_open_on_read  boolean   Opt-in BufReadCmd *.pdf: `:e file.pdf` invokes the
+                               mode picker instead of loading raw bytes (default: false)
   debug              boolean   Emit debug notifications (default: false)
+
+Backends are registered lazily: setup() only registers lightweight proxies for the
+builtins; the real backend module is only require()d the first time the resolver
+actually calls available()/extract() on it.
 
 See lua/pdfport/config/DEFAULTS.lua for the authoritative defaults.
 
@@ -88,6 +96,8 @@ lib.nvim.usercmd.composer, with <Tab> completion -- .pdf files prioritized,
 
 :PdfPort float [path]                                  *:PdfPort-float*
   Extract text and display in a centered floating window.
+  Prompts for a page range first (e.g. "1-3,5"; blank = all pages;
+  <Esc> cancels without opening anything).
 
 :PdfPort system [path]                                *:PdfPort-system*
   Open the PDF with the operating system's default application.
@@ -95,6 +105,11 @@ lib.nvim.usercmd.composer, with <Tab> completion -- .pdf files prioritized,
 :PdfPort terminal [path]                            *:PdfPort-terminal*
   Rasterize and display the first page as a terminal image.
   Requires pdftoppm and one of: chafa, ueberzugpp, kitten, imgcat.
+  Prompts for a page range first (blank = page 1; <Esc> cancels).
+
+:PdfPort backends                                    *:PdfPort-backends*
+  List every registered backend with its live available() status in a
+  floating scratch window.
 
 :PdfPort health                                        *:PdfPort-health*
   Shortcut for |:checkhealth| pdfport.
@@ -150,10 +165,13 @@ require("pdfport").register_backend({backend})
   pdfplumber  Requires Python + pdfplumber. Plain text output.
   marker      Requires marker_single (pip install marker-pdf). Markdown.
   docling     Requires Python + docling (pip install docling). Markdown.
-  claude      Requires curl, base64, ANTHROPIC_API_KEY. Markdown.
   ollama      Requires ollama, pdftoppm, curl. Markdown.
+  tesseract   Requires tesseract, pdftoppm. OCR fallback, plain text.
+  claude      Requires curl, base64, ANTHROPIC_API_KEY. Markdown.
 
-The fallback chain is tried in order until one succeeds.
+The fallback chain is tried in order until one succeeds. Successful extractions are
+cached across restarts (see extract_opts.cache above); |:PdfPort-backends| lists every
+registered backend's live availability.
 
 ==============================================================================
 8. RENDERERS                                      *pdfport.nvim-renderers*
@@ -167,14 +185,15 @@ The fallback chain is tried in order until one succeeds.
 9. FILE-TREE INTEGRATIONS                        *pdfport.nvim-filetrees*
 
 All integrations share the same default keymaps:
-  <leader>po  — Mode picker (interactive)
-  <leader>pt  — Extract to buffer (vsplit)
-  <leader>ps  — Open with system application
-  <leader>pi  — Terminal image preview
+  <leader>po  — Mode picker (interactive)                    [normal mode]
+  <leader>pt  — Extract to buffer (vsplit)                   [normal mode]
+  <leader>ps  — Open with system application                 [normal mode]
+  <leader>pi  — Terminal image preview                       [normal mode]
+  <leader>pb  — Batch-open every PDF in the visual selection  [visual mode]
 
-Pass `false` for any action (open/open_text/open_system/open_terminal) to disable
-that keymap. See docs/BINDINGS.md in the repo for the full cheatsheet, and section
-|pdfport.nvim-whichkey| below for which-key integration.
+Pass `false` for any action (open/open_text/open_system/open_terminal/open_batch) to
+disable that keymap. See docs/BINDINGS.md in the repo for the full cheatsheet, and
+section |pdfport.nvim-whichkey| below for which-key integration.
 
 neo-tree: >lua
   local neo = require("pdfport.integrations.neotree")
@@ -229,7 +248,8 @@ fzf-lua: >lua
 
 If which-key.nvim (folke/which-key.nvim) is installed, every active file-tree
 keymap is automatically registered with a description under the <leader>p
-group. No configuration required; this is a no-op when which-key is absent.
+group (open_batch registered under Visual mode, everything else under Normal
+mode). No configuration required; this is a no-op when which-key is absent.
 
 ==============================================================================
 12. HEALTH CHECK                                     *pdfport.nvim-health*

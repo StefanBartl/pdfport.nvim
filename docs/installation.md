@@ -19,7 +19,7 @@ or `event = "VeryLazy"`.
   cmd = { "PdfPort" },
   opts = {
     default_backend = "auto",
-    fallback_chain  = { "pdftotext", "pdfplumber", "marker", "docling", "ollama", "claude" },
+    fallback_chain  = { "pdftotext", "pdfplumber", "marker", "docling", "ollama", "tesseract", "claude" },
   },
 }
 ```

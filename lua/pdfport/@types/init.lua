@@ -12,6 +12,7 @@
 ---| "docling"     -- IBM docling structured extraction
 ---| "claude"      -- Anthropic Claude API (remote)
 ---| "ollama"      -- Local ollama multimodal model
+---| "tesseract"   -- Local tesseract OCR fallback
 ---| string        -- Custom/third-party backend identifier
 
 ---@class PdfPort.BackendCapabilities
@@ -41,6 +42,7 @@
 ---@field model? string
 ---@field timeout_ms? integer
 ---@field path? string
+---@field cache? boolean  # Cache successful extractions across sessions, keyed by path+backend+page-range and invalidated by mtime (default true)
 
 ---@class PdfPort.InternalExtractOpts : PdfPort.ExtractOpts
 ---@field __callback? fun(result: PdfPort.Result): nil
@@ -117,6 +119,7 @@
 ---@field claude_api_key? string
 ---@field ollama_host? string
 ---@field ollama_model? string
+---@field auto_open_on_read? boolean  # Opt-in BufReadCmd *.pdf that auto-invokes the mode picker on `:e file.pdf` (default false)
 ---@field debug boolean
 
 -- #############################################################################

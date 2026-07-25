@@ -45,17 +45,10 @@ function M.setup(user_config)
   require("pdfport.core.resolver")._set_config(cfg)
   require("pdfport.core.dispatcher")._set_config(cfg)
 
-  local ok_claude, claude = pcall(require, "pdfport.backends.claude")
-  if ok_claude and type(claude._set_config) == "function" then
-    claude._set_config(cfg)
-  end
-
-  local ok_ollama, ollama = pcall(require, "pdfport.backends.ollama")
-  if ok_ollama and type(ollama._set_config) == "function" then
-    ollama._set_config(cfg)
-  end
-
-  require("pdfport.backends").load_all()
+  -- Backends are registered as lazy proxies (pdfport.backends.load_all) —
+  -- the real claude/ollama modules (and their _set_config) only load the
+  -- first time the resolver actually considers that backend, not here.
+  require("pdfport.backends").load_all(cfg)
 
   local reg = require("pdfport.core.registry")
 
@@ -71,6 +64,10 @@ function M.setup(user_config)
   end
 
   M._register_commands()
+
+  if cfg.auto_open_on_read then
+    require("pdfport.bindings.autocmds").register_bufreadcmd()
+  end
 
   _initialized = true
 

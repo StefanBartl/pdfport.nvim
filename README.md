@@ -21,10 +21,13 @@ A Neovim plugin for extracting and displaying PDF content using a pluggable back
 
 ## Features
 
-- **Multiple extraction backends** — pdftotext, pdfplumber, marker-pdf, docling, Claude API, Ollama
+- **Multiple extraction backends** — pdftotext, pdfplumber, marker-pdf, docling, Claude API, Ollama, tesseract (OCR fallback) — loaded lazily, one `require` only when actually resolved
 - **Multiple renderers** — scratch buffer (split/vsplit/tab), floating window, system application, terminal image
-- **File-tree integrations** — neo-tree, nvim-tree, netrw, oil.nvim; unified `open_current()` auto-detects the active tree
+- **Page-range picker** — `float`/`terminal` modes prompt for a page range (`1-3,5`)
+- **Cross-session cache** — successful extractions persist across restarts, invalidated by the PDF's mtime
+- **File-tree integrations** — neo-tree, nvim-tree, netrw, oil.nvim; unified `open_current()` auto-detects the active tree; visual-mode batch-open (`<leader>pb`) for multiple selected PDFs
 - **Fuzzy-finder integrations** — Telescope previewer, fzf-lua preview function
+- **Optional `BufReadCmd`** — `:e file.pdf` can auto-invoke the mode picker (`auto_open_on_read`, opt-in)
 - **Lazy-load friendly** — guard in `plugin/`, commands registered on first `setup()` call
 - **which-key support** — every keymap gets a description under the `<leader>p` group when [which-key.nvim](https://github.com/folke/which-key.nvim) is installed
 - **Health check** — `:checkhealth pdfport`
@@ -42,7 +45,7 @@ Requires Neovim >= 0.9, [lib.nvim](https://github.com/StefanBartl/lib.nvim), and
   cmd = { "PdfPort" },
   opts = {
     default_backend = "auto",
-    fallback_chain  = { "pdftotext", "pdfplumber", "marker", "docling", "ollama", "claude" },
+    fallback_chain  = { "pdftotext", "pdfplumber", "marker", "docling", "ollama", "tesseract", "claude" },
   },
 }
 ```
@@ -50,13 +53,15 @@ Requires Neovim >= 0.9, [lib.nvim](https://github.com/StefanBartl/lib.nvim), and
 ```vim
 :PdfPort             " open PDF with interactive mode picker
 :PdfPort text        " extract to buffer
+:PdfPort backends    " list registered backends with live availability
 :PdfPort health      " run :checkhealth pdfport
 ```
 
 ## File-tree integrations
 
-Adds `<leader>po/pt/ps/pi` keymaps to neo-tree, nvim-tree, netrw, and oil.nvim — see
-[docs/integrations.md](docs/integrations.md) for setup snippets.
+Adds `<leader>po/pt/ps/pi` (normal mode) and `<leader>pb` (visual mode, batch-open) keymaps
+to neo-tree, nvim-tree, netrw, and oil.nvim — see [docs/integrations.md](docs/integrations.md)
+for setup snippets.
 
 ## Documentation
 

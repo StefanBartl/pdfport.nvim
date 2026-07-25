@@ -2,8 +2,9 @@
 
 ## File-tree integrations
 
-Every integration shares the same four actions (`open`, `open_text`, `open_system`,
-`open_terminal`), defaulting to `<leader>po/pt/ps/pi` — see
+Every integration shares the same five actions: `open`, `open_text`, `open_system`,
+`open_terminal` (normal mode, defaulting to `<leader>po/pt/ps/pi`) and `open_batch`
+(visual mode, defaulting to `<leader>pb`, batch-opens every PDF in the selection) — see
 [docs/BINDINGS.md](BINDINGS.md) for the full table. Pass `false` for any action to
 disable that keymap; if [which-key.nvim](https://github.com/folke/which-key.nvim) is
 installed, active keymaps are auto-registered with descriptions under `<leader>p`.

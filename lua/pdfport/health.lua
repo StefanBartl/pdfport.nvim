@@ -107,6 +107,13 @@ local function check_backends()
     h_warn("ollama: not installed (optional)")
   end
 
+  -- tesseract
+  if check_exe("tesseract", false) then
+    h_ok("tesseract backend: ready (requires pdftoppm too)")
+  else
+    h_warn("tesseract backend: not on PATH  (install tesseract-ocr)")
+  end
+
   -- claude
   if check_exe("curl", true) then
     local key = vim.env.ANTHROPIC_API_KEY
