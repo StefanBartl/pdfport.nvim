@@ -80,12 +80,13 @@ end
 function M.extract(path, opts)
   local api_key = (_config and _config.claude_api_key) or vim.env.ANTHROPIC_API_KEY
   if not api_key or api_key == "" then
-    local result = {
+    -- Returned synchronously (not via opts.__callback) so the dispatcher's
+    -- own "if result ~= nil then callback(result) end" fires it exactly
+    -- once — calling opts.__callback here too would double-fire callback.
+    return {
       status = "error", text = nil, format = "markdown", backend = "claude",
       pages_processed = nil, error = "claude: ANTHROPIC_API_KEY not set",
     }
-    if type(opts.__callback) == "function" then opts.__callback(result) end
-    return result
   end
 
   local model = opts.model or "claude-opus-4-5"
@@ -98,13 +99,12 @@ function M.extract(path, opts)
 
   local b64, b64_err = read_base64(path)
   if not b64 then
-    local result = {
+    -- See the ANTHROPIC_API_KEY branch above: synchronous return only.
+    return {
       status = "error", text = nil, format = "markdown", backend = "claude",
       pages_processed = nil,
       error = "claude: " .. (b64_err or "base64 encoding failed"),
     }
-    if type(opts.__callback) == "function" then opts.__callback(result) end
-    return result
   end
 
   local json_body  = build_request(b64, prompt, model)

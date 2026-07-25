@@ -176,6 +176,49 @@ do
   vim.fn.delete(tmp_pdf)
 end
 
+-- ── regression: claude.lua's early-error branches must not double-fire ──────
+-- Previously: opts.__callback(result) was called *and* result was returned
+-- non-nil from M.extract(), so the dispatcher's own post-pcall
+-- "if result ~= nil then callback(result) end" fired a second time on top
+-- of it. Exercised network-free: a missing ANTHROPIC_API_KEY is the very
+-- first check in M.extract, before curl/base64 ever come into play.
+do
+  local saved_key = vim.env.ANTHROPIC_API_KEY
+  vim.env.ANTHROPIC_API_KEY = nil
+
+  -- 1) Unit-level: call the backend module directly.
+  local claude = require("pdfport.backends.claude")
+  local calls = 0
+  local sync_result = claude.extract("/some/file.pdf", {
+    __callback = function() calls = calls + 1 end,
+  })
+  eq("claude.extract() (no API key): does not call opts.__callback itself", calls, 0)
+  check("claude.extract() (no API key): returns the error result synchronously instead",
+    sync_result ~= nil and sync_result.status == "error")
+
+  -- 2) End-to-end through the dispatcher: callback must fire exactly once.
+  local claude_tmp = vim.fn.tempname() .. ".pdf"
+  vim.fn.writefile({ "%PDF-1.4" }, claude_tmp)
+
+  local registry   = require("pdfport.core.registry")
+  local dispatcher = require("pdfport.core.dispatcher")
+  local claude_backend = registry.get_backend("claude")
+  local orig_available = claude_backend.available
+  claude_backend.available = function() return true end -- force-resolve regardless of curl/base64 on this machine
+
+  local results = {}
+  dispatcher.dispatch({ path = claude_tmp, backend_id = "claude" }, function(r) results[#results + 1] = r end)
+  vim.wait(200, function() return #results > 0 end, 5)
+
+  claude_backend.available = orig_available
+  vim.env.ANTHROPIC_API_KEY = saved_key
+  vim.fn.delete(claude_tmp)
+
+  eq("dispatch(claude, no API key): callback fires exactly once, not twice", #results, 1)
+  check("dispatch(claude, no API key): the one call reports status=error",
+    results[1] and results[1].status == "error")
+end
+
 -- ── keymaps: resolve()/disable + visual-mode-aware which-key registration ───
 do
   local keymaps = require("pdfport.bindings.keymaps")
