@@ -21,4 +21,26 @@ function M.on_filetype(pattern, augroup_name, callback)
   })
 end
 
+---@brief Optional, opt-in via config.auto_open_on_read: intercepts a direct
+---`:e file.pdf` and invokes the mode picker instead of loading the raw PDF
+---bytes into a buffer. Idempotent like M.on_filetype (own augroup, cleared
+---on each call).
+---@return nil
+function M.register_bufreadcmd()
+  autocmd.create("BufReadCmd", function(ev)
+    local path = vim.api.nvim_buf_get_name(ev.buf)
+    vim.bo[ev.buf].buftype    = "nofile"
+    vim.bo[ev.buf].modifiable = false
+    vim.bo[ev.buf].bufhidden  = "wipe"
+    vim.bo[ev.buf].swapfile   = false
+    vim.schedule(function()
+      require("pdfport.util.picker").pick_and_open(path)
+    end)
+  end, {
+    pattern = "*.pdf",
+    group   = "pdfport_bufreadcmd",
+    desc    = "pdfport: auto-invoke the mode picker when a PDF is opened directly",
+  })
+end
+
 return M

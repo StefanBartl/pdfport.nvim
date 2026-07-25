@@ -17,16 +17,24 @@ Registered per file-tree integration once its `setup()` (or `.keymaps()` for neo
 called. Every action can be overridden or disabled (`false`) via the integration's `opts`
 table — see [README.md](../README.md#file-tree-integrations) for setup snippets.
 
-| Default      | Action        | Description                       |
-|--------------|---------------|------------------------------------|
-| `<leader>po` | `open`          | Mode picker (interactive)         |
-| `<leader>pt` | `open_text`     | Extract to buffer (vsplit)        |
-| `<leader>ps` | `open_system`   | Open with system application      |
-| `<leader>pi` | `open_terminal` | Terminal image preview            |
+| Default      | Mode | Action        | Description                       |
+|--------------|------|---------------|------------------------------------|
+| `<leader>po` | n | `open`          | Mode picker (interactive)         |
+| `<leader>pt` | n | `open_text`     | Extract to buffer (vsplit)        |
+| `<leader>ps` | n | `open_system`   | Open with system application      |
+| `<leader>pi` | n | `open_terminal` | Terminal image preview            |
+| `<leader>pb` | v | `open_batch`    | Batch-open every PDF in the visual selection |
 
 These are buffer-local and only active inside the corresponding file-tree buffer
 (neo-tree, nvim-tree, netrw, oil.nvim). Defaults live in
 [lua/pdfport/bindings/keymaps.lua](../lua/pdfport/bindings/keymaps.lua).
+
+`open_batch` walks the visual-mode line range and re-runs each integration's own
+cursor-based path resolver per line, opening every `.pdf` it finds (mode `buffer`,
+unfocused, one after another) — see
+[lua/pdfport/util/batch.lua](../lua/pdfport/util/batch.lua). For neo-tree, it is registered
+as a nested `["v"] = { [lhs] = "pdfport_batch" }` entry inside `M.keymaps()`'s returned
+table rather than a top-level one, matching neo-tree's per-mode `window.mappings` shape.
 
 Disabling an action:
 
@@ -47,9 +55,10 @@ they fall back to `<cfile>` and then the current buffer name.
 |----------------------------|-------------------------------------------|
 | `:PdfPort [path]`         | Open PDF with interactive mode picker     |
 | `:PdfPort text [path]`     | Extract to buffer (auto backend)          |
-| `:PdfPort float [path]`    | Extract to floating window                |
+| `:PdfPort float [path]`    | Extract to floating window (prompts for a page range) |
 | `:PdfPort system [path]`   | Open with system application               |
-| `:PdfPort terminal [path]` | Render as terminal image                   |
+| `:PdfPort terminal [path]` | Render as terminal image (prompts for a page range) |
+| `:PdfPort backends`        | List all registered backends with live availability |
 | `:PdfPort health`          | Run `:checkhealth pdfport`            |
 
 ## Autocmds
@@ -67,6 +76,13 @@ instead of accumulating duplicate keymaps.
 
 neo-tree does not use autocmds — its commands/keymaps are registered declaratively via
 `opts.commands` / `opts.filesystem.window.mappings`.
+
+### Optional: `BufReadCmd *.pdf`
+
+Opt-in via `setup({ auto_open_on_read = true })`, default off. When enabled,
+`bindings/autocmds.lua`'s `M.register_bufreadcmd()` registers one `BufReadCmd` (augroup
+`pdfport_bufreadcmd`) that intercepts a direct `:e file.pdf` and invokes the mode picker
+instead of loading raw PDF bytes into a buffer.
 
 ## Which-key
 

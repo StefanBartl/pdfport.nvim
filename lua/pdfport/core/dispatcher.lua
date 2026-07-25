@@ -105,11 +105,30 @@ function M.dispatch(opts, callback)
     prompt     = (opts --[[@as PdfPort.OpenOpts]]).prompt,
     model      = (opts --[[@as PdfPort.OpenOpts]]).model,
     timeout_ms = (opts --[[@as PdfPort.OpenOpts]]).timeout_ms,
-    __callback = callback,
   })
 
-  local path       = opts.path
-  local backend_id = backend.id
+  local path        = opts.path
+  local backend_id   = backend.id
+  local cache_enabled = extract_opts.cache ~= false
+
+  local variant = (extract_opts.pages and #extract_opts.pages > 0)
+    and table.concat(extract_opts.pages, ",")
+    or tostring(extract_opts.max_pages or "all")
+
+  if cache_enabled then
+    local cached = require("pdfport.util.cache").get(path, backend_id, variant)
+    if cached then
+      vim.schedule(function() callback(cached) end)
+      return
+    end
+  end
+
+  extract_opts.__callback = cache_enabled and function(result)
+    if result and result.status == "ok" then
+      require("pdfport.util.cache").set(path, backend_id, variant, result)
+    end
+    callback(result)
+  end or callback
 
   ---@type fun(p: string, o: PdfPort.InternalExtractOpts): PdfPort.Result|nil
   local extract_fn = backend.extract
@@ -130,7 +149,12 @@ function M.dispatch(opts, callback)
       return
     end
 
-    if result ~= nil then callback(result) end
+    if result ~= nil then
+      if cache_enabled and result.status == "ok" then
+        require("pdfport.util.cache").set(path, backend_id, variant, result)
+      end
+      callback(result)
+    end
   end)
 end
 

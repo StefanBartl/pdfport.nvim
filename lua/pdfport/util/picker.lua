@@ -20,7 +20,8 @@ local CHOICES = {
 ---@param path string
 ---@return nil
 function M.pick_and_open(path)
-  local pdfport = require("pdfport")
+  local pdfport    = require("pdfport")
+  local page_range = require("pdfport.util.page_range")
 
   local items = {}
   for i, c in ipairs(CHOICES) do items[i] = c.label end
@@ -29,6 +30,12 @@ function M.pick_and_open(path)
     if not idx then return end
     local choice = CHOICES[idx]
     if not choice then return end
+    if choice.mode == "float" or choice.mode == "terminal" then
+      page_range.prompt(function(pages)
+        pdfport.open({ path = path, mode = choice.mode, backend_id = choice.backend, focus = true, pages = pages })
+      end)
+      return
+    end
     pdfport.open({ path = path, mode = choice.mode, backend_id = choice.backend, focus = true })
   end
 

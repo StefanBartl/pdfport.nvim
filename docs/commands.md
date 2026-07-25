@@ -11,12 +11,17 @@ completing with no input yet).
 |----------------------------|-------------------------------------------|
 | `:PdfPort [path]`         | Open PDF with interactive mode picker     |
 | `:PdfPort text [path]`     | Extract to buffer (auto backend)          |
-| `:PdfPort float [path]`    | Extract to floating window                |
+| `:PdfPort float [path]`    | Extract to floating window (prompts for a page range) |
 | `:PdfPort system [path]`   | Open with system application               |
-| `:PdfPort terminal [path]` | Render as terminal image                   |
+| `:PdfPort terminal [path]` | Render as terminal image (prompts for a page range) |
+| `:PdfPort backends`        | List all registered backends with live availability |
 | `:PdfPort health`          | Run `:checkhealth pdfport`            |
 
 All subcommands accept an optional path argument; if omitted they use the word under the cursor (`<cfile>`) or the current buffer.
+
+`float` and `terminal` prompt for a page range first (`vim.ui.input`, e.g. `1-3,5` — blank
+means the default: all pages for `float`, page 1 for `terminal`; `<Esc>` cancels without
+opening anything).
 
 See [docs/BINDINGS.md](BINDINGS.md) for the full keymap/command/autocmd cheatsheet.
 

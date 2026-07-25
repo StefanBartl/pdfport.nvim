@@ -63,6 +63,10 @@ function M.cmd_open_terminal()
   require("pdfport").open({ path = path, mode = "terminal" })
 end
 
+function M.cmd_open_batch()
+  require("pdfport.util.batch").open_selected(current_node_path)
+end
+
 ---@param opts? PdfPort.KeymapOpts
 ---@return nil
 function M.setup(opts)
@@ -72,16 +76,17 @@ function M.setup(opts)
   local resolved = keymaps.resolve(opts)
 
   local mappings = {
-    { key = resolved.open,          fn = M.cmd_open,          desc = keymaps.DESCRIPTIONS.open          },
-    { key = resolved.open_text,     fn = M.cmd_open_text,     desc = keymaps.DESCRIPTIONS.open_text     },
-    { key = resolved.open_system,   fn = M.cmd_open_system,   desc = keymaps.DESCRIPTIONS.open_system   },
-    { key = resolved.open_terminal, fn = M.cmd_open_terminal, desc = keymaps.DESCRIPTIONS.open_terminal },
+    { mode = "n", key = resolved.open,          fn = M.cmd_open,          desc = keymaps.DESCRIPTIONS.open          },
+    { mode = "n", key = resolved.open_text,     fn = M.cmd_open_text,     desc = keymaps.DESCRIPTIONS.open_text     },
+    { mode = "n", key = resolved.open_system,   fn = M.cmd_open_system,   desc = keymaps.DESCRIPTIONS.open_system   },
+    { mode = "n", key = resolved.open_terminal, fn = M.cmd_open_terminal, desc = keymaps.DESCRIPTIONS.open_terminal },
+    { mode = "v", key = resolved.open_batch,    fn = M.cmd_open_batch,    desc = keymaps.DESCRIPTIONS.open_batch    },
   }
 
   autocmds.on_filetype("NvimTree", "pdfport_tree", function(buf)
     for _, m in ipairs(mappings) do
       if m.key then
-        map("n", m.key, m.fn, { buffer = buf }, m.desc)
+        map(m.mode, m.key, m.fn, { buffer = buf }, m.desc)
       end
     end
   end)

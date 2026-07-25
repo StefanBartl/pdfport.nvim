@@ -13,6 +13,7 @@ local M = {}
 ---@field open_text? string|false
 ---@field open_system? string|false
 ---@field open_terminal? string|false
+---@field open_batch? string|false
 
 ---@type table<string, string>
 M.DEFAULTS = {
@@ -20,6 +21,7 @@ M.DEFAULTS = {
   open_text     = "<leader>pt",
   open_system   = "<leader>ps",
   open_terminal = "<leader>pi",
+  open_batch    = "<leader>pb",
 }
 
 ---@type table<string, string>
@@ -28,6 +30,14 @@ M.DESCRIPTIONS = {
   open_text     = "pdfport: extract to buffer",
   open_system   = "pdfport: open with system application",
   open_terminal = "pdfport: terminal image preview",
+  open_batch    = "pdfport: batch-open selected PDFs",
+}
+
+--- Actions bound in Visual mode instead of Normal mode. Everything not
+--- listed here is assumed Normal-mode by M.register_which_key().
+---@type table<string, boolean>
+M.VISUAL_ACTIONS = {
+  open_batch = true,
 }
 
 ---@param opts? PdfPort.KeymapOpts  nil per-field falls back to M.DEFAULTS; false disables
@@ -51,7 +61,8 @@ function M.register_which_key(resolved)
   local spec = { { "<leader>p", group = "pdfport" } }
   for action, lhs in pairs(resolved) do
     if lhs then
-      spec[#spec + 1] = { lhs, desc = M.DESCRIPTIONS[action] or ("pdfport: " .. action), mode = "n" }
+      local mode = M.VISUAL_ACTIONS[action] and "v" or "n"
+      spec[#spec + 1] = { lhs, desc = M.DESCRIPTIONS[action] or ("pdfport: " .. action), mode = mode }
     end
   end
   pcall(wk.add, spec)

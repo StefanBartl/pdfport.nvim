@@ -66,6 +66,10 @@ function M.commands()
       if not path or not is_pdf(path) then return end
       require("pdfport").open({ path = path, mode = "terminal" })
     end,
+
+    pdfport_batch = function(state)
+      require("pdfport.util.batch").open_selected(function() return node_path(state) end)
+    end,
   }
 end
 
@@ -75,17 +79,23 @@ local COMMAND_NAMES = {
   open_text     = "pdfport_text",
   open_system   = "pdfport_system",
   open_terminal = "pdfport_terminal",
+  open_batch    = "pdfport_batch",
 }
 
 ---@param opts? PdfPort.KeymapOpts
----@return table<string, string>
+---@return table<string, string|table<string,string>>  normal-mode entries at the top level, plus an optional `["v"]` sub-table for visual-mode entries (neo-tree's documented per-mode window.mappings shape)
 function M.keymaps(opts)
   local resolved = keymaps.resolve(opts)
   keymaps.register_which_key(resolved)
 
   local map = {}
   for action, lhs in pairs(resolved) do
-    if lhs then map[lhs] = COMMAND_NAMES[action] end
+    if lhs and not keymaps.VISUAL_ACTIONS[action] then
+      map[lhs] = COMMAND_NAMES[action]
+    end
+  end
+  if resolved.open_batch then
+    map["v"] = { [resolved.open_batch] = COMMAND_NAMES.open_batch }
   end
   return map
 end

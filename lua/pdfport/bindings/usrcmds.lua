@@ -8,8 +8,9 @@
 --- omitted they fall back to <cfile> and then the current buffer name. See
 --- docs/BINDINGS.md for the full cheatsheet.
 
-local composer = require("lib.nvim.usercmd.composer")
-local notify   = require("pdfport.util.notify").create("[pdfport.usrcmds]")
+local composer   = require("lib.nvim.usercmd.composer")
+local notify     = require("pdfport.util.notify").create("[pdfport.usrcmds]")
+local page_range = require("pdfport.util.page_range")
 
 local M = {}
 
@@ -105,6 +106,12 @@ function M.register(pdfport)
           local function on_select(_, idx)
             local c = choices[idx]
             if not c then return end
+            if c.mode == "float" or c.mode == "terminal" then
+              page_range.prompt(function(pages)
+                pdfport.open({ path = path, mode = c.mode, backend_id = c.backend, focus = true, pages = pages }, notify.error)
+              end)
+              return
+            end
             pdfport.open({ path = path, mode = c.mode, backend_id = c.backend, focus = true }, notify.error)
           end
 
@@ -129,7 +136,10 @@ function M.register(pdfport)
         desc = "Show PDF text in float window",
         run = function(ctx)
           local path = require_path(ctx, "PdfPort float")
-          if path then pdfport.open({ path = path, mode = "float", focus = true }, notify.error) end
+          if not path then return end
+          page_range.prompt(function(pages)
+            pdfport.open({ path = path, mode = "float", focus = true, pages = pages }, notify.error)
+          end)
         end },
 
       { path = { "system" }, args = path_arg,
@@ -143,12 +153,37 @@ function M.register(pdfport)
         desc = "Render PDF as terminal image",
         run = function(ctx)
           local path = require_path(ctx, "PdfPort terminal")
-          if path then pdfport.open({ path = path, mode = "terminal" }, notify.error) end
+          if not path then return end
+          page_range.prompt(function(pages)
+            pdfport.open({ path = path, mode = "terminal", pages = pages }, notify.error)
+          end)
         end },
 
       { path = { "health" },
         desc = "Run health check",
         run = function() vim.cmd("checkhealth pdfport") end },
+
+      { path = { "backends" },
+        desc = "List all registered backends with live availability",
+        run = function()
+          local registry = require("pdfport.core.registry")
+          local ok_scratch, make_scratch = pcall(require, "lib.nvim.window.make_scratch")
+          local lines = registry.diagnostics()
+          if ok_scratch then
+            make_scratch({
+              lines     = lines,
+              filetype  = "text",
+              title     = " pdfport: backends ",
+              title_pos = "center",
+              width     = math.floor(vim.o.columns * 0.6),
+              height    = math.floor(vim.o.lines * 0.5),
+              wo        = { wrap = false },
+              nice_quit = true,
+            })
+          else
+            notify.info(table.concat(lines, "\n"))
+          end
+        end },
     },
   })
 end

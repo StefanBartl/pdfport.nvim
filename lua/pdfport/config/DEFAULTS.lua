@@ -9,10 +9,11 @@
 return function()
   return {
     default_backend = "auto",
-    fallback_chain  = { "pdftotext", "pdfplumber", "marker", "docling", "ollama", "claude" },
+    fallback_chain  = { "pdftotext", "pdfplumber", "marker", "docling", "ollama", "tesseract", "claude" },
     extract_opts = {
       max_pages  = nil,
       timeout_ms = 30000,
+      cache      = true,
     },
     render_opts = {
       mode                 = "buffer",
@@ -24,6 +25,7 @@ return function()
     claude_api_key = nil,
     ollama_host    = "http://localhost:11434",
     ollama_model   = "llava",
+    auto_open_on_read = false,
     debug          = false,
   }
 end

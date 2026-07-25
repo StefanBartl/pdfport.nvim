@@ -74,6 +74,12 @@ function M.setup(opts)
       if not path or not is_pdf(path) then return end
       require("pdfport").open({ path = path, mode = "terminal" })
     end, keymaps.DESCRIPTIONS.open_terminal)
+
+    if resolved.open_batch then
+      map("v", resolved.open_batch, function()
+        require("pdfport.util.batch").open_selected(current_node_path)
+      end, { buffer = buf }, keymaps.DESCRIPTIONS.open_batch)
+    end
   end)
 
   keymaps.register_which_key(resolved)
