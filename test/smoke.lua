@@ -252,6 +252,31 @@ do
     page_range.parse("not a page range"), nil)
 end
 
+-- ── page_range.prompt(): routes through kit.input, not a raw vim.ui.input ───
+do
+  local captured_title
+  package.loaded["lib.nvim.ui.kit"] = {
+    input = function(opts)
+      captured_title = opts.title
+      opts.on_submit("1-3")
+    end,
+  }
+  package.loaded["pdfport.util.page_range"] = nil
+  local page_range = require("pdfport.util.page_range")
+
+  local got
+  page_range.prompt(function(pages) got = pages end)
+
+  check("page_range.prompt: kit.input asked with the expected title",
+    captured_title ~= nil and captured_title:find("pdfport pages", 1, true) ~= nil,
+    tostring(captured_title))
+  check("page_range.prompt: submitted '1-3' parses through to the callback",
+    vim.deep_equal(got, { 1, 2, 3 }))
+
+  package.loaded["lib.nvim.ui.kit"] = nil
+  package.loaded["pdfport.util.page_range"] = nil
+end
+
 -- ── neo-tree keymaps(): normal-mode table + nested visual-mode sub-table ────
 do
   local neotree = require("pdfport.integrations.neotree")
