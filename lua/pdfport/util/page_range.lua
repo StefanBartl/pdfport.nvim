@@ -42,10 +42,12 @@ end
 ---@param callback fun(pages: integer[]|nil): nil  called with nil if the prompt was cancelled or left blank
 ---@return nil
 function M.prompt(callback)
-  vim.ui.input({ prompt = "pdfport pages (e.g. 1-3,5 — blank = default): " }, function(input)
-    if input == nil then return end -- <Esc> / cancelled: do not open at all
-    callback(M.parse(input))
-  end)
+  require("lib.nvim.ui.kit").input({
+    title = "pdfport pages (e.g. 1-3,5 — blank = default): ",
+    on_submit = function(input)
+      callback(M.parse(input))
+    end,
+  })
 end
 
 return M
