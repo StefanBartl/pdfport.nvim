@@ -1,0 +1,47 @@
+# pdfport.nvim — test suite
+
+Framework-free headless specs. No plenary, no busted: `run.lua` loads each
+spec, hands it the shared `harness.lua`, and exits non-zero on the first
+failure — the same shape used across the sibling plugins.
+
+## Running
+
+From the repo root, with `lib.nvim` checked out as a sibling directory:
+
+```bash
+nvim --headless -u NONE -c "set rtp+=." -c "set rtp+=../lib.nvim" -c "luafile TESTS/run.lua" -c "qa!"
+```
+
+A successful run ends with `PDFPORT_TESTS_OK`. CI runs exactly this command.
+
+## No external tools required
+
+Every backend in these specs is a fake (`harness.fake_backend`) with a
+hard-coded `available()`. Nothing here shells out to `pdftotext`, Python,
+Ollama or Tesseract, so the suite gives the same result on a bare CI runner
+as on a fully-equipped machine. What it covers is load errors and
+chain-resolution logic — not real PDF extraction, which cannot be verified
+without the tools and a corpus.
+
+## Specs
+
+| Spec | Covers |
+| --- | --- |
+| `page_range_spec.lua` | `util.page_range.parse` — ranges, dedup, sorting, reversed ranges, junk input |
+| `registry_spec.lua` | backend/renderer registration, input guards, defensive copies, and the lazy-proxy contract |
+| `resolver_spec.lua` | fallback-chain resolution: explicit request, `default_backend`, `auto`, nothing available |
+| `smoke_spec.lua` | every module loads, `setup()` is idempotent, commands/renderers/health are wired |
+
+## Ordering
+
+`run.lua`'s spec order is deliberate: `registry_spec` asserts that the
+built-in backend modules are **not** yet in `package.loaded` (that is the
+lazy-proxy contract), so it must run before `smoke_spec`, which requires all
+seven of them on purpose.
+
+## Adding a spec
+
+Create `TESTS/<name>_spec.lua` returning `function(H) ... end`, then add its
+filename to the `specs` list in `run.lua`. Use `H.eq`/`H.ok`/`H.falsy`/
+`H.match`/`H.eq_list` for assertions and `H.fake_backend` whenever a test
+would otherwise depend on a real extraction tool.

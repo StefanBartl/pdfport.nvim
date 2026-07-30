@@ -15,19 +15,19 @@
 
 local M = {}
 
-local map      = require("lib.nvim.map")
-local notify   = require("pdfport.util.notify").create("[pdfport.netrw]")
-local picker   = require("pdfport.util.picker")
+local map = require("lib.nvim.map")
+local notify = require("pdfport.util.notify").create("[pdfport.netrw]")
+local picker = require("pdfport.util.picker")
 local autocmds = require("pdfport.bindings.autocmds")
-local keymaps  = require("pdfport.bindings.keymaps")
+local keymaps = require("pdfport.bindings.keymaps")
 
 ---@return string|nil
 local function current_node_path()
-  local dir  = vim.b.netrw_curdir
+  local dir = vim.b.netrw_curdir
   local file = vim.fn.expand("<cfile>")
   if not dir or dir == "" then return nil end
   if not file or file == "" then return nil end
-  local sep  = (dir:sub(-1) == "/" or dir:sub(-1) == "\\") and "" or "/"
+  local sep = (dir:sub(-1) == "/" or dir:sub(-1) == "\\") and "" or "/"
   return dir .. sep .. file
 end
 

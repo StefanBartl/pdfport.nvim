@@ -13,13 +13,13 @@ local M = {}
 
 ---@type { id: PdfPort.BackendId, module: string }[]
 local BUILTIN_BACKENDS = {
-  { id = "pdftotext",  module = "pdfport.backends.pdftotext"  },
+  { id = "pdftotext", module = "pdfport.backends.pdftotext" },
   { id = "pdfplumber", module = "pdfport.backends.pdfplumber" },
-  { id = "marker",     module = "pdfport.backends.marker"     },
-  { id = "docling",    module = "pdfport.backends.docling"    },
-  { id = "ollama",     module = "pdfport.backends.ollama"     },
-  { id = "tesseract",  module = "pdfport.backends.tesseract"  },
-  { id = "claude",     module = "pdfport.backends.claude"     },
+  { id = "marker", module = "pdfport.backends.marker" },
+  { id = "docling", module = "pdfport.backends.docling" },
+  { id = "ollama", module = "pdfport.backends.ollama" },
+  { id = "tesseract", module = "pdfport.backends.tesseract" },
+  { id = "claude", module = "pdfport.backends.claude" },
 }
 
 ---@param entry { id: PdfPort.BackendId, module: string }
@@ -35,9 +35,7 @@ local function make_lazy_backend(entry, cfg)
     local ok, backend = pcall(require, entry.module)
     if ok and type(backend) == "table" then
       loaded = backend
-      if cfg and type(backend._set_config) == "function" then
-        backend._set_config(cfg)
-      end
+      if cfg and type(backend._set_config) == "function" then backend._set_config(cfg) end
     else
       load_failed = true
     end
@@ -58,7 +56,10 @@ local function make_lazy_backend(entry, cfg)
       local b = load()
       if not b then
         return {
-          status = "error", text = nil, format = "plain", backend = entry.id,
+          status = "error",
+          text = nil,
+          format = "plain",
+          backend = entry.id,
           pages_processed = nil,
           error = string.format("pdfport: backend '%s' failed to load", entry.id),
         }

@@ -17,20 +17,20 @@ local M = {}
 
 ---@type table<string, string>
 M.DEFAULTS = {
-  open          = "<leader>po",
-  open_text     = "<leader>pt",
-  open_system   = "<leader>ps",
+  open = "<leader>po",
+  open_text = "<leader>pt",
+  open_system = "<leader>ps",
   open_terminal = "<leader>pi",
-  open_batch    = "<leader>pb",
+  open_batch = "<leader>pb",
 }
 
 ---@type table<string, string>
 M.DESCRIPTIONS = {
-  open          = "pdfport: mode picker",
-  open_text     = "pdfport: extract to buffer",
-  open_system   = "pdfport: open with system application",
+  open = "pdfport: mode picker",
+  open_text = "pdfport: extract to buffer",
+  open_system = "pdfport: open with system application",
   open_terminal = "pdfport: terminal image preview",
-  open_batch    = "pdfport: batch-open selected PDFs",
+  open_batch = "pdfport: batch-open selected PDFs",
 }
 
 --- Actions bound in Visual mode instead of Normal mode. Everything not
@@ -62,7 +62,8 @@ function M.register_which_key(resolved)
   for action, lhs in pairs(resolved) do
     if lhs then
       local mode = M.VISUAL_ACTIONS[action] and "v" or "n"
-      spec[#spec + 1] = { lhs, desc = M.DESCRIPTIONS[action] or ("pdfport: " .. action), mode = mode }
+      spec[#spec + 1] =
+        { lhs, desc = M.DESCRIPTIONS[action] or ("pdfport: " .. action), mode = mode }
     end
   end
   pcall(wk.add, spec)

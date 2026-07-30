@@ -18,7 +18,7 @@ local notify = require("pdfport.util.notify").create("[pdfport.integrations]")
 function M.current_pdf_path()
   local ok_api, api = pcall(vim.api.nvim_get_current_buf)
   local bufnr = ok_api and api or vim.api.nvim_get_current_buf()
-  local ft    = vim.bo[bufnr].filetype
+  local ft = vim.bo[bufnr].filetype
 
   -- neo-tree
   if ft == "neo-tree" then
@@ -45,7 +45,7 @@ function M.current_pdf_path()
 
   -- netrw
   if ft == "netrw" then
-    local dir  = vim.b.netrw_curdir
+    local dir = vim.b.netrw_curdir
     local file = vim.fn.expand("<cfile>")
     if dir and file and file ~= "" then
       local sep = (dir:sub(-1) == "/" or dir:sub(-1) == "\\") and "" or "/"
@@ -58,11 +58,9 @@ function M.current_pdf_path()
   if ft == "oil" then
     local ok_oil, oil = pcall(require, "oil")
     if ok_oil then
-      local dir   = oil.get_current_dir()
+      local dir = oil.get_current_dir()
       local entry = oil.get_cursor_entry()
-      if dir and entry and entry.name then
-        return dir .. entry.name
-      end
+      if dir and entry and entry.name then return dir .. entry.name end
     end
     return nil
   end
@@ -84,8 +82,8 @@ function M.open_current(opts)
   end
 
   local merged = vim.tbl_deep_extend("force", {
-    path  = path,
-    mode  = "buffer",
+    path = path,
+    mode = "buffer",
     split = "vsplit",
     focus = true,
   }, opts or {})

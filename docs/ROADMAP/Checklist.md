@@ -76,6 +76,25 @@ backend ids — not algorithmically interesting enough to warrant this section's
 ## Reviewer-Notizen — ➖ (template, not filled in for this pass)
 
 ## Concentrated action items
-Same as [Arch&Coding.md](Arch%26Coding.md): no automated tests · eager backend `require` in
-`backends/init.lua` · no unified window-lifecycle helper. Plus: `.luarc.json` gap closed by
-this session (see [ROADMAP.md](../ROADMAP.md)).
+
+- ~~**No automated tests**~~ — ✅ done. `TESTS/` now holds a framework-free headless suite
+  (`page_range`, `registry`, `resolver`, `smoke`) with a shared harness and a runner that
+  exits non-zero on failure. Every backend is faked, so the suite needs no
+  pdftotext/python/ollama on the host — it targets load errors and chain-resolution
+  regressions, not real extraction. `smoke_spec` requires all seven backend modules
+  explicitly, which is what makes a typo inside a rarely-exercised backend fail here rather
+  than only on a machine that happens to have that tool installed.
+- ~~**Eager backend `require` in `backends/init.lua`**~~ — ➖ was already stale when written:
+  `load_all()` registers lazy proxies and only requires a backend's real module the first
+  time a field on it is touched. `registry_spec` now pins that contract down by asserting
+  `package.loaded` stays empty after registration, so the behaviour cannot silently regress.
+- **No unified window-lifecycle helper** — still open, still deferred. Unchanged rationale:
+  worth doing only if a fourth window-based renderer appears.
+- ~~`.luarc.json` gap~~ — closed earlier (see [ROADMAP.md](../ROADMAP.md)).
+
+Also added while closing the above: `stylua.toml`, `.luacheckrc` and a CI workflow gating on
+all three (0 luacheck warnings). One real change fell out of it — a deeply nested inline
+table in `bindings/usrcmds.lua` on which stylua did not reach a stable fixpoint (it
+alternated between two layouts on successive runs, which would have made `stylua --check`
+fail in CI regardless of which layout was committed). It is now hoisted into a local, which
+is also less repetitive.

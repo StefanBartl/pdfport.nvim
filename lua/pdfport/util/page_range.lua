@@ -14,7 +14,7 @@ function M.parse(input)
   if input == "" then return nil end
 
   local pages = {}
-  local seen  = {}
+  local seen = {}
   for part in input:gmatch("[^,]+") do
     part = vim.trim(part)
     local a, b = part:match("^(%d+)%s*-%s*(%d+)$")
@@ -22,14 +22,20 @@ function M.parse(input)
       a, b = tonumber(a), tonumber(b)
       if a and b and a <= b then
         for p = a, b do
-          if not seen[p] then seen[p] = true; pages[#pages + 1] = p end
+          if not seen[p] then
+            seen[p] = true
+            pages[#pages + 1] = p
+          end
         end
       end
     else
       local n = tonumber(part)
       if n then
         n = math.floor(n)
-        if not seen[n] then seen[n] = true; pages[#pages + 1] = n end
+        if not seen[n] then
+          seen[n] = true
+          pages[#pages + 1] = n
+        end
       end
     end
   end

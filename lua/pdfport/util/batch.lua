@@ -20,15 +20,17 @@ function M.open_selected(resolve_path)
   local ok_cur, cur = pcall(vim.api.nvim_win_get_cursor, win)
 
   local start_line = vim.fn.line("'<")
-  local end_line   = vim.fn.line("'>")
+  local end_line = vim.fn.line("'>")
   if start_line == 0 or end_line == 0 then
     notify.warn("no visual selection")
     return
   end
-  if start_line > end_line then start_line, end_line = end_line, start_line end
+  if start_line > end_line then
+    start_line, end_line = end_line, start_line
+  end
 
   local paths = {}
-  local seen  = {}
+  local seen = {}
   for line = start_line, end_line do
     pcall(vim.api.nvim_win_set_cursor, win, { line, 0 })
     local ok_path, path = pcall(resolve_path)

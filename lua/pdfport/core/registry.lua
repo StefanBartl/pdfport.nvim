@@ -15,14 +15,12 @@ local _backend_order = {}
 ---@param backend PdfPort.Backend
 ---@return nil
 function M.register_backend(backend)
-  assert(type(backend) == "table",                          "backend must be a table")
+  assert(type(backend) == "table", "backend must be a table")
   assert(type(backend.id) == "string" and backend.id ~= "", "backend.id must be a non-empty string")
-  assert(type(backend.available) == "function",             "backend.available must be a function")
-  assert(type(backend.extract)   == "function",             "backend.extract must be a function")
+  assert(type(backend.available) == "function", "backend.available must be a function")
+  assert(type(backend.extract) == "function", "backend.extract must be a function")
 
-  if not _backends[backend.id] then
-    _backend_order[#_backend_order + 1] = backend.id
-  end
+  if not _backends[backend.id] then _backend_order[#_backend_order + 1] = backend.id end
   _backends[backend.id] = backend
 end
 
@@ -68,7 +66,7 @@ local _renderers = {}
 ---@return nil
 function M.register_renderer(mode, fn)
   assert(type(mode) == "string" and mode ~= "", "mode must be a non-empty string")
-  assert(type(fn) == "function",                "renderer fn must be a function")
+  assert(type(fn) == "function", "renderer fn must be a function")
   _renderers[mode] = fn
 end
 
@@ -96,7 +94,7 @@ function M.diagnostics()
   else
     for i = 1, #_backend_order do
       local id = _backend_order[i]
-      local b  = _backends[id]
+      local b = _backends[id]
       local ok, avail = pcall(b.available)
       local status = (ok and avail) and "available" or "unavailable"
       lines[#lines + 1] = string.format("  [%d] %-16s  %s", i, id, status)

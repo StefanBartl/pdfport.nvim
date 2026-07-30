@@ -10,13 +10,13 @@ local spawn_capture = require("lib.nvim.cross.uv.spawn_capture")
 
 ---@type PdfPort.Backend
 local M = {
-  id   = "marker",
+  id = "marker",
   name = "marker-pdf (AI Markdown extraction)",
   capabilities = {
-    markdown     = true,
-    tables       = true,
-    ocr          = true,
-    remote       = false,
+    markdown = true,
+    tables = true,
+    ocr = true,
+    remote = false,
     gpu_optional = true,
   },
 }
@@ -41,13 +41,18 @@ function M.extract(path, opts)
 
   local timeout_ms = opts.timeout_ms or 120000
   local argv = { "marker_single" }
-  for _, a in ipairs(args) do argv[#argv + 1] = a end
+  for _, a in ipairs(args) do
+    argv[#argv + 1] = a
+  end
 
   spawn_capture(argv, { timeout_ms = timeout_ms }, function(spawn_result)
     if spawn_result.timed_out then
       vim.fn.delete(tmp_dir, "rf")
       local result = {
-        status = "error", text = nil, format = "markdown", backend = "marker",
+        status = "error",
+        text = nil,
+        format = "markdown",
+        backend = "marker",
         pages_processed = nil,
         error = string.format("marker: timed out after %d ms", timeout_ms),
       }
@@ -58,30 +63,43 @@ function M.extract(path, opts)
     if not spawn_result.ok then
       vim.fn.delete(tmp_dir, "rf")
       local result = {
-        status = "error", text = nil, format = "markdown", backend = "marker",
+        status = "error",
+        text = nil,
+        format = "markdown",
+        backend = "marker",
         pages_processed = nil,
-        error = string.format("marker_single exited %d: %s", spawn_result.code, spawn_result.stderr),
+        error = string.format(
+          "marker_single exited %d: %s",
+          spawn_result.code,
+          spawn_result.stderr
+        ),
       }
       if type(opts.__callback) == "function" then opts.__callback(result) end
       return
     end
 
-    local stem    = vim.fn.fnamemodify(path, ":t:r")
+    local stem = vim.fn.fnamemodify(path, ":t:r")
     local md_path = tmp_dir .. "/" .. stem .. "/" .. stem .. ".md"
 
     if vim.fn.filereadable(md_path) ~= 1 then
       local pattern = tmp_dir:gsub("\\", "/") .. "/**/*.md"
-      local found   = vim.fn.glob(pattern, false, true)
+      local found = vim.fn.glob(pattern, false, true)
       if #found > 0 then
         md_path = found[1]
       else
         local all = vim.fn.glob(tmp_dir:gsub("\\", "/") .. "/**/*", false, true)
         vim.fn.delete(tmp_dir, "rf")
         local result = {
-          status = "error", text = nil, format = "markdown", backend = "marker",
+          status = "error",
+          text = nil,
+          format = "markdown",
+          backend = "marker",
           pages_processed = nil,
-          error = string.format("marker_single: no .md file in %s. Present: %s",
-            tmp_dir, table.concat(all, ", ")),
+          error = string.format(
+            "marker_single: no .md file in %s. Present: %s",
+            tmp_dir,
+            table.concat(all, ", ")
+          ),
         }
         if type(opts.__callback) == "function" then opts.__callback(result) end
         return
@@ -89,12 +107,16 @@ function M.extract(path, opts)
     end
 
     local lines = vim.fn.readfile(md_path)
-    local text  = table.concat(lines, "\n")
+    local text = table.concat(lines, "\n")
     vim.fn.delete(tmp_dir, "rf")
 
     local result = {
-      status = "ok", text = text, format = "markdown", backend = "marker",
-      pages_processed = opts.max_pages, error = nil,
+      status = "ok",
+      text = text,
+      format = "markdown",
+      backend = "marker",
+      pages_processed = opts.max_pages,
+      error = nil,
     }
     if type(opts.__callback) == "function" then opts.__callback(result) end
   end)
