@@ -100,12 +100,16 @@ loop. No hand-rolled recursion where an iterative approach is needed (there is n
 walk in this plugin at all).
 
 ## Concentrated action items
-1. **No automated tests** — biggest gap. A `test/smoke.lua` in the shape of
-   `filetree.nvim`'s (headless `require()` chain + a stub/fake backend) would cover the
-   riskiest surface: `setup()`, dispatcher resolution, and the disable/which-key keymap
-   logic added this session.
-2. **`backends/init.lua` eager `load_all()`** — defer each backend's `require` to
-   resolution time instead of loading all six upfront (see
-   [Zentral-Prinzipien.md §2](Zentral-Prinzipien.md)).
+1. ~~**No automated tests**~~ — ✅ done, and built in the suggested shape: a headless
+   `require()` chain plus fake backends, living in `TESTS/` (repo root, per the project
+   convention) rather than `test/smoke.lua`. Four specs — `page_range` (pure parser),
+   `registry` (registration guards + the lazy-proxy contract), `resolver` (fallback-chain
+   resolution, all backends faked) and `smoke` (every module loads, `setup()` is
+   idempotent, commands/renderers/health wired). Run via `TESTS/run.lua`, gated in CI.
+2. ~~**`backends/init.lua` eager `load_all()`**~~ — ➖ already fixed before this audit line
+   was read: `load_all()` registers lazy proxies whose real module is only required when a
+   field is first touched. `registry_spec` now asserts `package.loaded` stays empty after
+   registration, and that touching one proxy does not load its siblings, so this cannot
+   regress unnoticed.
 3. **No unified window lifecycle helper** across `buffer`/`float`/`terminal` renderers —
-   minor; only worth doing if a fourth window-based renderer is added.
+   still open, still minor; only worth doing if a fourth window-based renderer is added.

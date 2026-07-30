@@ -21,22 +21,22 @@ end
 ---@param requested PdfPort.BackendId|"auto"|nil
 ---@return PdfPort.BackendId[]
 local function build_chain(requested)
-  local cfg          = _config or {}
+  local cfg = _config or {}
   local global_chain = cfg.fallback_chain or {}
 
   if requested and requested ~= "auto" then
     local chain = { [#global_chain + 1] = nil }
     chain[1] = requested
-    for i = 1, #global_chain do chain[i + 1] = global_chain[i] end
+    for i = 1, #global_chain do
+      chain[i + 1] = global_chain[i]
+    end
     return chain
   end
 
   if cfg.default_backend and cfg.default_backend ~= "auto" then
     local chain = { cfg.default_backend }
     for i = 1, #global_chain do
-      if global_chain[i] ~= cfg.default_backend then
-        chain[#chain + 1] = global_chain[i]
-      end
+      if global_chain[i] ~= cfg.default_backend then chain[#chain + 1] = global_chain[i] end
     end
     return chain
   end
@@ -68,7 +68,7 @@ end
 
 ---@return PdfPort.Backend[]
 function M.available_backends()
-  local chain  = build_chain("auto")
+  local chain = build_chain("auto")
   local result = {}
   for i = 1, #chain do
     local backend = registry.get_backend(chain[i])

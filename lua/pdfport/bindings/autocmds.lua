@@ -15,9 +15,11 @@ local M = {}
 ---@param callback fun(buf: integer): nil        invoked with the entered buffer number
 ---@return nil
 function M.on_filetype(pattern, augroup_name, callback)
-  autocmd.create("FileType", function(ev) callback(ev.buf) end, {
+  autocmd.create("FileType", function(ev)
+    callback(ev.buf)
+  end, {
     pattern = pattern,
-    group   = augroup_name,
+    group = augroup_name,
   })
 end
 
@@ -29,17 +31,17 @@ end
 function M.register_bufreadcmd()
   autocmd.create("BufReadCmd", function(ev)
     local path = vim.api.nvim_buf_get_name(ev.buf)
-    vim.bo[ev.buf].buftype    = "nofile"
+    vim.bo[ev.buf].buftype = "nofile"
     vim.bo[ev.buf].modifiable = false
-    vim.bo[ev.buf].bufhidden  = "wipe"
-    vim.bo[ev.buf].swapfile   = false
+    vim.bo[ev.buf].bufhidden = "wipe"
+    vim.bo[ev.buf].swapfile = false
     vim.schedule(function()
       require("pdfport.util.picker").pick_and_open(path)
     end)
   end, {
     pattern = "*.pdf",
-    group   = "pdfport_bufreadcmd",
-    desc    = "pdfport: auto-invoke the mode picker when a PDF is opened directly",
+    group = "pdfport_bufreadcmd",
+    desc = "pdfport: auto-invoke the mode picker when a PDF is opened directly",
   })
 end
 

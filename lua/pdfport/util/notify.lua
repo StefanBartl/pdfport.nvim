@@ -21,9 +21,7 @@ function M.create(prefix)
     warn = notifier.warn,
     error = notifier.error,
     debug = function(msg, cfg)
-      if cfg and cfg.debug then
-        notifier.debug(msg)
-      end
+      if cfg and cfg.debug then notifier.debug(msg) end
     end,
   }
 end

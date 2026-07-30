@@ -11,17 +11,17 @@
 
 local M = {}
 
-local map      = require("lib.nvim.map")
-local notify   = require("pdfport.util.notify").create("[pdfport.oil]")
-local picker   = require("pdfport.util.picker")
+local map = require("lib.nvim.map")
+local notify = require("pdfport.util.notify").create("[pdfport.oil]")
+local picker = require("pdfport.util.picker")
 local autocmds = require("pdfport.bindings.autocmds")
-local keymaps  = require("pdfport.bindings.keymaps")
+local keymaps = require("pdfport.bindings.keymaps")
 
 ---@return string|nil
 local function current_node_path()
   local ok, oil = pcall(require, "oil")
   if not ok then return nil end
-  local dir   = oil.get_current_dir()
+  local dir = oil.get_current_dir()
   local entry = oil.get_cursor_entry()
   if not dir or not entry or not entry.name then return nil end
   return dir .. entry.name

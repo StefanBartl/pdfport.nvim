@@ -53,9 +53,9 @@ function M.setup(user_config)
   local reg = require("pdfport.core.registry")
 
   local renderers = {
-    { id = "buffer",   mod = "pdfport.renderers.buffer"   },
-    { id = "float",    mod = "pdfport.renderers.float"    },
-    { id = "system",   mod = "pdfport.renderers.system"   },
+    { id = "buffer", mod = "pdfport.renderers.buffer" },
+    { id = "float", mod = "pdfport.renderers.float" },
+    { id = "system", mod = "pdfport.renderers.system" },
     { id = "terminal", mod = "pdfport.renderers.terminal" },
   }
   for _, r in ipairs(renderers) do
@@ -65,9 +65,7 @@ function M.setup(user_config)
 
   M._register_commands()
 
-  if cfg.auto_open_on_read then
-    require("pdfport.bindings.autocmds").register_bufreadcmd()
-  end
+  if cfg.auto_open_on_read then require("pdfport.bindings.autocmds").register_bufreadcmd() end
 
   _initialized = true
 
@@ -88,7 +86,10 @@ function M.open(opts, on_error)
   if not _initialized then M.setup() end
 
   assert(type(opts) == "table", "pdfport.open: opts must be a table")
-  assert(type(opts.path) == "string" and opts.path ~= "", "pdfport.open: opts.path must be a non-empty string")
+  assert(
+    type(opts.path) == "string" and opts.path ~= "",
+    "pdfport.open: opts.path must be a non-empty string"
+  )
 
   require("pdfport.core.dispatcher").open(opts, on_error or notify.error)
 end

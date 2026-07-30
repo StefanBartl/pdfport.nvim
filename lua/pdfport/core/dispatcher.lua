@@ -4,7 +4,7 @@
 --- Coordinates callers (integrations, commands) with backend/renderer pairs.
 --- Flow: validate path → resolve backend → extract async → render on main thread.
 
-local uv       = vim.uv or vim.loop
+local uv = vim.uv or vim.loop
 local resolver = require("pdfport.core.resolver")
 local registry = require("pdfport.core.registry")
 
@@ -34,9 +34,7 @@ local ok_progress, progress_mod = pcall(require, "lib.nvim.progress")
 ---@param path string
 ---@return table|nil
 local function start_progress(backend_id, path)
-  if not ok_progress then
-    return nil
-  end
+  if not ok_progress then return nil end
   local handle = progress_mod.create({
     title = "[pdfport]",
     style = (_config and _config.progress_style) or "auto",
@@ -52,12 +50,12 @@ end
 ---@return PdfPort.Result
 local function err_result(msg, backend_id)
   return {
-    status          = "error",
-    text            = nil,
-    format          = "plain",
-    backend         = backend_id or "none",
+    status = "error",
+    text = nil,
+    format = "plain",
+    backend = backend_id or "none",
     pages_processed = nil,
-    error           = msg,
+    error = msg,
   }
 end
 
@@ -69,9 +67,7 @@ local function validate_path(path)
     return false, "pdfport: path must be a non-empty string"
   end
   local stat = uv.fs_stat(path)
-  if not stat then
-    return false, string.format("pdfport: file not found: %s", path)
-  end
+  if not stat then return false, string.format("pdfport: file not found: %s", path) end
   if stat.type ~= "file" then
     return false, string.format("pdfport: not a regular file: %s", path)
   end
@@ -82,25 +78,35 @@ end
 ---@param callback fun(result: PdfPort.Result): nil
 ---@return nil
 function M.dispatch(opts, callback)
-  assert(type(opts) == "table",          "opts must be a table")
-  assert(type(opts.path) == "string",    "opts.path must be a string")
-  assert(type(callback) == "function",   "callback must be a function")
+  assert(type(opts) == "table", "opts must be a table")
+  assert(type(opts.path) == "string", "opts.path must be a string")
+  assert(type(callback) == "function", "callback must be a function")
 
   local ok, err = validate_path(opts.path)
   if not ok then
-    vim.schedule(function() callback(err_result(err or "unknown path error")) end)
+    vim.schedule(function()
+      callback(err_result(err or "unknown path error"))
+    end)
     return
   end
 
   if opts.mode == "system" then
     local sys_renderer = registry.get_renderer("system")
     if not sys_renderer then
-      vim.schedule(function() callback(err_result("pdfport: system renderer not registered")) end)
+      vim.schedule(function()
+        callback(err_result("pdfport: system renderer not registered"))
+      end)
       return
     end
     vim.schedule(function()
-      sys_renderer({ status = "ok", text = nil, format = "plain", backend = "system",
-                     pages_processed = nil, error = nil }, opts)
+      sys_renderer({
+        status = "ok",
+        text = nil,
+        format = "plain",
+        backend = "system",
+        pages_processed = nil,
+        error = nil,
+      }, opts)
     end)
     return
   end
@@ -108,19 +114,29 @@ function M.dispatch(opts, callback)
   if opts.mode == "terminal" then
     local term_renderer = registry.get_renderer("terminal")
     if not term_renderer then
-      vim.schedule(function() callback(err_result("pdfport: terminal renderer not registered")) end)
+      vim.schedule(function()
+        callback(err_result("pdfport: terminal renderer not registered"))
+      end)
       return
     end
     vim.schedule(function()
-      term_renderer({ status = "ok", text = opts.path, format = "plain", backend = "terminal",
-                      pages_processed = nil, error = nil }, opts)
+      term_renderer({
+        status = "ok",
+        text = opts.path,
+        format = "plain",
+        backend = "terminal",
+        pages_processed = nil,
+        error = nil,
+      }, opts)
     end)
     return
   end
 
   local backend, resolve_err = resolver.resolve(opts.backend_id)
   if not backend then
-    vim.schedule(function() callback(err_result(resolve_err or "pdfport: no backend resolved")) end)
+    vim.schedule(function()
+      callback(err_result(resolve_err or "pdfport: no backend resolved"))
+    end)
     return
   end
 
@@ -128,25 +144,27 @@ function M.dispatch(opts, callback)
 
   ---@type PdfPort.InternalExtractOpts
   local extract_opts = vim.tbl_deep_extend("force", cfg_extract, {
-    pages      = (opts --[[@as PdfPort.OpenOpts]]).pages,
-    max_pages  = (opts --[[@as PdfPort.OpenOpts]]).max_pages,
-    prompt     = (opts --[[@as PdfPort.OpenOpts]]).prompt,
-    model      = (opts --[[@as PdfPort.OpenOpts]]).model,
+    pages = (opts --[[@as PdfPort.OpenOpts]]).pages,
+    max_pages = (opts --[[@as PdfPort.OpenOpts]]).max_pages,
+    prompt = (opts --[[@as PdfPort.OpenOpts]]).prompt,
+    model = (opts --[[@as PdfPort.OpenOpts]]).model,
     timeout_ms = (opts --[[@as PdfPort.OpenOpts]]).timeout_ms,
   })
 
-  local path        = opts.path
-  local backend_id   = backend.id
+  local path = opts.path
+  local backend_id = backend.id
   local cache_enabled = extract_opts.cache ~= false
 
   local variant = (extract_opts.pages and #extract_opts.pages > 0)
-    and table.concat(extract_opts.pages, ",")
+      and table.concat(extract_opts.pages, ",")
     or tostring(extract_opts.max_pages or "all")
 
   if cache_enabled then
     local cached = require("pdfport.util.cache").get(path, backend_id, variant)
     if cached then
-      vim.schedule(function() callback(cached) end)
+      vim.schedule(function()
+        callback(cached)
+      end)
       return
     end
   end
@@ -173,12 +191,14 @@ function M.dispatch(opts, callback)
     end
   end
 
-  extract_opts.__callback = cache_enabled and function(result)
-    if result and result.status == "ok" then
-      require("pdfport.util.cache").set(path, backend_id, variant, result)
-    end
-    callback(result)
-  end or callback
+  extract_opts.__callback = cache_enabled
+      and function(result)
+        if result and result.status == "ok" then
+          require("pdfport.util.cache").set(path, backend_id, variant, result)
+        end
+        callback(result)
+      end
+    or callback
 
   ---@type fun(p: string, o: PdfPort.InternalExtractOpts): PdfPort.Result|nil
   local extract_fn = backend.extract
@@ -186,16 +206,18 @@ function M.dispatch(opts, callback)
   vim.schedule(function()
     local ok_extract, result = pcall(
       ---@type fun(...): any
-      (extract_fn),
+      extract_fn,
       path,
       extract_opts
     )
 
     if not ok_extract then
-      callback(err_result(
-        string.format("pdfport: backend '%s' threw: %s", backend_id, tostring(result)),
-        backend_id
-      ))
+      callback(
+        err_result(
+          string.format("pdfport: backend '%s' threw: %s", backend_id, tostring(result)),
+          backend_id
+        )
+      )
       return
     end
 
@@ -215,13 +237,13 @@ end
 ---matches this module's job of staying decoupled from any particular UI.
 ---@return nil
 function M.open(opts, on_error)
-  assert(type(opts) == "table",       "opts must be a table")
+  assert(type(opts) == "table", "opts must be a table")
   assert(type(opts.path) == "string", "opts.path must be a string")
   on_error = on_error or function() end
 
   local cfg_render = (_config and _config.render_opts) or {}
   local mode = opts.mode or cfg_render.mode or "buffer"
-  opts.mode  = mode
+  opts.mode = mode
 
   M.dispatch(opts, function(result)
     if result.status == "error" then

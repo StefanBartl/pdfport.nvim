@@ -24,7 +24,7 @@ function M.previewer(opts)
   opts = opts or {}
 
   local previewers = require("telescope.previewers")
-  local pdfport    = require("pdfport")
+  local pdfport = require("pdfport")
 
   ---@type table<string, string>
   local cache = {}
@@ -43,7 +43,7 @@ function M.previewer(opts)
         local lines = vim.split(text, "\n", { plain = true })
         vim.bo[bufnr].modifiable = true
         vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
-        vim.bo[bufnr].filetype   = ft or "text"
+        vim.bo[bufnr].filetype = ft or "text"
         vim.bo[bufnr].modifiable = false
       end
 
@@ -55,9 +55,9 @@ function M.previewer(opts)
       write("-- pdfport: extracting... --", "text")
 
       pdfport.extract({
-        path       = path,
+        path = path,
         backend_id = opts.backend_id,
-        max_pages  = opts.max_pages or 5,
+        max_pages = opts.max_pages or 5,
         __callback = function(result)
           if not vim.api.nvim_buf_is_valid(bufnr) then return end
           local text = result.text or ("-- pdfport error: " .. (result.error or "unknown") .. " --")
@@ -83,15 +83,15 @@ function M.filetype_hook(filepath, bufnr, _)
   vim.bo[bufnr].modifiable = false
 
   pdfport.extract({
-    path      = filepath,
+    path = filepath,
     max_pages = 5,
     __callback = function(result)
       if not vim.api.nvim_buf_is_valid(bufnr) then return end
-      local text  = result.text or ""
+      local text = result.text or ""
       local lines = vim.split(text, "\n", { plain = true })
       vim.bo[bufnr].modifiable = true
       vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
-      vim.bo[bufnr].filetype   = "markdown"
+      vim.bo[bufnr].filetype = "markdown"
       vim.bo[bufnr].modifiable = false
     end,
   })

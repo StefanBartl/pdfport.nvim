@@ -7,24 +7,26 @@ local M = {}
 
 ---@type { label: string, mode: PdfPort.RendererMode, backend: PdfPort.BackendId|nil }[]
 local CHOICES = {
-  { label = "Plain text  (pdftotext)",  mode = "buffer",   backend = "pdftotext" },
-  { label = "Markdown    (marker)",      mode = "buffer",   backend = "marker"    },
-  { label = "Markdown    (docling)",     mode = "buffer",   backend = "docling"   },
-  { label = "Markdown    (Claude AI)",   mode = "buffer",   backend = "claude"    },
-  { label = "Markdown    (Ollama AI)",   mode = "buffer",   backend = "ollama"    },
-  { label = "Float window (auto)",       mode = "float",    backend = nil         },
-  { label = "Terminal preview",          mode = "terminal", backend = nil         },
-  { label = "System application",        mode = "system",   backend = nil         },
+  { label = "Plain text  (pdftotext)", mode = "buffer", backend = "pdftotext" },
+  { label = "Markdown    (marker)", mode = "buffer", backend = "marker" },
+  { label = "Markdown    (docling)", mode = "buffer", backend = "docling" },
+  { label = "Markdown    (Claude AI)", mode = "buffer", backend = "claude" },
+  { label = "Markdown    (Ollama AI)", mode = "buffer", backend = "ollama" },
+  { label = "Float window (auto)", mode = "float", backend = nil },
+  { label = "Terminal preview", mode = "terminal", backend = nil },
+  { label = "System application", mode = "system", backend = nil },
 }
 
 ---@param path string
 ---@return nil
 function M.pick_and_open(path)
-  local pdfport    = require("pdfport")
+  local pdfport = require("pdfport")
   local page_range = require("pdfport.util.page_range")
 
   local items = {}
-  for i, c in ipairs(CHOICES) do items[i] = c.label end
+  for i, c in ipairs(CHOICES) do
+    items[i] = c.label
+  end
 
   local function on_select(_, idx)
     if not idx then return end
@@ -32,7 +34,13 @@ function M.pick_and_open(path)
     if not choice then return end
     if choice.mode == "float" or choice.mode == "terminal" then
       page_range.prompt(function(pages)
-        pdfport.open({ path = path, mode = choice.mode, backend_id = choice.backend, focus = true, pages = pages })
+        pdfport.open({
+          path = path,
+          mode = choice.mode,
+          backend_id = choice.backend,
+          focus = true,
+          pages = pages,
+        })
       end)
       return
     end

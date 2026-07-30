@@ -15,8 +15,8 @@
 
 local M = {}
 
-local notify  = require("pdfport.util.notify").create("[pdfport.neotree]")
-local picker  = require("pdfport.util.picker")
+local notify = require("pdfport.util.notify").create("[pdfport.neotree]")
+local picker = require("pdfport.util.picker")
 local keymaps = require("pdfport.bindings.keymaps")
 
 ---@param state table
@@ -68,18 +68,20 @@ function M.commands()
     end,
 
     pdfport_batch = function(state)
-      require("pdfport.util.batch").open_selected(function() return node_path(state) end)
+      require("pdfport.util.batch").open_selected(function()
+        return node_path(state)
+      end)
     end,
   }
 end
 
 ---@type table<string, string>
 local COMMAND_NAMES = {
-  open          = "pdfport_open",
-  open_text     = "pdfport_text",
-  open_system   = "pdfport_system",
+  open = "pdfport_open",
+  open_text = "pdfport_text",
+  open_system = "pdfport_system",
   open_terminal = "pdfport_terminal",
-  open_batch    = "pdfport_batch",
+  open_batch = "pdfport_batch",
 }
 
 ---@param opts? PdfPort.KeymapOpts
@@ -90,13 +92,9 @@ function M.keymaps(opts)
 
   local map = {}
   for action, lhs in pairs(resolved) do
-    if lhs and not keymaps.VISUAL_ACTIONS[action] then
-      map[lhs] = COMMAND_NAMES[action]
-    end
+    if lhs and not keymaps.VISUAL_ACTIONS[action] then map[lhs] = COMMAND_NAMES[action] end
   end
-  if resolved.open_batch then
-    map["v"] = { [resolved.open_batch] = COMMAND_NAMES.open_batch }
-  end
+  if resolved.open_batch then map["v"] = { [resolved.open_batch] = COMMAND_NAMES.open_batch } end
   return map
 end
 

@@ -4,12 +4,12 @@
 
 local M = {}
 
-local health  = vim.health or require("health")
-local h_ok    = health.ok    or health.report_ok
-local h_warn  = health.warn  or health.report_warn
-local h_err   = health.error or health.report_error
+local health = vim.health or require("health")
+local h_ok = health.ok or health.report_ok
+local h_warn = health.warn or health.report_warn
+local h_err = health.error or health.report_error
 local h_start = health.start or health.report_start
-local h_info  = health.info  or health.report_info
+local h_info = health.info or health.report_info
 
 local ok_platform, platform = pcall(require, "pdfport.platform")
 local ok_registry, registry = pcall(require, "pdfport.core.registry")
@@ -45,7 +45,11 @@ local function check_core()
 
   for _, mod in ipairs({ "pdfport", "pdfport.core.resolver", "pdfport.core.dispatcher" }) do
     local ok_mod, _ = pcall(require, mod)
-    if ok_mod then h_ok(mod .. " loads") else h_err(mod .. " failed to load") end
+    if ok_mod then
+      h_ok(mod .. " loads")
+    else
+      h_err(mod .. " failed to load")
+    end
   end
 end
 
@@ -96,7 +100,8 @@ local function check_backends()
   -- ollama
   if check_exe("ollama", false) then
     h_ok("ollama binary found")
-    local out = vim.fn.system({ "curl", "-s", "-w", "\n%{http_code}", "http://localhost:11434/api/tags" })
+    local out =
+      vim.fn.system({ "curl", "-s", "-w", "\n%{http_code}", "http://localhost:11434/api/tags" })
     local code = out and out:match("(%d%d%d)%s*$")
     if code == "200" then
       h_ok("ollama daemon running on localhost:11434")
@@ -134,13 +139,20 @@ end
 local function check_renderers()
   h_start("pdfport: renderers")
 
-  if not ok_platform then h_err("platform module unavailable"); return end
+  if not ok_platform then
+    h_err("platform module unavailable")
+    return
+  end
 
   h_ok("buffer renderer: built-in")
   h_ok("float renderer: built-in")
 
   local sys = platform.open_cmd()
-  if sys then h_ok("system renderer: " .. sys) else h_err("system renderer: no open command found") end
+  if sys then
+    h_ok("system renderer: " .. sys)
+  else
+    h_err("system renderer: no open command found")
+  end
 
   h_start("pdfport: terminal image renderer")
   check_exe("pdftoppm", false)
@@ -154,7 +166,7 @@ local function check_renderers()
   end
 
   check_exe("ueberzugpp", false)
-  check_exe("chafa",      false)
+  check_exe("chafa", false)
 end
 
 local function check_integrations()
@@ -162,16 +174,19 @@ local function check_integrations()
 
   local function probe(mod, label)
     local found, _ = pcall(require, mod)
-    if found then h_ok(label .. " found – integration available")
-    else          h_info(label .. " not loaded – integration inactive") end
+    if found then
+      h_ok(label .. " found – integration available")
+    else
+      h_info(label .. " not loaded – integration inactive")
+    end
   end
 
-  probe("neo-tree",           "neo-tree.nvim")
-  probe("nvim-tree.api",      "nvim-tree")
-  probe("oil",                "oil.nvim")
-  probe("telescope",          "telescope.nvim")
-  probe("fzf-lua",            "fzf-lua")
-  probe("which-key",          "which-key.nvim")
+  probe("neo-tree", "neo-tree.nvim")
+  probe("nvim-tree.api", "nvim-tree")
+  probe("oil", "oil.nvim")
+  probe("telescope", "telescope.nvim")
+  probe("fzf-lua", "fzf-lua")
+  probe("which-key", "which-key.nvim")
 
   -- netrw is built-in, always available
   h_ok("netrw: built-in (always available)")

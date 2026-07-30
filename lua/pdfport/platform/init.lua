@@ -10,9 +10,9 @@ local M = {}
 -- /proc fallback chain — more robust than a single sysname match / a single
 -- /proc/version read, and cached internally there too).
 local lib_is_windows = require("lib.nvim.cross.platform.is_windows")
-local lib_is_macos   = require("lib.nvim.cross.platform.is_macos")
-local lib_is_linux   = require("lib.nvim.cross.platform.is_linux")
-local lib_is_wsl     = require("lib.nvim.cross.platform.is_wsl")
+local lib_is_macos = require("lib.nvim.cross.platform.is_macos")
+local lib_is_linux = require("lib.nvim.cross.platform.is_linux")
+local lib_is_wsl = require("lib.nvim.cross.platform.is_wsl")
 
 ---@type table<string, boolean>
 local _exe_cache = {}
@@ -80,28 +80,31 @@ end
 ---@return string|nil
 function M.open_cmd()
   local os = M.os()
-  if     os == "macos"   then return "open"
-  elseif os == "windows" then return "start"
-  else   return M.first_available({ "xdg-open", "wsl-open" })
+  if os == "macos" then
+    return "open"
+  elseif os == "windows" then
+    return "start"
+  else
+    return M.first_available({ "xdg-open", "wsl-open" })
   end
 end
 
 ---@return "ueberzug"|"chafa"|"kitty"|"imgcat"|nil
 function M.best_terminal_renderer()
   if M.has("ueberzugpp") or M.has("ueberzug") then return "ueberzug" end
-  local term      = vim.env.TERM or ""
+  local term = vim.env.TERM or ""
   local term_prog = vim.env.TERM_PROGRAM or ""
   if term == "xterm-kitty" or term_prog == "kitty" then
     if M.has("kitten") or M.has("kitty") then return "kitty" end
   end
   if M.has("imgcat") then return "imgcat" end
-  if M.has("chafa")  then return "chafa"  end
+  if M.has("chafa") then return "chafa" end
   return nil
 end
 
 function M.reset_cache()
-  _exe_cache      = {}
-  _python_cache   = nil
+  _exe_cache = {}
+  _python_cache = nil
   _python_resolved = false
 end
 

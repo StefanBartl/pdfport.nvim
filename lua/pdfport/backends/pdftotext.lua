@@ -9,13 +9,13 @@ local spawn_capture = require("lib.nvim.cross.uv.spawn_capture")
 
 ---@type PdfPort.StatefulBackend
 local M = {
-  id   = "pdftotext",
+  id = "pdftotext",
   name = "pdftotext (poppler-utils)",
   capabilities = {
-    markdown     = false,
-    tables       = false,
-    ocr          = false,
-    remote       = false,
+    markdown = false,
+    tables = false,
+    ocr = false,
+    remote = false,
     gpu_optional = false,
   },
 }
@@ -32,10 +32,13 @@ function M.extract(path, opts)
   local args = { "-layout", "-enc", "UTF-8" }
 
   if opts.pages and #opts.pages > 0 then
-    args[#args + 1] = "-f"; args[#args + 1] = tostring(opts.pages[1])
-    args[#args + 1] = "-l"; args[#args + 1] = tostring(opts.pages[#opts.pages])
+    args[#args + 1] = "-f"
+    args[#args + 1] = tostring(opts.pages[1])
+    args[#args + 1] = "-l"
+    args[#args + 1] = tostring(opts.pages[#opts.pages])
   elseif opts.max_pages then
-    args[#args + 1] = "-l"; args[#args + 1] = tostring(opts.max_pages)
+    args[#args + 1] = "-l"
+    args[#args + 1] = tostring(opts.max_pages)
   end
 
   args[#args + 1] = path
@@ -43,24 +46,36 @@ function M.extract(path, opts)
 
   local timeout_ms = opts.timeout_ms or 30000
   local argv = { "pdftotext" }
-  for _, a in ipairs(args) do argv[#argv + 1] = a end
+  for _, a in ipairs(args) do
+    argv[#argv + 1] = a
+  end
 
   spawn_capture(argv, { timeout_ms = timeout_ms }, function(spawn_result)
     local result
     if spawn_result.timed_out then
       result = {
-        status = "error", text = nil, format = "plain", backend = "pdftotext",
+        status = "error",
+        text = nil,
+        format = "plain",
+        backend = "pdftotext",
         pages_processed = nil,
         error = string.format("pdftotext: timed out after %d ms", timeout_ms),
       }
     elseif spawn_result.ok then
       result = {
-        status = "ok", text = spawn_result.stdout, format = "plain", backend = "pdftotext",
-        pages_processed = opts.max_pages, error = nil,
+        status = "ok",
+        text = spawn_result.stdout,
+        format = "plain",
+        backend = "pdftotext",
+        pages_processed = opts.max_pages,
+        error = nil,
       }
     else
       result = {
-        status = "error", text = nil, format = "plain", backend = "pdftotext",
+        status = "error",
+        text = nil,
+        format = "plain",
+        backend = "pdftotext",
         pages_processed = nil,
         error = string.format("pdftotext exited %d: %s", spawn_result.code, spawn_result.stderr),
       }

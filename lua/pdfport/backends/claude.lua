@@ -10,13 +10,13 @@ local spawn_capture = require("lib.nvim.cross.uv.spawn_capture")
 
 ---@type PdfPort.ConfigurableBackend
 local M = {
-  id   = "claude",
+  id = "claude",
   name = "Anthropic Claude API",
   capabilities = {
-    markdown     = true,
-    tables       = true,
-    ocr          = true,
-    remote       = true,
+    markdown = true,
+    tables = true,
+    ocr = true,
+    remote = true,
     gpu_optional = false,
   },
 }
@@ -41,13 +41,9 @@ end
 ---@return string|nil base64
 ---@return string|nil error_msg
 local function read_base64(path)
-  if not platform.has("base64") then
-    return nil, "base64 binary not found on PATH"
-  end
+  if not platform.has("base64") then return nil, "base64 binary not found on PATH" end
   local result = vim.fn.system({ "base64", "-w", "0", path })
-  if vim.v.shell_error ~= 0 then
-    return nil, "base64 encoding failed"
-  end
+  if vim.v.shell_error ~= 0 then return nil, "base64 encoding failed" end
   return result:gsub("%s+$", ""), nil
 end
 
@@ -57,8 +53,9 @@ end
 ---@return string json
 local function build_request(base64_pdf, prompt, model)
   local safe_prompt = prompt:gsub('"', '\\"'):gsub("\n", "\\n")
-  local safe_model  = model:gsub('"', '\\"')
-  return string.format([[{
+  local safe_model = model:gsub('"', '\\"')
+  return string.format(
+    [[{
   "model": "%s",
   "max_tokens": 4096,
   "messages": [{
@@ -71,7 +68,11 @@ local function build_request(base64_pdf, prompt, model)
       "text": "%s"
     }]
   }]
-}]], safe_model, base64_pdf, safe_prompt)
+}]],
+    safe_model,
+    base64_pdf,
+    safe_prompt
+  )
 end
 
 ---@param path string
@@ -84,48 +85,68 @@ function M.extract(path, opts)
     -- own "if result ~= nil then callback(result) end" fires it exactly
     -- once — calling opts.__callback here too would double-fire callback.
     return {
-      status = "error", text = nil, format = "markdown", backend = "claude",
-      pages_processed = nil, error = "claude: ANTHROPIC_API_KEY not set",
+      status = "error",
+      text = nil,
+      format = "markdown",
+      backend = "claude",
+      pages_processed = nil,
+      error = "claude: ANTHROPIC_API_KEY not set",
     }
   end
 
   local model = opts.model or "claude-opus-4-5"
-  local prompt = opts.prompt or table.concat({
-    "Extract all text content from this PDF document.",
-    "Format the output as clean Markdown.",
-    "Preserve headings, lists, tables and code blocks.",
-    "Do not add commentary or preamble.",
-  }, " ")
+  local prompt = opts.prompt
+    or table.concat({
+      "Extract all text content from this PDF document.",
+      "Format the output as clean Markdown.",
+      "Preserve headings, lists, tables and code blocks.",
+      "Do not add commentary or preamble.",
+    }, " ")
 
   local b64, b64_err = read_base64(path)
   if not b64 then
     -- See the ANTHROPIC_API_KEY branch above: synchronous return only.
     return {
-      status = "error", text = nil, format = "markdown", backend = "claude",
+      status = "error",
+      text = nil,
+      format = "markdown",
+      backend = "claude",
       pages_processed = nil,
       error = "claude: " .. (b64_err or "base64 encoding failed"),
     }
   end
 
-  local json_body  = build_request(b64, prompt, model)
-  local body_file  = vim.fn.tempname() .. ".json"
-  local f          = io.open(body_file, "w")
+  local json_body = build_request(b64, prompt, model)
+  local body_file = vim.fn.tempname() .. ".json"
+  local f = io.open(body_file, "w")
   if not f then
     return {
-      status = "error", text = nil, format = "markdown", backend = "claude",
-      pages_processed = nil, error = "claude: failed to write temp request file",
+      status = "error",
+      text = nil,
+      format = "markdown",
+      backend = "claude",
+      pages_processed = nil,
+      error = "claude: failed to write temp request file",
     }
   end
-  f:write(json_body); f:close()
+  f:write(json_body)
+  f:close()
 
   local timeout_ms = opts.timeout_ms or 60000
   local argv = {
-    "curl", "-s", "-X", "POST",
+    "curl",
+    "-s",
+    "-X",
+    "POST",
     "https://api.anthropic.com/v1/messages",
-    "-H", "Content-Type: application/json",
-    "-H", "x-api-key: " .. api_key,
-    "-H", "anthropic-version: 2023-06-01",
-    "-d", "@" .. body_file,
+    "-H",
+    "Content-Type: application/json",
+    "-H",
+    "x-api-key: " .. api_key,
+    "-H",
+    "anthropic-version: 2023-06-01",
+    "-d",
+    "@" .. body_file,
   }
 
   spawn_capture(argv, { timeout_ms = timeout_ms }, function(spawn_result)
@@ -133,7 +154,10 @@ function M.extract(path, opts)
 
     if spawn_result.timed_out then
       local result = {
-        status = "error", text = nil, format = "markdown", backend = "claude",
+        status = "error",
+        text = nil,
+        format = "markdown",
+        backend = "claude",
         pages_processed = nil,
         error = string.format("claude: HTTP request timed out after %d ms", timeout_ms),
       }
@@ -143,7 +167,10 @@ function M.extract(path, opts)
 
     if not spawn_result.ok then
       local result = {
-        status = "error", text = nil, format = "markdown", backend = "claude",
+        status = "error",
+        text = nil,
+        format = "markdown",
+        backend = "claude",
         pages_processed = nil,
         error = string.format("curl exited %d: %s", spawn_result.code, spawn_result.stderr),
       }
@@ -155,7 +182,10 @@ function M.extract(path, opts)
     local ok_json, decoded = pcall(vim.json.decode, raw)
     if not ok_json or type(decoded) ~= "table" then
       local result = {
-        status = "error", text = nil, format = "markdown", backend = "claude",
+        status = "error",
+        text = nil,
+        format = "markdown",
+        backend = "claude",
         pages_processed = nil,
         error = "claude: invalid JSON response: " .. raw:sub(1, 200),
       }
@@ -166,8 +196,12 @@ function M.extract(path, opts)
     if decoded.type == "error" then
       local api_err = (decoded.error and decoded.error.message) or "unknown API error"
       local result = {
-        status = "error", text = nil, format = "markdown", backend = "claude",
-        pages_processed = nil, error = "claude API error: " .. api_err,
+        status = "error",
+        text = nil,
+        format = "markdown",
+        backend = "claude",
+        pages_processed = nil,
+        error = "claude API error: " .. api_err,
       }
       if type(opts.__callback) == "function" then opts.__callback(result) end
       return
@@ -181,9 +215,12 @@ function M.extract(path, opts)
     end
 
     local result = {
-      status = "ok", text = table.concat(text_parts, "\n"),
-      format = "markdown", backend = "claude",
-      pages_processed = nil, error = nil,
+      status = "ok",
+      text = table.concat(text_parts, "\n"),
+      format = "markdown",
+      backend = "claude",
+      pages_processed = nil,
+      error = nil,
     }
     if type(opts.__callback) == "function" then opts.__callback(result) end
   end)
