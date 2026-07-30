@@ -72,6 +72,29 @@ Pass a table to |pdfport.setup()|.  All keys are optional.
   ollama_model       string    Ollama model name (default: "llava")
   auto_open_on_read  boolean   Opt-in BufReadCmd *.pdf: `:e file.pdf` invokes the
                                mode picker instead of loading raw bytes (default: false)
+  progress_style     string    Indicator while a backend extracts (default: "auto")
+                               "auto"|"notify"|"statusline"|"fidget"|"float"|"kit"
+
+                               Extraction is asynchronous, and the OCR/AI
+                               backends (marker, docling, ollama, tesseract)
+                               can run for minutes on a large PDF — until now
+                               with nothing on screen to say so. Provided by
+                               lib.nvim's `lib.nvim.progress` module.
+
+                               Wired in core/dispatcher.lua rather than per
+                               backend, so all seven — and any backend you
+                               register yourself — report progress for free.
+
+                               NOT cancellable: backends spawn via
+                               `spawn_capture`, which exposes no killable
+                               handle, so "float"/"kit"'s abort prompt would
+                               close the indicator while the process kept
+                               running. `timeout_ms` is the only real bound.
+                               Prefer "notify" or "statusline" here.
+
+                               A cache hit starts no indicator (it returns
+                               immediately), and the ~150ms delay guard means a
+                               fast pdftotext run never flashes any UI.
   debug              boolean   Emit debug notifications (default: false)
 
 Backends are registered lazily: setup() only registers lightweight proxies for the

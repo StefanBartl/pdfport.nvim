@@ -26,6 +26,9 @@ return function()
     ollama_host    = "http://localhost:11434",
     ollama_model   = "llava",
     auto_open_on_read = false,
+    -- Indicator while a backend extracts. OCR/AI backends run for minutes;
+    -- needs lib.nvim, silently a no-op without it.
+    progress_style = "auto",
     debug          = false,
   }
 end

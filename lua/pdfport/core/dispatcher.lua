@@ -19,6 +19,34 @@ function M._set_config(config)
   _config = config
 end
 
+local ok_progress, progress_mod = pcall(require, "lib.nvim.progress")
+
+---Starts a progress indicator for an extraction, or nil when lib.nvim isn't
+---installed. This lives in the dispatcher rather than in each backend because
+---the dispatcher is the one place every extraction passes through — all seven
+---backends get it without knowing about it.
+---
+---Deliberately no `on_cancel`: backends spawn through `spawn_capture`, which
+---does not hand back a killable handle, so registering one would close the
+---indicator while the process kept running. The per-backend `timeout_ms` is the
+---only real bound on a runaway extraction.
+---@param backend_id string
+---@param path string
+---@return table|nil
+local function start_progress(backend_id, path)
+  if not ok_progress then
+    return nil
+  end
+  local handle = progress_mod.create({
+    title = "[pdfport]",
+    style = (_config and _config.progress_style) or "auto",
+  })
+  handle:update({
+    text = string.format("%s: %s", backend_id, vim.fn.fnamemodify(path, ":t")),
+  })
+  return handle
+end
+
 ---@param msg string
 ---@param backend_id? PdfPort.BackendId
 ---@return PdfPort.Result
@@ -120,6 +148,28 @@ function M.dispatch(opts, callback)
     if cached then
       vim.schedule(function() callback(cached) end)
       return
+    end
+  end
+
+  -- Started only past the cache check: a cache hit returns immediately and has
+  -- nothing to report progress on. Wrapping `callback` here rather than closing
+  -- the handle at each exit means every downstream path is covered at once — the
+  -- async `__callback`, the synchronous return, and the backend-threw branch all
+  -- funnel through this one function.
+  local progress = start_progress(backend_id, path)
+  if progress then
+    local inner_callback = callback
+    local closed = false
+    callback = function(result)
+      if not closed then
+        closed = true
+        if result and result.status == "error" then
+          progress:finish(string.format("%s failed", backend_id))
+        else
+          progress:finish(string.format("%s done", backend_id))
+        end
+      end
+      inner_callback(result)
     end
   end
 
