@@ -25,9 +25,36 @@ require("pdfport").setup({
   ollama_host    = "http://localhost:11434",
   ollama_model   = "llava",
   auto_open_on_read = false,        -- opt-in BufReadCmd *.pdf: `:e file.pdf` invokes the mode picker
+  progress_style = "auto",          -- indicator while a backend extracts; see below
   debug          = false,
 })
 ```
+
+### Progress indicator
+
+An extraction is not instant: `marker`, `docling`, `ollama` and `tesseract` run
+an OCR/AI pipeline that can take minutes on a large PDF, and the default
+`timeout_ms` is 30s (backends raise it to 120s). Because extraction is
+asynchronous, nothing was on screen while it ran — indistinguishable from a
+command that silently did nothing.
+
+`progress_style` picks how that is reported, via
+[`lib.nvim.progress`](https://github.com/StefanBartl/lib.nvim/blob/main/lua/lib/nvim/progress/README.md):
+`"auto"` (default; prefers fidget.nvim, else `vim.notify`), `"notify"`,
+`"statusline"`, `"fidget"`, `"float"`, `"kit"`.
+
+`lib.nvim` is a required dependency of pdfport, so this always works. Two
+details worth knowing:
+
+- **It lives in the dispatcher**, not in the backends — so all seven get it,
+  and a backend you register yourself does too, for free.
+- **It cannot be cancelled.** Backends spawn through `spawn_capture`, which
+  does not expose a killable handle, so `"float"`/`"kit"`'s abort prompt would
+  close the indicator while the process kept running. `timeout_ms` is the only
+  real bound on a runaway extraction. Prefer `"notify"` or `"statusline"` here.
+
+A cache hit starts no indicator at all (it returns immediately), and the
+~150ms delay guard means a fast `pdftotext` run never flashes any UI.
 
 See [lua/pdfport/config/DEFAULTS.lua](../lua/pdfport/config/DEFAULTS.lua) for the
 authoritative default values and [lua/pdfport/@types/init.lua](../lua/pdfport/@types/init.lua)

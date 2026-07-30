@@ -219,6 +219,77 @@ do
     results[1] and results[1].status == "error")
 end
 
+-- ── progress indicator: one handle per extraction, always closed ────────────
+-- The dispatcher wraps `callback` to close the handle, which is what makes the
+-- SAME wiring cover the async path, the synchronous-return path (claude with no
+-- API key) and the backend-threw branch. A leaked handle would sit in the
+-- statusline registry forever, so "the registry is empty afterwards" is the
+-- assertion that actually matters here.
+do
+  local ok_progress, sl = pcall(require, "lib.nvim.progress.styles.statusline")
+  if not ok_progress then
+    print("  skip progress checks (lib.nvim.progress not available)")
+  else
+    pdfport.setup({ progress_style = "statusline" })
+
+    local prog = require("lib.nvim.progress")
+    local real_create = prog.create
+    local created, finished = 0, 0
+    prog.create = function(opts)
+      created = created + 1
+      local h = real_create(opts)
+      local rf = h.finish
+      h.finish = function(self, t) finished = finished + 1; return rf(self, t) end
+      return h
+    end
+
+    local prog_pdf = vim.fn.tempname() .. ".pdf"
+    vim.fn.writefile({ "%PDF-1.4 smoke test" }, prog_pdf)
+
+    local got
+    pdfport.extract({
+      path = prog_pdf, backend_id = STUB_ID,
+      __callback = function(result) got = result end,
+    })
+    vim.wait(300, function() return got ~= nil end, 5)
+    eq("progress: exactly one handle per extraction", created, 1)
+    eq("progress: the handle was closed", finished, 1)
+    eq("progress: statusline registry is empty afterwards", #sl.active(), 0)
+
+    -- A cache hit returns instantly; starting an indicator for it would be pure
+    -- flicker, so the handle must not even be created.
+    created, finished = 0, 0
+    local got_cached
+    pdfport.extract({
+      path = prog_pdf, backend_id = STUB_ID,
+      __callback = function(result) got_cached = result end,
+    })
+    vim.wait(300, function() return got_cached ~= nil end, 5)
+    eq("progress: no handle for a cache hit", created, 0)
+
+    -- The synchronous-error path (claude without an API key) must close its
+    -- handle too, and exactly once despite the `closed` guard being what stops
+    -- a second close.
+    created, finished = 0, 0
+    local prev_key = vim.env.ANTHROPIC_API_KEY
+    vim.env.ANTHROPIC_API_KEY = nil
+    pdfport.setup({ progress_style = "statusline", claude_api_key = nil })
+    local claude_got
+    require("pdfport.core.dispatcher").dispatch(
+      { path = prog_pdf, backend_id = "claude" },
+      function(r) claude_got = r end
+    )
+    vim.wait(300, function() return claude_got ~= nil end, 5)
+    eq("progress: synchronous error path closes its handle exactly once", finished, created)
+    eq("progress: registry empty after a failed extraction", #sl.active(), 0)
+    vim.env.ANTHROPIC_API_KEY = prev_key
+
+    prog.create = real_create
+    require("pdfport.util.cache").clear()
+    vim.fn.delete(prog_pdf)
+  end
+end
+
 -- ── keymaps: resolve()/disable + visual-mode-aware which-key registration ───
 do
   local keymaps = require("pdfport.bindings.keymaps")

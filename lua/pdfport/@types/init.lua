@@ -120,6 +120,7 @@
 ---@field ollama_host? string
 ---@field ollama_model? string
 ---@field auto_open_on_read? boolean  # Opt-in BufReadCmd *.pdf that auto-invokes the mode picker on `:e file.pdf` (default false)
+---@field progress_style? "auto"|"notify"|"statusline"|"fidget"|"float"|"kit"  # Indicator while a backend extracts; needs lib.nvim, no-op without it (default "auto")
 ---@field debug boolean
 
 -- #############################################################################
