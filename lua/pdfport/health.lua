@@ -238,6 +238,8 @@ function M.check()
   check_renderers()
   check_integrations()
   check_registry_state()
+
+  require("lib.nvim.usercmd.composer").checkhealth("PdfPort")
 end
 
 return M
