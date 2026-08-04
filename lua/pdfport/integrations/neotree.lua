@@ -19,6 +19,7 @@ local notify = require("pdfport.util.notify").create("[pdfport.neotree]")
 local picker = require("pdfport.util.picker")
 local keymaps = require("pdfport.bindings.keymaps")
 
+---@internal
 ---@param state table
 ---@return string|nil
 local function node_path(state)
@@ -30,6 +31,8 @@ local function node_path(state)
   return node:get_id()
 end
 
+---@internal
+---@see pdfport.integrations.netrw, pdfport.integrations.nvim_tree, pdfport.integrations.oil  Same check, duplicated per-tree
 ---@param path string
 ---@return boolean
 local function is_pdf(path)

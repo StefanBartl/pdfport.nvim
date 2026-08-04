@@ -14,6 +14,10 @@ local h_info = health.info or health.report_info
 local ok_platform, platform = pcall(require, "pdfport.platform")
 local ok_registry, registry = pcall(require, "pdfport.core.registry")
 
+---@internal
+---@param name string     executable to probe on PATH
+---@param required boolean  true reports missing as an error, false as a warning
+---@return boolean found
 local function check_exe(name, required)
   if not ok_platform then return false end
   if platform.has(name) then
@@ -28,6 +32,10 @@ local function check_exe(name, required)
   return false
 end
 
+---@internal
+---Reports whether pdfport's own core modules (platform, registry, resolver,
+---dispatcher) load without error.
+---@return nil
 local function check_core()
   h_start("pdfport: core")
 
@@ -53,6 +61,10 @@ local function check_core()
   end
 end
 
+---@internal
+---Reports availability of each extraction backend's external dependency
+---(CLI tool, python module, or API key/env var).
+---@return nil
 local function check_backends()
   h_start("pdfport: extraction backends")
 
@@ -136,6 +148,9 @@ local function check_backends()
   end
 end
 
+---@internal
+---Reports availability of each render mode, including the terminal-image tool detection.
+---@return nil
 local function check_renderers()
   h_start("pdfport: renderers")
 
@@ -169,6 +184,10 @@ local function check_renderers()
   check_exe("chafa", false)
 end
 
+---@internal
+---Reports which file-tree/picker plugins are present and whether lib.nvim
+---(a hard dependency for :PdfPort) is installed.
+---@return nil
 local function check_integrations()
   h_start("pdfport: integrations")
 
@@ -208,6 +227,10 @@ local function check_integrations()
   end
 end
 
+---@internal
+---Reports per-backend availability from the live registry, which only has
+---entries once require("pdfport").setup() has run.
+---@return nil
 local function check_registry_state()
   h_start("pdfport: registered backends")
 
@@ -232,6 +255,9 @@ local function check_registry_state()
   end
 end
 
+---Runs all :checkhealth pdfport sections: core, backends, renderers,
+---integrations, and the live registry state.
+---@return nil
 function M.check()
   check_core()
   check_backends()

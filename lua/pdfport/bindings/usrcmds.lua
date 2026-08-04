@@ -14,6 +14,7 @@ local page_range = require("pdfport.util.page_range")
 
 local M = {}
 
+---@internal
 ---@param arg_lead string
 ---@return string[]
 local function complete_pdf_path(arg_lead)
@@ -47,6 +48,7 @@ composer.register_type("PDF_PATH", {
   end,
 })
 
+---@internal
 ---@param explicit string|nil  Already-extracted positional arg, if any
 ---@return string|nil
 local function resolve_path(explicit)

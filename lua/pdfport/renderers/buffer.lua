@@ -11,12 +11,14 @@ local M = {}
 
 local api = vim.api
 
+---@internal
 ---@param path string
 ---@return string
 local function buf_name(path)
   return string.format("pdfport://%s", vim.fn.fnamemodify(path, ":t:r"))
 end
 
+---@internal
 ---@param name string
 ---@return integer bufnr
 local function get_or_create_buf(name)
@@ -28,12 +30,14 @@ local function get_or_create_buf(name)
   return nr
 end
 
+---@internal
 ---@param line string
 ---@return string
 local function strip_cr(line)
   return (line:gsub("\r$", ""))
 end
 
+---@internal
 ---@return integer  orig_win (0 = no switch needed)
 local function ensure_editor_win()
   local cur_win = api.nvim_get_current_win()

@@ -21,6 +21,7 @@ end
 
 local ok_progress, progress_mod = pcall(require, "lib.nvim.progress")
 
+---@internal
 ---Starts a progress indicator for an extraction, or nil when lib.nvim isn't
 ---installed. This lives in the dispatcher rather than in each backend because
 ---the dispatcher is the one place every extraction passes through — all seven
@@ -45,6 +46,7 @@ local function start_progress(backend_id, path)
   return handle
 end
 
+---@internal
 ---@param msg string
 ---@param backend_id? PdfPort.BackendId
 ---@return PdfPort.Result
@@ -59,6 +61,7 @@ local function err_result(msg, backend_id)
   }
 end
 
+---@internal
 ---@param path string
 ---@return boolean ok
 ---@return string|nil error_msg
@@ -74,6 +77,7 @@ local function validate_path(path)
   return true, nil
 end
 
+---@see pdfport.core.resolver.resolve  Backend selection happens here before extraction
 ---@param opts PdfPort.OpenOpts|PdfPort.InternalExtractOpts
 ---@param callback fun(result: PdfPort.Result): nil
 ---@return nil

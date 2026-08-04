@@ -37,6 +37,7 @@ function M.available()
   return type(key) == "string" and key ~= ""
 end
 
+---@internal
 ---@param path string
 ---@return string|nil base64
 ---@return string|nil error_msg
@@ -47,6 +48,7 @@ local function read_base64(path)
   return result:gsub("%s+$", ""), nil
 end
 
+---@internal
 ---@param base64_pdf string
 ---@param prompt string
 ---@param model string

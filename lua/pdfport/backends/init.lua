@@ -22,6 +22,7 @@ local BUILTIN_BACKENDS = {
   { id = "claude", module = "pdfport.backends.claude" },
 }
 
+---@internal
 ---@param entry { id: PdfPort.BackendId, module: string }
 ---@param cfg PdfPort.Config|nil
 ---@return PdfPort.Backend

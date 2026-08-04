@@ -35,6 +35,7 @@ function M.available()
   return platform.has("ollama") and platform.has("pdftoppm") and platform.has("curl")
 end
 
+---@internal
 ---@param pdf_path string
 ---@param page integer
 ---@return string|nil png_path
@@ -57,6 +58,7 @@ local function rasterize_sync(pdf_path, page)
   return vim.fn.filereadable(png) == 1 and png or nil
 end
 
+---@internal
 ---@param path string
 ---@return string|nil b64
 ---@return string|nil error_msg
@@ -89,6 +91,7 @@ local function b64_encode(path)
   return table.concat(result), nil
 end
 
+---@internal
 ---@param b64 string|nil
 ---@param prompt string
 ---@param model string
