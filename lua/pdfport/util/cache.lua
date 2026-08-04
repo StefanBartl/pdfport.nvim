@@ -14,6 +14,7 @@ local M = {}
 
 local NAMESPACE = "pdfport_extract"
 
+---@internal
 ---@param path string
 ---@param backend_id string|nil
 ---@param variant string
@@ -22,6 +23,7 @@ local function cache_key(path, backend_id, variant)
   return string.format("%s::%s::%s", path, backend_id or "auto", variant)
 end
 
+---@internal
 ---@param path string
 ---@return integer|nil
 local function mtime(path)

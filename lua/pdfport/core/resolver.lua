@@ -18,6 +18,7 @@ function M._set_config(config)
   _config = config
 end
 
+---@internal
 ---@param requested PdfPort.BackendId|"auto"|nil
 ---@return PdfPort.BackendId[]
 local function build_chain(requested)

@@ -21,6 +21,8 @@ local picker = require("pdfport.util.picker")
 local autocmds = require("pdfport.bindings.autocmds")
 local keymaps = require("pdfport.bindings.keymaps")
 
+---@internal
+---@see pdfport.integrations.nvim_tree, pdfport.integrations.oil  Same-shaped helper, filetype-specific
 ---@return string|nil
 local function current_node_path()
   local dir = vim.b.netrw_curdir
@@ -31,6 +33,8 @@ local function current_node_path()
   return dir .. sep .. file
 end
 
+---@internal
+---@see pdfport.integrations.nvim_tree, pdfport.integrations.oil, pdfport.integrations.neotree  Same check, duplicated per-tree
 ---@param path string
 ---@return boolean
 local function is_pdf(path)

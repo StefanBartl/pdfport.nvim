@@ -8,6 +8,7 @@ local platform = require("pdfport.platform")
 local notify = require("pdfport.util.notify").create("[pdfport.terminal]")
 local uv = vim.uv or vim.loop
 
+---@internal
 ---@param pdf_path string
 ---@param page integer
 ---@param dpi integer
@@ -60,6 +61,7 @@ local function rasterize(pdf_path, page, dpi, callback)
   end)
 end
 
+---@internal
 ---@param path string
 ---@param interval_ms integer
 ---@param max_attempts integer
@@ -71,6 +73,7 @@ local function wait_for_file(path, interval_ms, max_attempts, callback)
   end, { interval_ms = interval_ms, max_attempts = max_attempts }, callback)
 end
 
+---@internal
 ---@param png_path string
 ---@param tool "ueberzug"|"chafa"|"kitty"|"imgcat"|nil
 ---@param size_ratio { width: number, height: number }
