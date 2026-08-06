@@ -17,10 +17,13 @@ pdfport.nvim was audited against the project checklists. Full per-rule status:
    window-based renderer is added; not an active problem today.
 
 Done, moved out of this list (2026-07):
-- ~~Add automated test coverage~~ — [test/smoke.lua](../test/smoke.lua), headless,
-  stub-backend-based; covers `setup()`, lazy backend registration/resolution, the
-  dispatcher's error/cache paths, and the disable/which-key keymap logic. Run via
-  `nvim --clean --headless -u NONE -l test/smoke.lua` (see [test/README.md](../test/README.md)).
+- ~~Add automated test coverage~~ — [TESTS/](../TESTS), headless, framework-free,
+  stub-backend-based; four specs (`page_range`, `registry`, `resolver`, `smoke`) cover
+  `setup()`, lazy backend registration/resolution, the dispatcher's error/cache paths, and
+  the disable/which-key keymap logic. Run via `TESTS/run.lua`, gated in CI (see
+  [.github/workflows/ci.yml](../.github/workflows/ci.yml)). The earlier standalone
+  `test/smoke.lua` this superseded has been removed (2026-08) — it was dead weight, not
+  wired into CI, and drifting out of sync with the actual suite.
 - ~~Make backend loading truly lazy~~ — `backends/init.lua`'s `M.load_all()` now registers
   each builtin as a lazy proxy; the real module is only `require`d the first time the
   resolver actually touches `available()`/`extract()` on it, not unconditionally at
