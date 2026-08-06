@@ -20,6 +20,17 @@ A Neovim plugin for extracting and displaying PDF content using a pluggable back
 > lib.nvim's UI kit for a nicer mode picker when available, falling back to `vim.ui.select`
 > otherwise.
 
+> Backends like `marker`, `docling`, `ollama`, and `claude` extract PDFs to Markdown —
+> [`mdview.nvim`](https://github.com/StefanBartl/mdview.nvim), a sister plugin from the
+> same author, is a good fit for previewing that output.
+
+## Table of contents
+
+- [Features](#features)
+- [Quickstart](#quickstart)
+- [File-tree integrations](#file-tree-integrations)
+- [Documentation](#documentation)
+
 ## Features
 
 - **Multiple extraction backends** — pdftotext, pdfplumber, marker-pdf, docling, Claude API, Ollama, tesseract (OCR fallback) — loaded lazily, one `require` only when actually resolved

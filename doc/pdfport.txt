@@ -1,23 +1,23 @@
-*pdfport.nvim.txt*  PDF extraction and display for Neovim
+*pdfport.txt*  PDF extraction and display for Neovim                *pdfport.nvim*
 
 ==============================================================================
-CONTENTS                                             *pdfport.nvim-contents*
+CONTENTS                                             *pdfport-contents*
 
-  1. Introduction ........................ |pdfport.nvim-intro|
-  2. Requirements ........................ |pdfport.nvim-requirements|
-  3. Setup ............................... |pdfport.nvim-setup|
-  4. Configuration ....................... |pdfport.nvim-config|
-  5. Commands ............................ |pdfport.nvim-commands|
-  6. Lua API ............................. |pdfport.nvim-api|
-  7. Backends ............................ |pdfport.nvim-backends|
-  8. Renderers ........................... |pdfport.nvim-renderers|
-  9. File-tree integrations .............. |pdfport.nvim-filetrees|
- 10. Fuzzy-finder integrations ........... |pdfport.nvim-fuzzyfinders|
- 11. Which-key ............................ |pdfport.nvim-whichkey|
- 12. Health check ........................ |pdfport.nvim-health|
+  1. Introduction ........................ |pdfport-intro|
+  2. Requirements ........................ |pdfport-requirements|
+  3. Setup ............................... |pdfport-setup|
+  4. Configuration ....................... |pdfport-config|
+  5. Commands ............................ |pdfport-commands|
+  6. Lua API ............................. |pdfport-api|
+  7. Backends ............................ |pdfport-backends|
+  8. Renderers ........................... |pdfport-renderers|
+  9. File-tree integrations .............. |pdfport-filetrees|
+ 10. Fuzzy-finder integrations ........... |pdfport-fuzzyfinders|
+ 11. Which-key ............................ |pdfport-whichkey|
+ 12. Health check ........................ |pdfport-health|
 
 ==============================================================================
-1. INTRODUCTION                                        *pdfport.nvim-intro*
+1. INTRODUCTION                                        *pdfport-intro*
 
 pdfport.nvim extracts text from PDF files and displays it inside Neovim.
 It uses a pluggable backend/renderer architecture so you can choose the
@@ -25,15 +25,15 @@ extraction tool that suits your workflow — from the fast built-in pdftotext
 to AI-powered cloud and local backends.
 
 ==============================================================================
-2. REQUIREMENTS                                  *pdfport.nvim-requirements*
+2. REQUIREMENTS                                  *pdfport-requirements*
 
 - Neovim >= 0.9
 - lib.nvim (github.com/StefanBartl/lib.nvim) -- required: the :PdfPort
   command is built on lib.nvim.usercmd.composer
-- At least one extraction backend installed (see |pdfport.nvim-backends|)
+- At least one extraction backend installed (see |pdfport-backends|)
 
 ==============================================================================
-3. SETUP                                               *pdfport.nvim-setup*
+3. SETUP                                               *pdfport-setup*
 
 With lazy.nvim: >lua
   {
@@ -49,7 +49,7 @@ Manual: >lua
 <
 
 ==============================================================================
-4. CONFIGURATION                                      *pdfport.nvim-config*
+4. CONFIGURATION                                      *pdfport-config*
 
 Pass a table to |pdfport.setup()|.  All keys are optional.
 
@@ -104,7 +104,7 @@ actually calls available()/extract() on it.
 See lua/pdfport/config/DEFAULTS.lua for the authoritative defaults.
 
 ==============================================================================
-5. COMMANDS                                        *pdfport.nvim-commands*
+5. COMMANDS                                        *pdfport-commands*
 
 One command, :PdfPort [subcommand] [path] (built via
 lib.nvim.usercmd.composer, with <Tab> completion -- .pdf files prioritized,
@@ -138,7 +138,7 @@ lib.nvim.usercmd.composer, with <Tab> completion -- .pdf files prioritized,
   Shortcut for |:checkhealth| pdfport.
 
 ==============================================================================
-6. LUA API                                             *pdfport.nvim-api*
+6. LUA API                                             *pdfport-api*
 
                                                     *pdfport.setup()*
 require("pdfport").setup({opts})
@@ -182,7 +182,7 @@ require("pdfport").register_backend({backend})
     extract     function  function(path, opts) — must call opts.__callback
 
 ==============================================================================
-7. BACKENDS                                        *pdfport.nvim-backends*
+7. BACKENDS                                        *pdfport-backends*
 
   pdftotext   Requires pdftotext (poppler-utils). Plain text output.
   pdfplumber  Requires Python + pdfplumber. Plain text output.
@@ -197,7 +197,7 @@ cached across restarts (see extract_opts.cache above); |:PdfPort-backends| lists
 registered backend's live availability.
 
 ==============================================================================
-8. RENDERERS                                      *pdfport.nvim-renderers*
+8. RENDERERS                                      *pdfport-renderers*
 
   buffer      Opens a scratch buffer (supports split/vsplit/tab).
   float       Opens a centered floating window. Press q or <Esc> to close.
@@ -205,7 +205,7 @@ registered backend's live availability.
   terminal    Rasterizes via pdftoppm and displays with chafa/kitty/imgcat.
 
 ==============================================================================
-9. FILE-TREE INTEGRATIONS                        *pdfport.nvim-filetrees*
+9. FILE-TREE INTEGRATIONS                        *pdfport-filetrees*
 
 All integrations share the same default keymaps:
   <leader>po  — Mode picker (interactive)                    [normal mode]
@@ -216,7 +216,7 @@ All integrations share the same default keymaps:
 
 Pass `false` for any action (open/open_text/open_system/open_terminal/open_batch) to
 disable that keymap. See docs/BINDINGS.md in the repo for the full cheatsheet, and
-section |pdfport.nvim-whichkey| below for which-key integration.
+section |pdfport-whichkey| below for which-key integration.
 
 neo-tree: >lua
   local neo = require("pdfport.integrations.neotree")
@@ -242,7 +242,7 @@ Unified auto-detect: >lua
 <
 
 ==============================================================================
-10. FUZZY-FINDER INTEGRATIONS                  *pdfport.nvim-fuzzyfinders*
+10. FUZZY-FINDER INTEGRATIONS                  *pdfport-fuzzyfinders*
 
 Telescope — single picker: >lua
   require("telescope.builtin").find_files({
@@ -267,7 +267,7 @@ fzf-lua: >lua
 <
 
 ==============================================================================
-11. WHICH-KEY                                       *pdfport.nvim-whichkey*
+11. WHICH-KEY                                       *pdfport-whichkey*
 
 If which-key.nvim (folke/which-key.nvim) is installed, every active file-tree
 keymap is automatically registered with a description under the <leader>p
@@ -275,7 +275,7 @@ group (open_batch registered under Visual mode, everything else under Normal
 mode). No configuration required; this is a no-op when which-key is absent.
 
 ==============================================================================
-12. HEALTH CHECK                                     *pdfport.nvim-health*
+12. HEALTH CHECK                                     *pdfport-health*
 
 :checkhealth pdfport
 
