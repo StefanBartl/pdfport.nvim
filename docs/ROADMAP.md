@@ -32,6 +32,14 @@ Done, moved out of this list (2026-07):
 ## Features
 
 Open:
+- **PDF creation as a public API.** Today pdfport only reads PDFs. The other
+  direction — image/Markdown/HTML → PDF, exposed as an API that `images.nvim`,
+  `markdown.nvim` and `filetree.nvim` call instead of each growing its own
+  `magick`/`pandoc` glue — is designed in
+  [ROADMAP/PDF_CREATE.md](ROADMAP/PDF_CREATE.md): a `producers/` registry
+  mirroring `backends/`, `pdfport.create{}`, per-input-kind fallback chains
+  (`img2pdf`→`magick`, `pandoc`+engine→`typst`). Pairs with the rasterization
+  item below — same shape, opposite arrow.
 - **Expose page rasterization as a public API.** `renderers/terminal.lua`
   already rasterizes a PDF page to a throwaway PNG via `pdftoppm` (its local
   `rasterize()`, deleted again ~2s after display) — every ingredient for a
