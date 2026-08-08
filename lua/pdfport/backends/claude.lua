@@ -49,32 +49,32 @@ local function read_base64(path)
 end
 
 ---@internal
+--- `vim.json.encode` handles quoting/escaping for `prompt` and `model`
+--- correctly - a hand-rolled `gsub('"', '\\"')` only escapes quotes and
+--- newlines, not backslashes, so any Windows path or regex in the prompt
+--- (e.g. "C:\repos\foo" or "\d+") produced invalid JSON that
+--- `vim.json.decode` rejected on the receiving end.
 ---@param base64_pdf string
 ---@param prompt string
 ---@param model string
 ---@return string json
 local function build_request(base64_pdf, prompt, model)
-  local safe_prompt = prompt:gsub('"', '\\"'):gsub("\n", "\\n")
-  local safe_model = model:gsub('"', '\\"')
-  return string.format(
-    [[{
-  "model": "%s",
-  "max_tokens": 4096,
-  "messages": [{
-    "role": "user",
-    "content": [{
-      "type": "document",
-      "source": { "type": "base64", "media_type": "application/pdf", "data": "%s" }
-    }, {
-      "type": "text",
-      "text": "%s"
-    }]
-  }]
-}]],
-    safe_model,
-    base64_pdf,
-    safe_prompt
-  )
+  return vim.json.encode({
+    model = model,
+    max_tokens = 4096,
+    messages = {
+      {
+        role = "user",
+        content = {
+          {
+            type = "document",
+            source = { type = "base64", media_type = "application/pdf", data = base64_pdf },
+          },
+          { type = "text", text = prompt },
+        },
+      },
+    },
+  })
 end
 
 ---@param path string
@@ -134,6 +134,32 @@ function M.extract(path, opts)
   f:write(json_body)
   f:close()
 
+  -- The API key goes in a curl config file (`-K`), not a `-H "x-api-key: ..."`
+  -- argv element: argv is visible to any other process on the system for
+  -- the lifetime of the curl call (Process Explorer/WMI on Windows, `ps` on
+  -- POSIX unless hidden), so a literal key in argv leaks it to anyone who
+  -- can list processes. `-K` points curl at a file instead - fs_chmod is
+  -- best-effort (Windows has no real POSIX permission bits; this is a
+  -- no-op there, but does restrict the file on POSIX).
+  local key_config_file = vim.fn.tempname() .. ".curlcfg"
+  local kf = io.open(key_config_file, "w")
+  if not kf then
+    vim.fn.delete(body_file)
+    return {
+      status = "error",
+      text = nil,
+      format = "markdown",
+      backend = "claude",
+      pages_processed = nil,
+      error = "claude: failed to write temp curl config file",
+    }
+  end
+  kf:write(('header = "x-api-key: %s"\n'):format(api_key:gsub('"', '\\"')))
+  kf:close()
+  pcall(function()
+    (vim.uv or vim.loop).fs_chmod(key_config_file, 384) -- 0600
+  end)
+
   local timeout_ms = opts.timeout_ms or 60000
   local argv = {
     "curl",
@@ -144,15 +170,16 @@ function M.extract(path, opts)
     "-H",
     "Content-Type: application/json",
     "-H",
-    "x-api-key: " .. api_key,
-    "-H",
     "anthropic-version: 2023-06-01",
+    "-K",
+    key_config_file,
     "-d",
     "@" .. body_file,
   }
 
   spawn_capture(argv, { timeout_ms = timeout_ms }, function(spawn_result)
     vim.fn.delete(body_file)
+    vim.fn.delete(key_config_file)
 
     if spawn_result.timed_out then
       local result = {

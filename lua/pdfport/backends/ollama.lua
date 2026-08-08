@@ -100,16 +100,13 @@ end
 ---@param callback fun(text: string|nil, err: string|nil): nil
 ---@return nil
 local function query_ollama(b64, prompt, model, host, timeout_ms, callback)
-  local safe_prompt = prompt:gsub('"', '\\"'):gsub("\n", "\\n")
-  local safe_model = model:gsub('"', '\\"')
-  local body = b64
-      and string.format(
-        '{"model":"%s","prompt":"%s","images":["%s"],"stream":false}',
-        safe_model,
-        safe_prompt,
-        b64
-      )
-    or string.format('{"model":"%s","prompt":"%s","stream":false}', safe_model, safe_prompt)
+  -- vim.json.encode handles quoting/escaping correctly - the previous
+  -- gsub('"', '\\"') only escaped quotes and newlines, not backslashes, so
+  -- a Windows path or regex in the prompt (e.g. "C:\repos\foo") produced
+  -- invalid JSON that the receiving end would reject.
+  local body_tbl = { model = model, prompt = prompt, stream = false }
+  if b64 then body_tbl.images = { b64 } end
+  local body = vim.json.encode(body_tbl)
 
   local body_file = vim.fn.tempname() .. ".json"
   local f = io.open(body_file, "w")
