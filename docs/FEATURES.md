@@ -82,11 +82,12 @@ file (path arg, `<cfile>`, or current buffer); `:PdfPort merge <output.pdf>
 lists every registered producer (including the merge producers) with live
 availability, same as `:PdfPort backends` does for extraction backends.
 
-**Not shipped yet (P2 caller wiring):** the actual soft-dependency wiring
-into `images.nvim` (`convert.to_pdf` switch) and `markdown.nvim`
-(`:Markdown export pdf`) — those live in their own repos.
-`filetree.nvim`'s wiring (`util/pdf.create()` + the `pdf_create` feature) has
-shipped; see that plugin's own docs. Full design and phased plan in
+**P2 caller wiring shipped (2026-08-09), all three:** `filetree.nvim`
+(`util/pdf.create()` + the `pdf_create` feature), `images.nvim`
+(`convert.to_pdf`/`M.export` route through `pdfport.create()` when
+available, else the previous `magick`-only path unchanged), and
+`markdown.nvim` (`:Markdown export pdf`) — each documented in its own repo.
+Full design and phased plan in
 [docs/ROADMAP/PDF_CREATE.md](ROADMAP/PDF_CREATE.md).
 
 ## Rendering & display

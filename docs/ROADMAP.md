@@ -63,10 +63,12 @@ Done (2026-08):
   [`producers/ghostscript.lua`](../lua/pdfport/producers/ghostscript.lua) (merge,
   registered as ordinary "pdf"-kind producers), `pdfport.create()`/`can_create()`/
   `merge()`, `:PdfPort create`/`:PdfPort merge`/`:PdfPort producers`, a `health.lua`
-  section. See [docs/FEATURES.md](FEATURES.md). Of P2 (caller wiring),
-  `filetree.nvim` is now wired (`util/pdf.create()` + `pdf_create` feature,
-  documented there); `images.nvim`/`markdown.nvim` wiring remains open (own
-  repos) — full design in [ROADMAP/PDF_CREATE.md](ROADMAP/PDF_CREATE.md).
+  section. See [docs/FEATURES.md](FEATURES.md). P2 (caller wiring) is done
+  too: `filetree.nvim` (`util/pdf.create()` + `pdf_create` feature),
+  `images.nvim` (`convert.to_pdf`/`M.export` route through `pdfport.create()`
+  when available), and `markdown.nvim` (`:Markdown export pdf`) all wired —
+  each documented in its own repo. Full design in
+  [ROADMAP/PDF_CREATE.md](ROADMAP/PDF_CREATE.md).
 
 Done (2026-07):
 - ~~OCR fallback backend~~ — [`tesseract`](../lua/pdfport/backends/tesseract.lua):
