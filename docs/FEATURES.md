@@ -34,7 +34,7 @@ plain text or Markdown:
 
 Custom backends can be added via `pdfport.register_backend()`.
 
-## Creation: something → PDF *(new, 2026-08-09)*
+## Creation: something → PDF *(2026-08-09)*
 
 `pdfport.create()`/`:PdfPort create` is the reverse direction: given one or
 more input files, resolve a **producer** through a per-input-kind fallback
@@ -42,13 +42,19 @@ chain (`create_chain`) and write a PDF. Mirrors the read path's shape exactly
 (`registry.register_producer`, `core/composer.lua`, lazy-loaded
 `producers/*.lua`) so the same mental model applies to both directions.
 
-**P0 + P1 — shipped:** image and markdown/text inputs.
+**P0–P3 — shipped:** image, markdown/text, HTML, office, and PDF-merge inputs.
 
-| Producer  | Accepts        | Requires                       | Notes                          |
-|-----------|----------------|---------------------------------|-----------------------------------|
-| img2pdf   | image          | `pip install img2pdf`           | First choice: lossless            |
-| magick    | image          | ImageMagick (`magick` on PATH)  | Pragmatic default; recompresses   |
-| pandoc    | markdown, text | `pandoc` + one PDF engine       | Engine auto-detected: tectonic -> typst -> xelatex -> lualatex -> pdflatex |
+| Producer    | Accepts        | Requires                        | Notes                          |
+|-------------|----------------|----------------------------------|-----------------------------------|
+| img2pdf     | image          | `pip install img2pdf`            | First choice: lossless            |
+| magick      | image          | ImageMagick (`magick` on PATH)   | Pragmatic default; recompresses   |
+| pandoc      | markdown, text | `pandoc` + one PDF engine        | Engine auto-detected: tectonic -> typst -> xelatex -> lualatex -> pdflatex |
+| weasyprint  | html           | `pip install weasyprint`         | First choice for HTML: clean CSS Paged Media |
+| chromium    | html           | a Chromium-family browser on PATH | Fallback: chromium/chromium-browser/google-chrome/chrome/msedge, headless print-to-pdf |
+| soffice     | office         | LibreOffice (`soffice` on PATH)  | docx/odt/xlsx/pptx in one call, converts via a scratch dir |
+| qpdf        | pdf (merge)    | `qpdf` on PATH                   | First choice for `pdfport.merge()`: exact, no re-encoding |
+| pdftk       | pdf (merge)    | `pdftk` on PATH                  | Merge fallback #2 |
+| ghostscript | pdf (merge)    | `gs`/`gswin64c`/`gswin32c` on PATH | Merge fallback #3, last resort: recompresses |
 
 ```lua
 require("pdfport").create({
@@ -62,17 +68,26 @@ require("pdfport").create({
   from   = "markdown",
   output = "/path/out.pdf",
 })
+
+-- Merge two or more existing PDFs into one
+require("pdfport").merge({
+  inputs = { "/path/a.pdf", "/path/b.pdf" },
+  output = "/path/merged.pdf",
+})
 ```
 
-`:PdfPort create [path]` creates a PDF from an image (path arg, `<cfile>`, or
-current buffer); `:PdfPort producers` lists every registered producer with
-live availability, same as `:PdfPort backends` does for extraction backends.
+`:PdfPort create [path]` creates a PDF from an image/markdown/text/html/office
+file (path arg, `<cfile>`, or current buffer); `:PdfPort merge <output.pdf>
+<a.pdf> <b.pdf> ...` merges two or more existing PDFs; `:PdfPort producers`
+lists every registered producer (including the merge producers) with live
+availability, same as `:PdfPort backends` does for extraction backends.
 
-**Not shipped yet (P2–P3):** HTML input (`weasyprint`/`chromium`), Office
-input (`soffice`), the actual caller wiring into
-`images.nvim`/`markdown.nvim`/`filetree.nvim` (e.g. `:Markdown export pdf`),
-and `pdfport.merge()` for combining existing PDFs. Full design and phased
-plan in [docs/ROADMAP/PDF_CREATE.md](ROADMAP/PDF_CREATE.md).
+**Not shipped yet (P2 caller wiring):** the actual soft-dependency wiring
+into `images.nvim` (`convert.to_pdf` switch) and `markdown.nvim`
+(`:Markdown export pdf`) — those live in their own repos.
+`filetree.nvim`'s wiring (`util/pdf.create()` + the `pdf_create` feature) has
+shipped; see that plugin's own docs. Full design and phased plan in
+[docs/ROADMAP/PDF_CREATE.md](ROADMAP/PDF_CREATE.md).
 
 ## Rendering & display
 

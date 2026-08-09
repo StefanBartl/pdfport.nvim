@@ -1,12 +1,17 @@
 # Konzept — PDF-Erstellung als öffentliche API
 
-Status: **P0 + P1 implementiert (2026-08-09)** — Gerüst + Bild-Producer
+Status: **P0–P3 implementiert (2026-08-09)** — Gerüst + Bild-Producer
 (`img2pdf`/`magick`) + Text/Markdown-Producer (`pandoc` mit
-Engine-Auto-Erkennung), `pdfport.create()`/`can_create()` (inkl.
+Engine-Auto-Erkennung) + HTML-Producer (`weasyprint`/`chromium`) +
+Office-Producer (`soffice`) + Merge-Producer (`qpdf`/`pdftk`/`ghostscript`,
+über `pdfport.merge()`), `pdfport.create()`/`can_create()`/`merge()` (inkl.
 `text`/`bufnr`-Eingaben über `util/tmpfile.lua`), `:PdfPort
-create`/`:PdfPort producers`, Tests, Doku. Siehe
-[docs/FEATURES.md](../FEATURES.md). P2 (Aufrufer-Anbindung) und P3 (HTML/
-Office-Producer, Merge) sind weiterhin nur Konzept. Stand des Konzepts:
+create`/`:PdfPort merge`/`:PdfPort producers`, Tests, Doku. Siehe
+[docs/FEATURES.md](../FEATURES.md). Von P2 (Aufrufer-Anbindung) ist
+`filetree.nvim` jetzt angebunden (`util/pdf.create()` +
+`features/system/pdf_create`, dort dokumentiert); `images.nvim`
+(`convert.to_pdf`-Weiche) und `markdown.nvim` (`:Markdown export pdf`) bleiben
+offen — eigene Repos, außerhalb dieses Änderungsumfangs. Stand des Konzepts:
 2026-08-07.
 
 pdfport.nvim kann heute ausschließlich *lesen*: PDF → Text/Markdown
@@ -338,11 +343,16 @@ ein PDF; einzelne `.md`/`.docx` → PDF daneben.
    statt ein zweiter Top-Level-Producer zu sein. `:Markdown export pdf`
    selbst ist weiterhin P2 (Aufrufer-Anbindung).
 3. **P2 — Aufrufer anbinden.** ~~filetree-Bugfix (`pdfport_nvim`)~~ bereits
-   gefixt vorgefunden (2026-08-09) — jetzt offen: `filetree.util.pdf.create`
-   + visuelle Mehrfachauswahl, `images.convert.to_pdf`-Weiche,
-   `:Markdown export pdf`.
-4. **P3 — Breite.** `weasyprint`/`chromium` (HTML), `soffice` (Office),
-   `pdfport.merge` über `qpdf`.
+   gefixt vorgefunden (2026-08-09). ~~`filetree.util.pdf.create` +
+   visuelle Mehrfachauswahl~~ **erledigt (2026-08-09)** — `filetree.nvim`s
+   `util/pdf.create()` + Feature `pdf_create` (Marks/aktueller Node/Ordner,
+   Bestätigung über `lib.nvim.ui.kit`), dokumentiert in filetrees eigenen
+   Docs. Weiterhin offen, weil eigene Repos außerhalb dieses
+   Änderungsumfangs: `images.convert.to_pdf`-Weiche, `:Markdown export pdf`.
+4. ~~**P3 — Breite.**~~ **Erledigt (2026-08-09).** `weasyprint`/`chromium`
+   (HTML), `soffice` (Office), `pdfport.merge()` über
+   `qpdf`/`pdftk`/`ghostscript` (registriert als normale "pdf"-Producer,
+   `merge()` ist ein dünner Wrapper um `composer.create({ from = "pdf" })`).
 
 ## 8. Tests
 

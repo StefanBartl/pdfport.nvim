@@ -15,7 +15,8 @@ completing with no input yet).
 | `:PdfPort system [path]`   | Open with system application               |
 | `:PdfPort terminal [path]` | Render as terminal image (prompts for a page range) |
 | `:PdfPort backends`        | List all registered backends with live availability |
-| `:PdfPort create [path]`   | Create a PDF from an image (path arg, `<cfile>`, or current buffer) |
+| `:PdfPort create [path]`   | Create a PDF from an image/markdown/text/html/office file (path arg, `<cfile>`, or current buffer) |
+| `:PdfPort merge <output.pdf> <a.pdf> <b.pdf> ...` | Merge two or more PDFs into one |
 | `:PdfPort producers`       | List all registered creation producers with live availability |
 | `:PdfPort health`          | Run `:checkhealth pdfport`            |
 
@@ -87,10 +88,22 @@ p.register_producer({
     -- must call req.__callback(result) asynchronously
   end,
 })
+
+-- Merge two or more existing PDFs into one (qpdf -> pdftk -> Ghostscript)
+p.merge({
+  inputs = { "/some/a.pdf", "/some/b.pdf" },  -- at least 2, in output order
+  output = "/some/merged.pdf",                -- required, no default
+  __callback = function(result)
+    if result.status == "ok" then
+      print(result.path)
+    end
+  end,
+})
 ```
 
 See [docs/ROADMAP/PDF_CREATE.md](ROADMAP/PDF_CREATE.md) for the full design and roadmap
-(P0, shipped: image → PDF via `img2pdf`/`magick`; P1+: Markdown/HTML/Office producers).
+(P0–P3 shipped: image/Markdown/text/HTML/Office producers + `merge()`; P2 caller wiring
+into `images.nvim`/`markdown.nvim` remains, `filetree.nvim` is done).
 
 ## Health check
 

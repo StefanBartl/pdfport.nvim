@@ -76,8 +76,11 @@ Pass a table to |pdfport.setup()|.  All keys are optional.
     timeout_ms       integer   Per-producer timeout in ms (default: 60000)
   create_chain       table     Per input-kind producer fallback chain
                                (default: image = { "img2pdf", "magick" },
-                               markdown/text = { "pandoc" }; html/office
-                               ship with no producer yet)
+                               markdown/text = { "pandoc" },
+                               html = { "weasyprint", "chromium" },
+                               office = { "soffice" },
+                               pdf = { "qpdf", "pdftk", "ghostscript" }
+                               -- the merge chain, used by pdfport.merge())
   pdf_engine         string    pandoc --pdf-engine preference (default: "auto")
                                "auto"|"tectonic"|"typst"|"xelatex"|"lualatex"|"pdflatex"
   claude_api_key     string?   Overrides $ANTHROPIC_API_KEY
@@ -148,9 +151,13 @@ lib.nvim.usercmd.composer, with <Tab> completion -- .pdf files prioritized,
   floating scratch window.
 
 :PdfPort create [path]                                *:PdfPort-create*
-  Create a PDF from an image. Path falls back to <cfile> and then the
-  current buffer name; output defaults to the input's stem + ".pdf" next
-  to it. See |pdfport-producers|.
+  Create a PDF from an image/markdown/text/html/office file. Path falls
+  back to <cfile> and then the current buffer name; output defaults to
+  the input's stem + ".pdf" next to it. See |pdfport-producers|.
+
+:PdfPort merge {output} {input1} {input2} ...          *:PdfPort-merge*
+  Merge two or more existing PDFs into one, e.g.
+  ":PdfPort merge out.pdf a.pdf b.pdf c.pdf". See |pdfport.merge()|.
 
 :PdfPort producers                                  *:PdfPort-producers*
   List every registered creation producer with its live available()
@@ -248,6 +255,20 @@ require("pdfport").register_producer({producer})
     available   function  Returns true when the producer is usable
     create      function  function(req) — must call req.__callback
 
+                                                    *pdfport.merge()*
+require("pdfport").merge({opts})
+  Merge two or more existing PDFs into one. Thin wrapper over create()
+  with the input kind fixed to "pdf" — reuses the create_chain.pdf
+  fallback chain (qpdf -> pdftk -> ghostscript by default). {opts} fields:
+
+    inputs       string[]  At least 2 PDF paths, in output order (required)
+    output       string    Output path (required, no default)
+    producer_id  string?   Specific producer; nil = use create_chain.pdf
+    on_conflict  string?   "overwrite"|"suffix"|"error" (default: "overwrite")
+    opts         table?    timeout_ms, etc.
+    __callback   function? Called as callback(result: PdfPort.CreateResult);
+                           default notifies success/failure
+
 ==============================================================================
 7. BACKENDS                                        *pdfport-backends*
 
@@ -273,12 +294,24 @@ registered backend's live availability.
   pandoc      Requires `pandoc` plus one PDF engine. Markdown/text -> PDF.
               Engine auto-detected: tectonic -> typst -> xelatex -> lualatex
               -> pdflatex, or pin one via `pdf_engine`.
+  weasyprint  Requires `pip install weasyprint`. HTML -> PDF, first choice
+              (clean CSS Paged Media support).
+  chromium    Requires a Chromium-family browser on PATH (chromium,
+              chromium-browser, google-chrome, chrome, or msedge). HTML ->
+              PDF fallback via headless --print-to-pdf.
+  soffice     Requires LibreOffice (`soffice` on PATH). Office
+              (docx/odt/xlsx/pptx) -> PDF, one call covers all four.
+  qpdf        Requires `qpdf` on PATH. PDF + PDF -> PDF (merge), first
+              choice: exact, no page-content re-encoding.
+  pdftk       Requires `pdftk` on PATH. PDF + PDF -> PDF (merge fallback #2).
+  ghostscript Requires gs/gswin64c/gswin32c on PATH. PDF + PDF -> PDF
+              (merge fallback #3, last resort: recompresses).
 
 The per-input-kind chain (create_chain) is tried in order until one producer
 is both registered and available(); |:PdfPort-producers| lists every
-registered producer's live availability. HTML/Office producers
-(weasyprint/chromium, soffice) are not shipped yet — see
-docs/ROADMAP/PDF_CREATE.md in the repo for the full design and roadmap.
+registered producer's live availability, including the "pdf"-kind merge
+producers used by |pdfport.merge()|. See docs/ROADMAP/PDF_CREATE.md in the
+repo for the full design and roadmap.
 
 ==============================================================================
 9. RENDERERS                                      *pdfport-renderers*
@@ -366,7 +399,8 @@ mode). No configuration required; this is a no-op when which-key is absent.
 Reports:
   - Core module load status
   - Backend availability (tool executables, Python modules, API keys)
-  - Producer availability (img2pdf, magick)
+  - Producer availability (img2pdf, magick, pandoc, weasyprint, chromium,
+    soffice, and the merge producers qpdf/pdftk/ghostscript)
   - Renderer availability (system open command, image renderer)
   - Integration status (neo-tree, nvim-tree, oil.nvim, telescope, fzf-lua, which-key)
   - Live registry: all registered backends with available() result

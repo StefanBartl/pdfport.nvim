@@ -37,17 +37,16 @@ return function()
       fit = "contain",
       timeout_ms = 60000,
     },
-    -- Per input-kind producer fallback chain for pdfport.create(). "image"
-    -- (img2pdf → magick) and "markdown"/"text" (pandoc) have shipped
-    -- producers; "html"/"office" are pre-wired empty so producers/*.lua can
-    -- register into them later (see docs/ROADMAP/PDF_CREATE.md) without a
-    -- config shape change.
+    -- Per input-kind producer fallback chain for pdfport.create().
     create_chain = {
       image = { "img2pdf", "magick" },
       markdown = { "pandoc" },
       text = { "pandoc" },
-      html = {},
-      office = {},
+      html = { "weasyprint", "chromium" },
+      office = { "soffice" },
+      -- "pdf" is merge (PDF + PDF -> one PDF), via pdfport.merge(): qpdf
+      -- (small, exact, no re-encoding) -> pdftk -> Ghostscript.
+      pdf = { "qpdf", "pdftk", "ghostscript" },
     },
     pdf_engine = "auto",
     claude_api_key = nil,

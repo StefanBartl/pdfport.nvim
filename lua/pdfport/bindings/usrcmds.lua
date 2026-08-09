@@ -294,6 +294,25 @@ function M.register(pdfport)
           show_diagnostics(" pdfport: producers ")
         end,
       },
+
+      {
+        path = { "merge" },
+        args = { { name = "output", type = "PDF_PATH" } },
+        desc = "Merge two or more PDFs: :PdfPort merge <output.pdf> <a.pdf> <b.pdf> ...",
+        run = function(ctx)
+          local output = ctx.args.output
+          local inputs = ctx.rest or {}
+          if not output or output == "" then
+            notify.error("PdfPort merge: no output path given")
+            return
+          end
+          if #inputs < 2 then
+            notify.error("PdfPort merge: need at least 2 input PDFs, got " .. #inputs)
+            return
+          end
+          pdfport.merge({ inputs = inputs, output = vim.fn.expand(output) })
+        end,
+      },
     },
   })
 end

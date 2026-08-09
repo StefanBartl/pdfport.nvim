@@ -184,6 +184,52 @@ local function check_producers()
   else
     h_warn("pandoc producer: not on PATH  (install pandoc)")
   end
+
+  if check_exe("weasyprint", false) then
+    h_ok("weasyprint producer: ready (html -> PDF)")
+  else
+    h_warn("weasyprint producer: not on PATH  (pip install weasyprint)")
+  end
+
+  local browser = platform.first_available({
+    "chromium",
+    "chromium-browser",
+    "google-chrome",
+    "chrome",
+    "msedge",
+  })
+  if browser then
+    h_ok("chromium producer: ready (html -> PDF, browser: " .. browser .. ")")
+  else
+    h_warn("chromium producer: no Chromium-family browser on PATH (optional html fallback)")
+  end
+
+  if check_exe("soffice", false) then
+    h_ok("soffice producer: ready (office -> PDF)")
+  else
+    h_warn("soffice producer: not on PATH  (install LibreOffice)")
+  end
+
+  h_start("pdfport: merge producers (pdfport.merge())")
+
+  if check_exe("qpdf", false) then
+    h_ok("qpdf producer: ready (pdf merge)")
+  else
+    h_warn("qpdf producer: not on PATH  (install qpdf)")
+  end
+
+  if check_exe("pdftk", false) then
+    h_ok("pdftk producer: ready (pdf merge)")
+  else
+    h_warn("pdftk producer: not on PATH  (install pdftk)")
+  end
+
+  local gs = platform.first_available({ "gs", "gswin64c", "gswin32c" })
+  if gs then
+    h_ok("ghostscript producer: ready (pdf merge, exe: " .. gs .. ")")
+  else
+    h_warn("ghostscript producer: no gs/gswin64c/gswin32c on PATH (last-resort merge fallback)")
+  end
 end
 
 ---@internal
