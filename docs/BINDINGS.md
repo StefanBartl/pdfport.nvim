@@ -59,6 +59,8 @@ they fall back to `<cfile>` and then the current buffer name.
 | `:PdfPort system [path]`   | Open with system application               |
 | `:PdfPort terminal [path]` | Render as terminal image (prompts for a page range) |
 | `:PdfPort backends`        | List all registered backends with live availability |
+| `:PdfPort create [path]`   | Create a PDF from an image (path arg, `<cfile>`, or current buffer) |
+| `:PdfPort producers`       | List all registered creation producers with live availability |
 | `:PdfPort health`          | Run `:checkhealth pdfport`            |
 
 ## Autocmds

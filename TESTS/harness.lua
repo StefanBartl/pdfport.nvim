@@ -96,4 +96,28 @@ function H.fake_backend(id, available, on_extract)
   }
 end
 
+--- A minimal valid producer, for composer/producer-registry tests that must
+--- not depend on any real PDF-creation tool being installed on the host.
+---@param id string
+---@param available boolean
+---@param accepts PdfPort.InputKind[]|nil  # default { "image" }
+---@return table
+function H.fake_producer(id, available, accepts)
+  return {
+    id = id,
+    accepts = accepts or { "image" },
+    available = function()
+      return available
+    end,
+    create = function(req)
+      return {
+        status = "ok",
+        path = req.output,
+        producer = id,
+        pages = #req.inputs,
+      }
+    end,
+  }
+end
+
 return H

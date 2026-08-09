@@ -91,6 +91,58 @@
 ---@field timeout_ms? integer
 
 -- #############################################################################
+-- Producer types (PDF creation — the reverse of extraction)
+-- #############################################################################
+
+---@alias PdfPort.InputKind "image"|"markdown"|"html"|"text"|"office"|"pdf"
+
+---@alias PdfPort.ProducerId
+---| "img2pdf"  -- Python img2pdf CLI (lossless image embed)
+---| "magick"   -- ImageMagick `magick` CLI
+---| string     -- Custom/third-party producer identifier
+
+---@class PdfPort.ProducerCapabilities
+---@field batch boolean      # Multiple inputs → one document
+---@field lossless boolean   # Embeds source data unchanged
+---@field styling boolean    # Page size/margin/template are honored
+---@field toc boolean        # Can generate a table of contents
+---@field remote boolean     # Requires network access
+
+---@class PdfPort.CreateOpts
+---@field page_size? string
+---@field margin? string
+---@field dpi? integer
+---@field fit? "contain"|"fill"|"native"
+---@field title? string
+---@field toc? boolean
+---@field template? string
+---@field timeout_ms? integer
+
+---@class PdfPort.CreateResult
+---@field status PdfPort.ResultStatus
+---@field path string|nil        # Path of the created file
+---@field producer PdfPort.ProducerId
+---@field pages integer|nil
+---@field error string|nil
+
+---@class PdfPort.InternalCreateOpts : PdfPort.CreateOpts
+---@field inputs string[]
+---@field output string
+---@field on_conflict "overwrite"|"suffix"|"error"
+---@field __callback? fun(result: PdfPort.CreateResult): nil
+
+---@class PdfPort.Producer
+---@field id PdfPort.ProducerId
+---@field name string
+---@field accepts PdfPort.InputKind[]
+---@field capabilities PdfPort.ProducerCapabilities
+---@field available fun(): boolean
+---@field create fun(req: PdfPort.InternalCreateOpts): PdfPort.CreateResult|nil
+
+---@class PdfPort.ConfigurableProducer : PdfPort.Producer
+---@field _set_config? fun(config: PdfPort.Config): nil
+
+-- #############################################################################
 -- Result types
 -- #############################################################################
 
@@ -116,6 +168,9 @@
 ---@field fallback_chain PdfPort.BackendId[]
 ---@field extract_opts PdfPort.ExtractOpts
 ---@field render_opts PdfPort.RenderOpts
+---@field create_opts PdfPort.CreateOpts
+---@field create_chain table<PdfPort.InputKind, PdfPort.ProducerId[]>
+---@field pdf_engine? string  # pandoc --pdf-engine preference: "auto"|"tectonic"|"typst"|"xelatex"|...
 ---@field claude_api_key? string
 ---@field ollama_host? string
 ---@field ollama_model? string

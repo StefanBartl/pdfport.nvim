@@ -32,14 +32,6 @@ Done, moved out of this list (2026-07):
 ## Features
 
 Open:
-- **PDF creation as a public API.** Today pdfport only reads PDFs. The other
-  direction — image/Markdown/HTML → PDF, exposed as an API that `images.nvim`,
-  `markdown.nvim` and `filetree.nvim` call instead of each growing its own
-  `magick`/`pandoc` glue — is designed in
-  [ROADMAP/PDF_CREATE.md](ROADMAP/PDF_CREATE.md): a `producers/` registry
-  mirroring `backends/`, `pdfport.create{}`, per-input-kind fallback chains
-  (`img2pdf`→`magick`, `pandoc`+engine→`typst`). Pairs with the rasterization
-  item below — same shape, opposite arrow.
 - **Expose page rasterization as a public API.** `renderers/terminal.lua`
   already rasterizes a PDF page to a throwaway PNG via `pdftoppm` (its local
   `rasterize()`, deleted again ~2s after display) — every ingredient for a
@@ -54,6 +46,16 @@ Open:
   the resulting image. images.nvim's own roadmap explicitly points here now
   instead of carrying a "PDF page as image" item itself (see
   `images.nvim/docs/ROADMAP/README.md` and `CROSS-PLUGIN.md`, 2026-08-06).
+
+Done (2026-08):
+- ~~PDF creation as a public API (P0: scaffold + images).~~ — `producers/`
+  registry mirroring `backends/`, [`core/composer.lua`](../lua/pdfport/core/composer.lua),
+  [`producers/img2pdf.lua`](../lua/pdfport/producers/img2pdf.lua) +
+  [`producers/magick.lua`](../lua/pdfport/producers/magick.lua), `pdfport.create()`/
+  `can_create()`, `:PdfPort create`/`:PdfPort producers`, a `health.lua` section. See
+  [docs/FEATURES.md](FEATURES.md). P1 (Markdown/text via pandoc/typst) through P3
+  (HTML/Office producers, caller anbindung in images.nvim/markdown.nvim/filetree.nvim)
+  remain open — full design in [ROADMAP/PDF_CREATE.md](ROADMAP/PDF_CREATE.md).
 
 Done (2026-07):
 - ~~OCR fallback backend~~ — [`tesseract`](../lua/pdfport/backends/tesseract.lua):

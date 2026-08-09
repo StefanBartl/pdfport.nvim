@@ -64,6 +64,32 @@ local function resolve_path(explicit)
   return nil
 end
 
+---@internal Shared by the "backends" and "producers" routes: both just show
+---registry.diagnostics() (backends+producers together) in a titled scratch
+---window, or notify with the plain text if lib.nvim's scratch helper is
+---unavailable.
+---@param title string
+---@return nil
+local function show_diagnostics(title)
+  local registry = require("pdfport.core.registry")
+  local ok_scratch, make_scratch = pcall(require, "lib.nvim.window.make_scratch")
+  local lines = registry.diagnostics()
+  if ok_scratch then
+    make_scratch({
+      lines = lines,
+      filetype = "text",
+      title = title,
+      title_pos = "center",
+      width = math.floor(vim.o.columns * 0.6),
+      height = math.floor(vim.o.lines * 0.5),
+      wo = { wrap = false },
+      nice_quit = true,
+    })
+  else
+    notify.info(table.concat(lines, "\n"))
+  end
+end
+
 ---@param pdfport table  the pdfport public API module (for M.open())
 ---@return nil
 function M.register(pdfport)
@@ -246,23 +272,26 @@ function M.register(pdfport)
         path = { "backends" },
         desc = "List all registered backends with live availability",
         run = function()
-          local registry = require("pdfport.core.registry")
-          local ok_scratch, make_scratch = pcall(require, "lib.nvim.window.make_scratch")
-          local lines = registry.diagnostics()
-          if ok_scratch then
-            make_scratch({
-              lines = lines,
-              filetype = "text",
-              title = " pdfport: backends ",
-              title_pos = "center",
-              width = math.floor(vim.o.columns * 0.6),
-              height = math.floor(vim.o.lines * 0.5),
-              wo = { wrap = false },
-              nice_quit = true,
-            })
-          else
-            notify.info(table.concat(lines, "\n"))
-          end
+          show_diagnostics(" pdfport: backends ")
+        end,
+      },
+
+      {
+        path = { "create" },
+        args = path_arg,
+        desc = "Create a PDF from an image (path arg, cfile, or current buffer)",
+        run = function(ctx)
+          local path = require_path(ctx, "PdfPort create")
+          if not path then return end
+          pdfport.create({ inputs = { path } })
+        end,
+      },
+
+      {
+        path = { "producers" },
+        desc = "List all registered creation producers with live availability",
+        run = function()
+          show_diagnostics(" pdfport: producers ")
         end,
       },
     },

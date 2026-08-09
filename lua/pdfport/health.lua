@@ -149,6 +149,31 @@ local function check_backends()
 end
 
 ---@internal
+---Reports availability of each creation producer's external dependency
+---(img2pdf: Python module/CLI; magick: ImageMagick CLI).
+---@return nil
+local function check_producers()
+  h_start("pdfport: creation producers")
+
+  if not ok_platform then
+    h_err("platform module unavailable – cannot check tool executables")
+    return
+  end
+
+  if check_exe("img2pdf", false) then
+    h_ok("img2pdf producer: ready (lossless image -> PDF)")
+  else
+    h_warn("img2pdf producer: not on PATH  (pip install img2pdf)")
+  end
+
+  if check_exe("magick", false) then
+    h_ok("magick producer: ready (image -> PDF, ImageMagick)")
+  else
+    h_warn("magick producer: not on PATH  (install ImageMagick)")
+  end
+end
+
+---@internal
 ---Reports availability of each render mode, including the terminal-image tool detection.
 ---@return nil
 local function check_renderers()
@@ -253,6 +278,23 @@ local function check_registry_state()
       h_warn(string.format("%-14s  unavailable", b.id))
     end
   end
+
+  h_start("pdfport: registered producers")
+
+  local producers = registry.all_producers and registry.all_producers() or {}
+  if #producers == 0 then
+    h_warn("No producers registered – call require('pdfport').setup() first")
+    return
+  end
+
+  for _, p in ipairs(producers) do
+    local avail_ok, avail = pcall(p.available)
+    if avail_ok and avail then
+      h_ok(string.format("%-14s  available", p.id))
+    else
+      h_warn(string.format("%-14s  unavailable", p.id))
+    end
+  end
 end
 
 ---@internal
@@ -275,6 +317,7 @@ end
 function M.check()
   check_core()
   check_backends()
+  check_producers()
   check_renderers()
   check_integrations()
   check_deps()

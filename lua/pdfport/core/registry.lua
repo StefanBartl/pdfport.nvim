@@ -55,6 +55,61 @@ function M.has_backend(id)
 end
 
 -- #############################################################################
+-- Producer registry (PDF creation — the reverse of extraction)
+-- #############################################################################
+
+---@type table<PdfPort.ProducerId, PdfPort.Producer>
+local _producers = {}
+
+---@type PdfPort.ProducerId[]
+local _producer_order = {}
+
+---@param producer PdfPort.Producer
+---@return nil
+function M.register_producer(producer)
+  assert(type(producer) == "table", "producer must be a table")
+  assert(
+    type(producer.id) == "string" and producer.id ~= "",
+    "producer.id must be a non-empty string"
+  )
+  assert(type(producer.available) == "function", "producer.available must be a function")
+  assert(type(producer.create) == "function", "producer.create must be a function")
+
+  if not _producers[producer.id] then _producer_order[#_producer_order + 1] = producer.id end
+  _producers[producer.id] = producer
+end
+
+---@param id PdfPort.ProducerId
+---@return PdfPort.Producer|nil
+function M.get_producer(id)
+  return _producers[id]
+end
+
+---@return PdfPort.Producer[]
+function M.all_producers()
+  local result = { [#_producer_order] = nil }
+  for i = 1, #_producer_order do
+    result[i] = _producers[_producer_order[i]]
+  end
+  return result
+end
+
+---@return PdfPort.ProducerId[]
+function M.producer_ids()
+  local ids = { [#_producer_order] = nil }
+  for i = 1, #_producer_order do
+    ids[i] = _producer_order[i]
+  end
+  return ids
+end
+
+---@param id PdfPort.ProducerId
+---@return boolean
+function M.has_producer(id)
+  return _producers[id] ~= nil
+end
+
+-- #############################################################################
 -- Renderer registry
 -- #############################################################################
 
@@ -96,6 +151,19 @@ function M.diagnostics()
       local id = _backend_order[i]
       local b = _backends[id]
       local ok, avail = pcall(b.available)
+      local status = (ok and avail) and "available" or "unavailable"
+      lines[#lines + 1] = string.format("  [%d] %-16s  %s", i, id, status)
+    end
+  end
+  lines[#lines + 1] = ""
+  lines[#lines + 1] = "Producers:"
+  if #_producer_order == 0 then
+    lines[#lines + 1] = "  (none registered)"
+  else
+    for i = 1, #_producer_order do
+      local id = _producer_order[i]
+      local p = _producers[id]
+      local ok, avail = pcall(p.available)
       local status = (ok and avail) and "available" or "unavailable"
       lines[#lines + 1] = string.format("  [%d] %-16s  %s", i, id, status)
     end
