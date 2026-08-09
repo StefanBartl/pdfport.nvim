@@ -37,6 +37,12 @@ return function()
     -- Indicator while a backend extracts. OCR/AI backends run for minutes;
     -- needs lib.nvim, silently a no-op without it.
     progress_style = "auto",
+    -- One-time "which CLI tools does this plugin want, and why" popup on
+    -- first setup() after install (via lib.nvim.deps). Set to false to
+    -- disable it for this plugin specifically, right here in the spec
+    -- passed to setup() — no vim.g needed. See README "Optional external
+    -- tools".
+    deps_popup = true,
     debug = false,
   }
 end

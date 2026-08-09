@@ -71,14 +71,20 @@ function M.setup(user_config)
 
   -- One-time (persisted across restarts, not just this session) "here's
   -- what CLI tools unlock which backend, and why" popup — the first time
-  -- pdfport.nvim actually initializes after being installed. pcall'd
+  -- pdfport.nvim actually initializes after being installed. `cfg.deps_popup
+  -- = false` (set right in the setup() spec, config/DEFAULTS.lua) disables
+  -- it for this plugin specifically — checked here, not left to the global
+  -- vim.g toggle alone, so the plugin's own spec is a real place to turn
+  -- this off, not just a pointer to a separate lib.nvim setting. pcall'd
   -- despite lib.nvim being a hard dependency elsewhere in this file: an
   -- older lib.nvim without lib.nvim.deps shouldn't break setup() over an
   -- informational popup. `:Lib deps show pdfport.nvim` stays available for
   -- checking again at any time; see docs/install.json and
   -- :help lib.nvim-deps-first_run.
-  local ok_deps, deps = pcall(require, "lib.nvim.deps")
-  if ok_deps then deps.show_once("pdfport.nvim") end
+  if cfg.deps_popup ~= false then
+    local ok_deps, deps = pcall(require, "lib.nvim.deps")
+    if ok_deps then deps.show_once("pdfport.nvim") end
+  end
 
   notify.debug("initialized", cfg)
 end
