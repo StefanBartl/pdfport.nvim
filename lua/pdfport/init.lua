@@ -69,6 +69,17 @@ function M.setup(user_config)
 
   _initialized = true
 
+  -- One-time (persisted across restarts, not just this session) "here's
+  -- what CLI tools unlock which backend, and why" popup — the first time
+  -- pdfport.nvim actually initializes after being installed. pcall'd
+  -- despite lib.nvim being a hard dependency elsewhere in this file: an
+  -- older lib.nvim without lib.nvim.deps shouldn't break setup() over an
+  -- informational popup. `:Lib deps show pdfport.nvim` stays available for
+  -- checking again at any time; see docs/install.json and
+  -- :help lib.nvim-deps-first_run.
+  local ok_deps, deps = pcall(require, "lib.nvim.deps")
+  if ok_deps then deps.show_once("pdfport.nvim") end
+
   notify.debug("initialized", cfg)
 end
 
