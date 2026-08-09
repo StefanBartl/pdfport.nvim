@@ -29,6 +29,7 @@ return function(H)
     "pdfport.producers",
     "pdfport.producers.img2pdf",
     "pdfport.producers.magick",
+    "pdfport.producers.pandoc",
     "pdfport.renderers.buffer",
     "pdfport.renderers.float",
     "pdfport.renderers.system",
@@ -39,6 +40,7 @@ return function(H)
     "pdfport.util.notify",
     "pdfport.util.page_range",
     "pdfport.util.picker",
+    "pdfport.util.tmpfile",
     "pdfport.health",
   }
 

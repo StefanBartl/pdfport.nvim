@@ -75,9 +75,11 @@ Pass a table to |pdfport.setup()|.  All keys are optional.
     fit              string    "contain"|"fill"|"native" (default: "contain")
     timeout_ms       integer   Per-producer timeout in ms (default: 60000)
   create_chain       table     Per input-kind producer fallback chain
-                               (default: image = { "img2pdf", "magick" };
-                               markdown/html/office ship with no producer yet)
+                               (default: image = { "img2pdf", "magick" },
+                               markdown/text = { "pandoc" }; html/office
+                               ship with no producer yet)
   pdf_engine         string    pandoc --pdf-engine preference (default: "auto")
+                               "auto"|"tectonic"|"typst"|"xelatex"|"lualatex"|"pdflatex"
   claude_api_key     string?   Overrides $ANTHROPIC_API_KEY
   ollama_host        string    Ollama API URL (default: localhost:11434)
   ollama_model       string    Ollama model name (default: "llava")
@@ -204,17 +206,25 @@ require("pdfport").register_backend({backend})
                                                    *pdfport.create()*
 require("pdfport").create({opts})
   Create a PDF from something else — the reverse of open()/extract().
-  {opts} fields:
+  {opts} fields (exactly one of inputs/text/bufnr):
 
-    inputs       string[]  (required) File paths, in page order
-    output       string?   Output path; default: first input's stem + .pdf
+    inputs       string[]  File paths, in page order
+    text         string?   Content directly; requires from + output
+    bufnr        integer?  Buffer content; requires from + output
+    output       string?   Output path; default with inputs: first input's
+                           stem + .pdf. Required with text/bufnr.
     from         string?   "image"|"markdown"|"html"|"text"|"office"|"pdf";
-                           guessed from the first input's extension otherwise
+                           guessed from the first input's extension when
+                           using inputs; required with text/bufnr
     producer_id  string?   Specific producer; nil = use create_chain
     on_conflict  string?   "overwrite"|"suffix"|"error" (default: "overwrite")
     opts         table?    page_size/margin/dpi/fit/title/toc/template/timeout_ms
     __callback   function? Called as callback(result: PdfPort.CreateResult);
                            default notifies success/failure
+
+  text/bufnr inputs are materialized to a temp file via util/tmpfile.lua
+  first and cleaned up again once the result callback has fired — producers
+  only ever see a real path either way.
 
   PdfPort.CreateResult fields:
     status      "ok"|"error"|"partial"
@@ -260,11 +270,14 @@ registered backend's live availability.
               (embeds JPEG/PNG data unchanged instead of recompressing it).
   magick      Requires ImageMagick (`magick` on PATH). Image -> PDF,
               multi-image -> multi-page natively; recompresses.
+  pandoc      Requires `pandoc` plus one PDF engine. Markdown/text -> PDF.
+              Engine auto-detected: tectonic -> typst -> xelatex -> lualatex
+              -> pdflatex, or pin one via `pdf_engine`.
 
 The per-input-kind chain (create_chain) is tried in order until one producer
 is both registered and available(); |:PdfPort-producers| lists every
-registered producer's live availability. Markdown/HTML/Office producers
-(pandoc+engine, weasyprint/chromium, soffice) are not shipped yet — see
+registered producer's live availability. HTML/Office producers
+(weasyprint/chromium, soffice) are not shipped yet — see
 docs/ROADMAP/PDF_CREATE.md in the repo for the full design and roadmap.
 
 ==============================================================================

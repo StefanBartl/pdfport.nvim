@@ -136,15 +136,17 @@ end
 -- Creation ("write") API — the reverse of open/extract
 -- #############################################################################
 
----@param opts PdfPort.CreateOpts|table  # inputs = {...}; see docs/ROADMAP/PDF_CREATE.md
+---@param opts PdfPort.CreateOpts|table  # exactly one of inputs/text/bufnr; see docs/ROADMAP/PDF_CREATE.md
 ---@return nil
 function M.create(opts)
   if not _initialized then M.setup() end
 
   assert(type(opts) == "table", "pdfport.create: opts must be a table")
   assert(
-    type(opts.inputs) == "table" and #opts.inputs > 0,
-    "pdfport.create: opts.inputs must be a non-empty list of file paths"
+    (type(opts.inputs) == "table" and #opts.inputs > 0)
+      or type(opts.text) == "string"
+      or type(opts.bufnr) == "number",
+    "pdfport.create: pass exactly one of opts.inputs, opts.text, opts.bufnr"
   )
 
   local callback = opts.__callback

@@ -14,6 +14,7 @@ local M = {}
 local BUILTIN_PRODUCERS = {
   { id = "img2pdf", module = "pdfport.producers.img2pdf" },
   { id = "magick", module = "pdfport.producers.magick" },
+  { id = "pandoc", module = "pdfport.producers.pandoc" },
 }
 
 ---@internal

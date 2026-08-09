@@ -171,6 +171,19 @@ local function check_producers()
   else
     h_warn("magick producer: not on PATH  (install ImageMagick)")
   end
+
+  if check_exe("pandoc", false) then
+    local engine =
+      platform.first_available({ "tectonic", "typst", "xelatex", "lualatex", "pdflatex" })
+    if engine then
+      h_ok("pandoc producer: ready (markdown/text -> PDF, engine: " .. engine .. ")")
+    else
+      h_warn("pandoc producer: pandoc found but no PDF engine on PATH")
+      h_info("Install one of: tectonic, typst, xelatex, lualatex, pdflatex")
+    end
+  else
+    h_warn("pandoc producer: not on PATH  (install pandoc)")
+  end
 end
 
 ---@internal

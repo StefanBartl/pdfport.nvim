@@ -42,17 +42,25 @@ chain (`create_chain`) and write a PDF. Mirrors the read path's shape exactly
 (`registry.register_producer`, `core/composer.lua`, lazy-loaded
 `producers/*.lua`) so the same mental model applies to both directions.
 
-**P0 — shipped:** image inputs only.
+**P0 + P1 — shipped:** image and markdown/text inputs.
 
-| Producer  | Accepts | Requires                     | Notes                       |
-|-----------|---------|-------------------------------|-------------------------------|
-| img2pdf   | image   | `pip install img2pdf`         | First choice: lossless        |
-| magick    | image   | ImageMagick (`magick` on PATH)| Pragmatic default; recompresses |
+| Producer  | Accepts        | Requires                       | Notes                          |
+|-----------|----------------|---------------------------------|-----------------------------------|
+| img2pdf   | image          | `pip install img2pdf`           | First choice: lossless            |
+| magick    | image          | ImageMagick (`magick` on PATH)  | Pragmatic default; recompresses   |
+| pandoc    | markdown, text | `pandoc` + one PDF engine       | Engine auto-detected: tectonic -> typst -> xelatex -> lualatex -> pdflatex |
 
 ```lua
 require("pdfport").create({
   inputs = { "/path/a.png", "/path/b.png" },  -- order = page order
   -- output, from, producer_id, on_conflict, opts.{page_size,margin,dpi,fit,...} all optional
+})
+
+-- Or create directly from text/a buffer (requires from + output; no path to guess from)
+require("pdfport").create({
+  text   = "# Title\n\nSome text.",
+  from   = "markdown",
+  output = "/path/out.pdf",
 })
 ```
 
@@ -60,11 +68,11 @@ require("pdfport").create({
 current buffer); `:PdfPort producers` lists every registered producer with
 live availability, same as `:PdfPort backends` does for extraction backends.
 
-**Not shipped yet (P1–P3):** Markdown/text input (`pandoc`+engine → `typst`),
-HTML input (`weasyprint`/`chromium`), Office input (`soffice`), the actual
-caller wiring into `images.nvim`/`markdown.nvim`/`filetree.nvim`, and
-`pdfport.merge()` for combining existing PDFs. Full design and phased plan in
-[docs/ROADMAP/PDF_CREATE.md](ROADMAP/PDF_CREATE.md).
+**Not shipped yet (P2–P3):** HTML input (`weasyprint`/`chromium`), Office
+input (`soffice`), the actual caller wiring into
+`images.nvim`/`markdown.nvim`/`filetree.nvim` (e.g. `:Markdown export pdf`),
+and `pdfport.merge()` for combining existing PDFs. Full design and phased
+plan in [docs/ROADMAP/PDF_CREATE.md](ROADMAP/PDF_CREATE.md).
 
 ## Rendering & display
 
