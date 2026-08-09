@@ -30,11 +30,13 @@ require("pdfport").setup({
   },
   create_chain = {                  -- per input-kind producer fallback chain
     image    = { "img2pdf", "magick" },
-    markdown = {},                  -- no shipped producer yet (P1, pandoc/typst)
+    markdown = { "pandoc" },
+    text     = { "pandoc" },
     html     = {},                  -- no shipped producer yet (P3)
     office   = {},                  -- no shipped producer yet (P3)
   },
-  pdf_engine     = "auto",          -- pandoc --pdf-engine preference (P1)
+  pdf_engine     = "auto",          -- pandoc --pdf-engine preference:
+                                     -- "auto"|"tectonic"|"typst"|"xelatex"|"lualatex"|"pdflatex"
   claude_api_key = nil,              -- or set ANTHROPIC_API_KEY env var
   ollama_host    = "http://localhost:11434",
   ollama_model   = "llava",
@@ -95,10 +97,15 @@ the resolver actually calls `available()`/`extract()` on it.
 The reverse direction: something → PDF, via `pdfport.create()`/`:PdfPort create`. Full
 design and roadmap in [docs/ROADMAP/PDF_CREATE.md](ROADMAP/PDF_CREATE.md).
 
-| ID       | Accepts | Requires                    | Notes                              |
-|----------|---------|------------------------------|-------------------------------------|
-| img2pdf  | image   | `pip install img2pdf`        | First choice: lossless, embeds source data unchanged |
-| magick   | image   | ImageMagick (`magick` on PATH) | Pragmatic default; recompresses    |
+| ID       | Accepts          | Requires                      | Notes                              |
+|----------|------------------|--------------------------------|-------------------------------------|
+| img2pdf  | image            | `pip install img2pdf`          | First choice: lossless, embeds source data unchanged |
+| magick   | image            | ImageMagick (`magick` on PATH) | Pragmatic default; recompresses    |
+| pandoc   | markdown, text   | `pandoc` + one PDF engine      | Engine auto-detected: tectonic → typst → xelatex → lualatex → pdflatex, or pin one via `pdf_engine` |
+
+`inputs` (file paths) covers the common case; `text`/`bufnr` (with required `from` + `output`)
+are materialized to a temp file via `util/tmpfile.lua` first and cleaned up again once the
+producer's result is in — producers only ever see a real path either way.
 
 Producers are registered lazily, the same way as backends: `setup()` only registers
 lightweight proxies, and the real module is only `require`d the first time the composer

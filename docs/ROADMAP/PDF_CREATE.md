@@ -1,10 +1,13 @@
 # Konzept — PDF-Erstellung als öffentliche API
 
-Status: **P0 implementiert (2026-08-09)** — Gerüst + Bild-Producer
-(`img2pdf`/`magick`), `pdfport.create()`/`can_create()`, `:PdfPort
+Status: **P0 + P1 implementiert (2026-08-09)** — Gerüst + Bild-Producer
+(`img2pdf`/`magick`) + Text/Markdown-Producer (`pandoc` mit
+Engine-Auto-Erkennung), `pdfport.create()`/`can_create()` (inkl.
+`text`/`bufnr`-Eingaben über `util/tmpfile.lua`), `:PdfPort
 create`/`:PdfPort producers`, Tests, Doku. Siehe
-[docs/FEATURES.md](../FEATURES.md). P1 (Text/Markdown) bis P3 (Aufrufer,
-Breite) sind weiterhin nur Konzept. Stand des Konzepts: 2026-08-07.
+[docs/FEATURES.md](../FEATURES.md). P2 (Aufrufer-Anbindung) und P3 (HTML/
+Office-Producer, Merge) sind weiterhin nur Konzept. Stand des Konzepts:
+2026-08-07.
 
 pdfport.nvim kann heute ausschließlich *lesen*: PDF → Text/Markdown
 (`backends/`, `core/dispatcher.lua`) bzw. PDF-Seite → Bild (intern in
@@ -324,12 +327,20 @@ ein PDF; einzelne `.md`/`.docx` → PDF daneben.
    `:PdfPort producers`, `health.lua`-Abschnitt, Tests (`TESTS/producer_spec.lua`).
    Die API ist jetzt nutzbar (`opts.inputs` = Dateipfade; `text`/`bufnr`-Eingaben
    bleiben P1). Noch offen: die eigentliche Anbindung in `images.nvim` selbst (P2).
-2. **P1 — Text.** `producers/pandoc.lua` (inkl. Engine-Erkennung) +
-   `producers/typst.lua`, `from = "markdown"|"text"`, `util/tmpfile.lua`.
-   Danach ist `:Markdown export pdf` möglich.
-3. **P2 — Aufrufer anbinden.** filetree-Bugfix (`pdfport_nvim`), dann
-   `filetree.util.pdf.create` + visuelle Mehrfachauswahl,
-   `images.convert.to_pdf`-Weiche, `:Markdown export pdf`.
+2. ~~**P1 — Text.**~~ **Erledigt (2026-08-09), reduzierter Zuschnitt.**
+   `producers/pandoc.lua` mit interner Engine-Auto-Erkennung (tectonic →
+   typst → xelatex → lualatex → pdflatex, via `--pdf-engine`), `from =
+   "markdown"|"text"`, `util/tmpfile.lua` (`opts.text`/`opts.bufnr` in
+   `pdfport.create()`, mit Pflicht-`from`+`output`, Cleanup nach dem
+   Ergebnis-Callback). Kein separater `producers/typst.lua` — laut Abschnitt
+   2 braucht typst als direkte Markdown-Quelle ohnehin pandoc davor oder
+   eine eigene Vorlage, deckt sich also mit pandocs `--pdf-engine=typst`
+   statt ein zweiter Top-Level-Producer zu sein. `:Markdown export pdf`
+   selbst ist weiterhin P2 (Aufrufer-Anbindung).
+3. **P2 — Aufrufer anbinden.** ~~filetree-Bugfix (`pdfport_nvim`)~~ bereits
+   gefixt vorgefunden (2026-08-09) — jetzt offen: `filetree.util.pdf.create`
+   + visuelle Mehrfachauswahl, `images.convert.to_pdf`-Weiche,
+   `:Markdown export pdf`.
 4. **P3 — Breite.** `weasyprint`/`chromium` (HTML), `soffice` (Office),
    `pdfport.merge` über `qpdf`.
 

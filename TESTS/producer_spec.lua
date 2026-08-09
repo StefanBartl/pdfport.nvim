@@ -72,7 +72,7 @@ return function(H)
   do
     require("pdfport.producers").load_all({})
 
-    for _, id in ipairs({ "img2pdf", "magick" }) do
+    for _, id in ipairs({ "img2pdf", "magick", "pandoc" }) do
       H.ok(registry.has_producer(id), ("built-in producer %q is registered"):format(id))
       H.eq(
         package.loaded["pdfport.producers." .. id],
@@ -138,5 +138,70 @@ return function(H)
       return got ~= nil
     end)
     H.eq(got and got.status, "error", "an unguessable extension without opts.from is an error")
+  end
+
+  -- ------------------------------------------------------- text/bufnr inputs
+
+  registry.register_producer(H.fake_producer("spec_p_markdown", true, { "markdown" }))
+  composer._set_config({ create_chain = { markdown = { "spec_p_markdown" } } })
+
+  do
+    -- Passing more than one of inputs/text/bufnr is rejected up front.
+    local got
+    composer.create({ inputs = { "a.md" }, text = "# x" }, function(result)
+      got = result
+    end)
+    vim.wait(200, function()
+      return got ~= nil
+    end)
+    H.eq(got and got.status, "error", "inputs + text together is a validation error")
+  end
+
+  do
+    -- text/bufnr without opts.from cannot guess a kind (no extension).
+    local got
+    composer.create({ text = "# hello" }, function(result)
+      got = result
+    end)
+    vim.wait(200, function()
+      return got ~= nil
+    end)
+    H.eq(got and got.status, "error", "opts.text without opts.from is a validation error")
+  end
+
+  do
+    -- text/bufnr without opts.output has no default output path.
+    local got
+    composer.create({ text = "# hello", from = "markdown" }, function(result)
+      got = result
+    end)
+    vim.wait(200, function()
+      return got ~= nil
+    end)
+    H.eq(got and got.status, "error", "opts.text without opts.output is a validation error")
+  end
+
+  do
+    local tmp_dir = vim.fn.stdpath("cache") .. "/pdfport_spec"
+    vim.fn.mkdir(tmp_dir, "p")
+    local output = tmp_dir .. "/from_text.pdf"
+    pcall(vim.fn.delete, output)
+
+    local got
+    composer.create({ text = "# hello", from = "markdown", output = output }, function(result)
+      got = result
+    end)
+    vim.wait(200, function()
+      return got ~= nil
+    end)
+
+    H.ok(got, "create() with opts.text invokes the callback")
+    H.eq(got.status, "ok", "opts.text materializes to a tmpfile and creates successfully")
+    H.eq(got.path, output, "the explicit output path is honored")
+
+    -- The materialized tmpfile must be cleaned up again after the callback.
+    local cache_tmp_dir = vim.fn.stdpath("cache") .. "/pdfport.nvim/tmp"
+    local leftover = vim.fn.glob(cache_tmp_dir .. "/*.md", false, true)
+    H.eq(#leftover, 0, "the materialized tmpfile is deleted after create() completes")
   end
 end

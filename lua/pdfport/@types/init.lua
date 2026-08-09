@@ -109,6 +109,15 @@
 ---@field remote boolean     # Requires network access
 
 ---@class PdfPort.CreateOpts
+---@field inputs? string[]      # File paths, in page order; exactly one of inputs/text/bufnr
+---@field text? string          # Content directly; requires opts.from and opts.output
+---@field bufnr? integer        # Buffer content; requires opts.from and opts.output
+---@field output? string
+---@field from? PdfPort.InputKind
+---@field producer_id? PdfPort.ProducerId
+---@field on_conflict? "overwrite"|"suffix"|"error"
+---@field opts? PdfPort.CreateOpts
+---@field __callback? fun(result: PdfPort.CreateResult): nil
 ---@field page_size? string
 ---@field margin? string
 ---@field dpi? integer

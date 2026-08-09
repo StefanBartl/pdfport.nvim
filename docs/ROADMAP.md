@@ -48,14 +48,18 @@ Open:
   `images.nvim/docs/ROADMAP/README.md` and `CROSS-PLUGIN.md`, 2026-08-06).
 
 Done (2026-08):
-- ~~PDF creation as a public API (P0: scaffold + images).~~ — `producers/`
-  registry mirroring `backends/`, [`core/composer.lua`](../lua/pdfport/core/composer.lua),
+- ~~PDF creation as a public API (P0+P1: scaffold, images, Markdown/text).~~ —
+  `producers/` registry mirroring `backends/`,
+  [`core/composer.lua`](../lua/pdfport/core/composer.lua) (now also materializing
+  `opts.text`/`opts.bufnr` via [`util/tmpfile.lua`](../lua/pdfport/util/tmpfile.lua)),
   [`producers/img2pdf.lua`](../lua/pdfport/producers/img2pdf.lua) +
-  [`producers/magick.lua`](../lua/pdfport/producers/magick.lua), `pdfport.create()`/
-  `can_create()`, `:PdfPort create`/`:PdfPort producers`, a `health.lua` section. See
-  [docs/FEATURES.md](FEATURES.md). P1 (Markdown/text via pandoc/typst) through P3
-  (HTML/Office producers, caller anbindung in images.nvim/markdown.nvim/filetree.nvim)
-  remain open — full design in [ROADMAP/PDF_CREATE.md](ROADMAP/PDF_CREATE.md).
+  [`producers/magick.lua`](../lua/pdfport/producers/magick.lua) +
+  [`producers/pandoc.lua`](../lua/pdfport/producers/pandoc.lua) (PDF-engine
+  auto-detection), `pdfport.create()`/`can_create()`, `:PdfPort create`/`:PdfPort
+  producers`, a `health.lua` section. See [docs/FEATURES.md](FEATURES.md). P2 (caller
+  wiring into images.nvim/markdown.nvim/filetree.nvim) through P3 (HTML/Office
+  producers, merge) remain open — full design in
+  [ROADMAP/PDF_CREATE.md](ROADMAP/PDF_CREATE.md).
 
 Done (2026-07):
 - ~~OCR fallback backend~~ — [`tesseract`](../lua/pdfport/backends/tesseract.lua):

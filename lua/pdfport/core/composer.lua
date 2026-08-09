@@ -6,9 +6,10 @@
 --- Flow: validate inputs → guess/accept input kind → resolve output path
 --- (on_conflict) → resolve producer chain → create (async or sync).
 ---
---- P0 scope: `opts.inputs` (file paths) only. `text`/`bufnr` inputs
---- (materialized via a future util/tmpfile.lua) are P1, see
---- docs/ROADMAP/PDF_CREATE.md.
+--- `opts.inputs` (file paths) is the common case. `opts.text`/`opts.bufnr`
+--- are materialized to a real file via util/tmpfile.lua first (producers
+--- only ever see a path, same interface either way) and cleaned up again
+--- once the result callback has fired.
 
 local uv = vim.uv or vim.loop
 local registry = require("pdfport.core.registry")
@@ -153,12 +154,57 @@ function M.create(opts, callback)
   assert(type(opts) == "table", "opts must be a table")
   assert(type(callback) == "function", "callback must be a function")
 
-  local inputs = opts.inputs
-  if type(inputs) ~= "table" or #inputs == 0 then
+  local has_inputs = type(opts.inputs) == "table" and #opts.inputs > 0
+  local has_text = type(opts.text) == "string" and opts.text ~= ""
+  local has_bufnr = type(opts.bufnr) == "number"
+
+  local given = (has_inputs and 1 or 0) + (has_text and 1 or 0) + (has_bufnr and 1 or 0)
+  if given ~= 1 then
     vim.schedule(function()
-      callback(err_result("pdfport.create: opts.inputs must be a non-empty list of file paths"))
+      callback(err_result("pdfport.create: pass exactly one of opts.inputs, opts.text, opts.bufnr"))
     end)
     return
+  end
+
+  -- text/bufnr need opts.from — there is no extension to guess a kind from,
+  -- and no meaningful default output path either.
+  if (has_text or has_bufnr) and not opts.from then
+    vim.schedule(function()
+      callback(err_result("pdfport.create: opts.from is required with opts.text/opts.bufnr"))
+    end)
+    return
+  end
+  if (has_text or has_bufnr) and not (opts.output and opts.output ~= "") then
+    vim.schedule(function()
+      callback(err_result("pdfport.create: opts.output is required with opts.text/opts.bufnr"))
+    end)
+    return
+  end
+
+  local tmp_path = nil
+  ---@type string[]
+  local inputs
+  if has_inputs then
+    inputs = opts.inputs --[[@as string[] ]]
+  elseif has_text then
+    local tmpfile = require("pdfport.util.tmpfile")
+    tmp_path = tmpfile.write_text(opts.text, opts.from)
+    inputs = { tmp_path }
+  else
+    local tmpfile = require("pdfport.util.tmpfile")
+    tmp_path = tmpfile.write_buffer(opts.bufnr, opts.from)
+    inputs = { tmp_path }
+  end
+
+  -- Wrap the caller's callback so a materialized tmpfile is always removed
+  -- again, on every exit path (validation error, resolve error, producer
+  -- result) — not just the success path.
+  if tmp_path then
+    local inner_callback = callback
+    callback = function(result)
+      require("pdfport.util.tmpfile").cleanup(tmp_path)
+      inner_callback(result)
+    end
   end
 
   local kind = opts.from or guess_kind(inputs[1])

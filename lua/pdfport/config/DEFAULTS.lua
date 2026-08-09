@@ -37,13 +37,15 @@ return function()
       fit = "contain",
       timeout_ms = 60000,
     },
-    -- Per input-kind producer fallback chain for pdfport.create(). Only
-    -- "image" has a shipped producer today (img2pdf → magick); the other
-    -- kinds are pre-wired here so producers/*.lua can register into them
-    -- later (see docs/ROADMAP/PDF_CREATE.md) without a config shape change.
+    -- Per input-kind producer fallback chain for pdfport.create(). "image"
+    -- (img2pdf → magick) and "markdown"/"text" (pandoc) have shipped
+    -- producers; "html"/"office" are pre-wired empty so producers/*.lua can
+    -- register into them later (see docs/ROADMAP/PDF_CREATE.md) without a
+    -- config shape change.
     create_chain = {
       image = { "img2pdf", "magick" },
-      markdown = {},
+      markdown = { "pandoc" },
+      text = { "pandoc" },
       html = {},
       office = {},
     },

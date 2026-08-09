@@ -70,6 +70,13 @@ p.create({
 
 p.can_create("image") -- true if a producer (img2pdf/magick) is available
 
+-- Create a PDF from Markdown text directly (opts.text/opts.bufnr require opts.from + opts.output)
+p.create({
+  text   = "# Title\n\nSome text.",
+  from   = "markdown",
+  output = "/some/out.pdf",
+})
+
 -- Register a custom producer
 p.register_producer({
   id        = "my_producer",
