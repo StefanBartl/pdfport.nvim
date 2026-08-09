@@ -43,7 +43,7 @@ A Neovim plugin for extracting and displaying PDF content using a pluggable back
 - **Lazy-load friendly** — guard in `plugin/`, commands registered on first `setup()` call
 - **which-key support** — every keymap gets a description under the `<leader>p` group when [which-key.nvim](https://github.com/folke/which-key.nvim) is installed
 - **Health check** — `:checkhealth pdfport`
-- **Declared, installable external tools** — `docs/install.json` lists every optional CLI tool (poppler, tesseract, ollama, chafa, …) with why it matters; `:Lib deps show pdfport.nvim` reports what's missing, `:Lib deps install pdfport.nvim` offers to install it (via [lib.nvim.deps](https://github.com/StefanBartl/lib.nvim/blob/main/lua/lib/nvim/deps/README.md))
+- **Declared, installable external tools** — `docs/install.json` lists every optional CLI tool (poppler, tesseract, ollama, chafa, …) with why it matters; `:Lib deps show pdfport.nvim` reports what's missing, `:Lib deps install pdfport.nvim` offers to install it (via [lib.nvim.deps](https://github.com/StefanBartl/lib.nvim/blob/main/lua/lib/nvim/deps/README.md)). A popup shows this automatically the first time `setup()` runs after installing pdfport.nvim — opt out with `vim.g.lib_nvim_deps_disable_first_run = true` (every plugin) or `vim.g.lib_nvim_deps_disabled_plugins = { "pdfport.nvim" }` (just this one), set anywhere in your config.
 
 ## Quickstart
 
