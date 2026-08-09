@@ -255,14 +255,29 @@ local function check_registry_state()
   end
 end
 
+---@internal
+---Reports pdfport's own docs/install.json via lib.nvim.deps — the same
+---tools check_backends() already probes, but with each tool's declared
+---`why` and a pointer to `:Lib deps show pdfport.nvim` for the install
+---command. Silently does nothing if lib.nvim.deps isn't available (older
+---lib.nvim) or pdfport ships no spec.
+---@return nil
+local function check_deps()
+  local ok_deps, deps_health = pcall(require, "lib.nvim.deps.health")
+  if not ok_deps then return end
+  h_start("pdfport: declared tools (lib.nvim.deps)")
+  deps_health.report_for("pdfport.nvim")
+end
+
 ---Runs all :checkhealth pdfport sections: core, backends, renderers,
----integrations, and the live registry state.
+---integrations, declared-tools (lib.nvim.deps), and the live registry state.
 ---@return nil
 function M.check()
   check_core()
   check_backends()
   check_renderers()
   check_integrations()
+  check_deps()
   check_registry_state()
 
   require("lib.nvim.usercmd.composer").checkhealth("PdfPort")
