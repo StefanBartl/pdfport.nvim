@@ -44,11 +44,15 @@ function M.setup(user_config)
 
   require("pdfport.core.resolver")._set_config(cfg)
   require("pdfport.core.dispatcher")._set_config(cfg)
+  require("pdfport.core.composer")._set_config(cfg)
 
   -- Backends are registered as lazy proxies (pdfport.backends.load_all) —
   -- the real claude/ollama modules (and their _set_config) only load the
   -- first time the resolver actually considers that backend, not here.
   require("pdfport.backends").load_all(cfg)
+
+  -- Same lazy-proxy pattern for creation producers (img2pdf/magick).
+  require("pdfport.producers").load_all(cfg)
 
   local reg = require("pdfport.core.registry")
 
@@ -126,6 +130,46 @@ end
 ---@return PdfPort.Config
 function M.config()
   return vim.deepcopy(config.get())
+end
+
+-- #############################################################################
+-- Creation ("write") API — the reverse of open/extract
+-- #############################################################################
+
+---@param opts PdfPort.CreateOpts|table  # inputs = {...}; see docs/ROADMAP/PDF_CREATE.md
+---@return nil
+function M.create(opts)
+  if not _initialized then M.setup() end
+
+  assert(type(opts) == "table", "pdfport.create: opts must be a table")
+  assert(
+    type(opts.inputs) == "table" and #opts.inputs > 0,
+    "pdfport.create: opts.inputs must be a non-empty list of file paths"
+  )
+
+  local callback = opts.__callback
+    or function(result)
+      if result.status == "ok" then
+        notify.info(string.format("created %s (%s)", result.path, result.producer))
+      else
+        notify.error(result.error or "pdfport.create failed")
+      end
+    end
+
+  require("pdfport.core.composer").create(opts, callback)
+end
+
+---@param kind PdfPort.InputKind
+---@return boolean
+function M.can_create(kind)
+  if not _initialized then M.setup() end
+  return require("pdfport.core.composer").can_create(kind)
+end
+
+---@param producer PdfPort.Producer
+---@return nil
+function M.register_producer(producer)
+  require("pdfport.core.registry").register_producer(producer)
 end
 
 ---@return table  Module with commands() and keymaps()

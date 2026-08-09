@@ -21,6 +21,20 @@ require("pdfport").setup({
       height = 0.8,
     },
   },
+  create_opts = {
+    page_size  = "A4",
+    margin     = "20mm",
+    dpi        = 300,               -- image path only
+    fit        = "contain",         -- "contain"|"fill"|"native"
+    timeout_ms = 60000,             -- creation can run longer than extraction
+  },
+  create_chain = {                  -- per input-kind producer fallback chain
+    image    = { "img2pdf", "magick" },
+    markdown = {},                  -- no shipped producer yet (P1, pandoc/typst)
+    html     = {},                  -- no shipped producer yet (P3)
+    office   = {},                  -- no shipped producer yet (P3)
+  },
+  pdf_engine     = "auto",          -- pandoc --pdf-engine preference (P1)
   claude_api_key = nil,              -- or set ANTHROPIC_API_KEY env var
   ollama_host    = "http://localhost:11434",
   ollama_model   = "llava",
@@ -75,6 +89,20 @@ the resolver actually calls `available()`/`extract()` on it.
 | ollama      | `ollama`, `pdftoppm`, `curl`                | Markdown |
 | tesseract   | `tesseract`, `pdftoppm` (OCR fallback)      | plain    |
 | claude      | `curl`, `base64`, `ANTHROPIC_API_KEY`       | Markdown |
+
+## Creation producers
+
+The reverse direction: something → PDF, via `pdfport.create()`/`:PdfPort create`. Full
+design and roadmap in [docs/ROADMAP/PDF_CREATE.md](ROADMAP/PDF_CREATE.md).
+
+| ID       | Accepts | Requires                    | Notes                              |
+|----------|---------|------------------------------|-------------------------------------|
+| img2pdf  | image   | `pip install img2pdf`        | First choice: lossless, embeds source data unchanged |
+| magick   | image   | ImageMagick (`magick` on PATH) | Pragmatic default; recompresses    |
+
+Producers are registered lazily, the same way as backends: `setup()` only registers
+lightweight proxies, and the real module is only `require`d the first time the composer
+actually calls `available()`/`create()` on it.
 
 ## Caching
 

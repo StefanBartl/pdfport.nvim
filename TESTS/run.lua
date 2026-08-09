@@ -27,6 +27,7 @@ local specs = {
   "page_range_spec.lua",
   "registry_spec.lua",
   "resolver_spec.lua",
+  "producer_spec.lua",
   "smoke_spec.lua",
 }
 

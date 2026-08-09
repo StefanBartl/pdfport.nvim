@@ -1,6 +1,10 @@
 # Konzept — PDF-Erstellung als öffentliche API
 
-Status: **Konzept, nichts davon implementiert.** Stand 2026-08-07.
+Status: **P0 implementiert (2026-08-09)** — Gerüst + Bild-Producer
+(`img2pdf`/`magick`), `pdfport.create()`/`can_create()`, `:PdfPort
+create`/`:PdfPort producers`, Tests, Doku. Siehe
+[docs/FEATURES.md](../FEATURES.md). P1 (Text/Markdown) bis P3 (Aufrufer,
+Breite) sind weiterhin nur Konzept. Stand des Konzepts: 2026-08-07.
 
 pdfport.nvim kann heute ausschließlich *lesen*: PDF → Text/Markdown
 (`backends/`, `core/dispatcher.lua`) bzw. PDF-Seite → Bild (intern in
@@ -277,14 +281,11 @@ Schreibrichtung.
 und bekommt `M.create(paths, opts)`. Visuelle Auswahl mehrerer Bilder →
 ein PDF; einzelne `.md`/`.docx` → PDF daneben.
 
-> **Vorher zu fixen (echter Bug, kein Konzept):**
-> `filetree/util/pdf.lua` macht `require("pdfport_nvim")` — dieses Modul
-> existiert nicht, pdfport heißt `lua/pdfport/`. Deshalb meldet filetree
-> *immer* „pdfport.nvim not installed — opening PDF in system viewer", auch
-> wenn pdfport installiert ist (genau die Warnung aus der persönlichen
-> Roadmap). Betroffen: der Modulkommentar, `M.has_pdfport()` und `M.open()`.
-> Das muss vor der Create-Anbindung weg, sonst wird die neue API dort nie
-> erreicht.
+> **Bereits gefixt (2026-08-09):** `filetree/util/pdf.lua`s `M.has_pdfport()`
+> und `M.open()` rufen bereits korrekt `require("pdfport")` auf, nicht
+> `require("pdfport_nvim")` — der Bug aus der persönlichen Roadmap besteht
+> nicht mehr. Die Create-Anbindung (`M.create(paths, opts)`) selbst ist Teil
+> von P2 und noch offen.
 
 ---
 
@@ -317,10 +318,12 @@ ein PDF; einzelne `.md`/`.docx` → PDF daneben.
 
 ## 7. Ausbaustufen
 
-1. **P0 — Gerüst + Bilder.** `@types`-Erweiterung, `registry.register_producer`,
-   `core/composer.lua`, `producers/img2pdf.lua` + `producers/magick.lua`,
-   `pdfport.create`/`can_create`, `:PdfPort create`, `:PdfPort producers`,
-   `health.lua`-Abschnitt. Danach ist die API für `images.nvim` benutzbar.
+1. ~~**P0 — Gerüst + Bilder.**~~ **Erledigt (2026-08-09).** `@types`-Erweiterung,
+   `registry.register_producer`, `core/composer.lua`, `producers/img2pdf.lua` +
+   `producers/magick.lua`, `pdfport.create`/`can_create`, `:PdfPort create`,
+   `:PdfPort producers`, `health.lua`-Abschnitt, Tests (`TESTS/producer_spec.lua`).
+   Die API ist jetzt nutzbar (`opts.inputs` = Dateipfade; `text`/`bufnr`-Eingaben
+   bleiben P1). Noch offen: die eigentliche Anbindung in `images.nvim` selbst (P2).
 2. **P1 — Text.** `producers/pandoc.lua` (inkl. Engine-Erkennung) +
    `producers/typst.lua`, `from = "markdown"|"text"`, `util/tmpfile.lua`.
    Danach ist `:Markdown export pdf` möglich.
