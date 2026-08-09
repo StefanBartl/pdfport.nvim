@@ -103,7 +103,7 @@ p.merge({
 
 See [docs/ROADMAP/PDF_CREATE.md](ROADMAP/PDF_CREATE.md) for the full design and roadmap
 (P0–P3 shipped: image/Markdown/text/HTML/Office producers + `merge()`; P2 caller wiring
-into `images.nvim`/`markdown.nvim` remains, `filetree.nvim` is done).
+into `filetree.nvim`/`images.nvim`/`markdown.nvim` all shipped too).
 
 ## Health check
 

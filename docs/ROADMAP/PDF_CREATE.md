@@ -7,12 +7,14 @@ Office-Producer (`soffice`) + Merge-Producer (`qpdf`/`pdftk`/`ghostscript`,
 über `pdfport.merge()`), `pdfport.create()`/`can_create()`/`merge()` (inkl.
 `text`/`bufnr`-Eingaben über `util/tmpfile.lua`), `:PdfPort
 create`/`:PdfPort merge`/`:PdfPort producers`, Tests, Doku. Siehe
-[docs/FEATURES.md](../FEATURES.md). Von P2 (Aufrufer-Anbindung) ist
-`filetree.nvim` jetzt angebunden (`util/pdf.create()` +
-`features/system/pdf_create`, dort dokumentiert); `images.nvim`
-(`convert.to_pdf`-Weiche) und `markdown.nvim` (`:Markdown export pdf`) bleiben
-offen — eigene Repos, außerhalb dieses Änderungsumfangs. Stand des Konzepts:
-2026-08-07.
+[docs/FEATURES.md](../FEATURES.md). **P2 (Aufrufer-Anbindung) ist jetzt
+vollständig:** `filetree.nvim` (`util/pdf.create()` +
+`features/system/pdf_create`), `images.nvim` (`convert.to_pdf`/`M.export`
+routen asynchron über `pdfport.create()`, wenn verfügbar, sonst der
+bisherige `magick`-Pfad unverändert) und `markdown.nvim` (`:Markdown export
+pdf`, neues `markdown.commands.export`, exakt nach dem Muster von
+`markdown.commands.image` für images.nvim) — jeweils dokumentiert im
+eigenen Repo. Stand des Konzepts: 2026-08-07.
 
 pdfport.nvim kann heute ausschließlich *lesen*: PDF → Text/Markdown
 (`backends/`, `core/dispatcher.lua`) bzw. PDF-Seite → Bild (intern in
@@ -256,44 +258,66 @@ require("pdfport").setup({
 Überall **Soft-Dependency über `pcall`**, wie im ganzen Ökosystem üblich: fehlt
 pdfport, bleibt das bisherige Verhalten.
 
-### `images.nvim`
+### `images.nvim` — erledigt (2026-08-09)
 
-`images.convert.to_pdf` wird zur dünnen Weiche: ist pdfport da, geht der Aufruf
-dorthin (asynchron, verlustfrei über `img2pdf`, Mehrfachauswahl möglich);
-sonst bleibt der heutige `magick`-Pfad wortgleich als Fallback stehen.
+`images.convert.to_pdf` ist jetzt die dünne Weiche: ist pdfport da und meldet
+`can_create("image")` einen Producer, geht der Export dorthin (asynchron,
+verlustfrei über `img2pdf`, sonst `magick` — welcher Producer greift,
+entscheidet pdfports eigene `create_chain`); sonst bleibt der bisherige
+synchrone `magick`-Pfad wortgleich als Fallback stehen. Fast wortgleich zum
+hier skizzierten Code umgesetzt, nur mit einem `on_done(ok, out_or_err)`
+statt eines synchronen Rückgabewerts — der pdfport-Pfad ist async, der
+magick-Pfad ruft `on_done` synchron auf, damit `images.export()` (der
+öffentliche `:Image export`-Einstieg) beide Pfade einheitlich behandelt,
+statt zwei Aufrufkonventionen zu unterscheiden:
 
 ```lua
-function M.to_pdf(path)
+function M.to_pdf(path, on_done)
   local ok, pdfport = pcall(require, "pdfport")
   if ok and pdfport.can_create("image") then
-    return pdfport.create({ inputs = { path }, from = "image" })
+    pdfport.create({ inputs = { path }, from = "image", __callback = function(result)
+      if on_done then on_done(result.status == "ok", result.path or result.error) end
+    end })
+    return nil, nil
   end
-  -- … bisheriger magick-Pfad unverändert …
+  -- … bisheriger magick-Pfad unverändert, ruft on_done synchron …
 end
 ```
 
-Neu möglich und der eigentliche Gewinn: `:Image gallery` / eine
-Mehrfachauswahl → **ein** mehrseitiges PDF statt n Einzeldateien.
+**Nicht umgesetzt** (bewusst außerhalb dieses Umfangs): `:Image gallery` /
+eine Mehrfachauswahl → **ein** mehrseitiges PDF statt n Einzeldateien. Bliebe
+ein sinnvoller Folgeschritt, ist aber ein neues UI-/Auswahl-Feature in
+images.nvim selbst, keine reine Anbindung.
 
-### `markdown.nvim`
+### `markdown.nvim` — erledigt (2026-08-09)
 
-`:Markdown export pdf` — der Puffer (oder die Datei) geht mit
-`from = "markdown"` an pdfport. Das Plugin kennt weder pandoc noch eine
-Engine; die Enttäuschung „nichts installiert" formuliert pdfport, nicht
-markdown.nvim. Ergänzt `handler/file.lua`s bestehende Leserichtung um die
-Schreibrichtung.
+`:Markdown export pdf` — neues `markdown.commands.export`, exakt nach dem
+Muster von `markdown.commands.image` (der bestehenden images.nvim-Anbindung):
+ein unveränderter Puffer mit Datei auf der Platte exportiert die Datei direkt
+(`from = "markdown"`); ein ungespeicherter/neuer Puffer exportiert stattdessen
+den Pufferinhalt (`bufnr = 0`, `from = "markdown"`, `output` explizit gesetzt
+— pdfport materialisiert selbst über `util/tmpfile.lua`). Das Plugin kennt
+weder pandoc noch eine Engine; die Enttäuschung „nichts installiert"
+formuliert pdfport, nicht markdown.nvim (`can_create("markdown")` gated die
+Subcommand-Ausführung vorab). Gated über `config.feature_enabled("export")`,
+wie jedes andere `:Markdown`-Subcommand.
 
-### `filetree.nvim`
+### `filetree.nvim` — erledigt (2026-08-09)
 
-`util/pdf.lua` ist bereits „der eine Ort, an dem filetree mit pdfport spricht"
-und bekommt `M.create(paths, opts)`. Visuelle Auswahl mehrerer Bilder →
-ein PDF; einzelne `.md`/`.docx` → PDF daneben.
+`util/pdf.lua` war bereits „der eine Ort, an dem filetree mit pdfport
+spricht" und bekam `M.create(paths, opts)`. Ziel-Ermittlung wie bei
+`trash`/`copy_move` (markierte Knoten, sonst aktueller Knoten; ein
+Ordner-Knoten expandiert zu seinen direkten Kind-Dateien, nicht rekursiv) im
+neuen Feature `features/system/pdf_create` (Taste `gP`), das immer über
+`filetree.util.confirm` (= `lib.nvim.ui.kit.confirm`) nachfragt, bevor
+irgendetwas geschrieben wird. Eine PDF pro Eingabedatei (kein Merge einer
+Mehrfachauswahl in eine gemeinsame PDF — bei gemischten Dateitypen in einem
+Ordner ergäbe das ohnehin keinen Sinn).
 
-> **Bereits gefixt (2026-08-09):** `filetree/util/pdf.lua`s `M.has_pdfport()`
-> und `M.open()` rufen bereits korrekt `require("pdfport")` auf, nicht
-> `require("pdfport_nvim")` — der Bug aus der persönlichen Roadmap besteht
-> nicht mehr. Die Create-Anbindung (`M.create(paths, opts)`) selbst ist Teil
-> von P2 und noch offen.
+> **Bereits gefixt (2026-08-07):** `filetree/util/pdf.lua`s `M.has_pdfport()`
+> und `M.open()` riefen schon vor diesem Durchgang korrekt `require("pdfport")`
+> auf, nicht `require("pdfport_nvim")` — der Bug aus der persönlichen Roadmap
+> bestand zu diesem Zeitpunkt bereits nicht mehr.
 
 ---
 
@@ -342,13 +366,16 @@ ein PDF; einzelne `.md`/`.docx` → PDF daneben.
    eine eigene Vorlage, deckt sich also mit pandocs `--pdf-engine=typst`
    statt ein zweiter Top-Level-Producer zu sein. `:Markdown export pdf`
    selbst ist weiterhin P2 (Aufrufer-Anbindung).
-3. **P2 — Aufrufer anbinden.** ~~filetree-Bugfix (`pdfport_nvim`)~~ bereits
-   gefixt vorgefunden (2026-08-09). ~~`filetree.util.pdf.create` +
-   visuelle Mehrfachauswahl~~ **erledigt (2026-08-09)** — `filetree.nvim`s
+3. ~~**P2 — Aufrufer anbinden.**~~ **Erledigt (2026-08-09), alle drei.**
+   filetree-Bugfix (`pdfport_nvim`) bereits gefixt vorgefunden. `filetree.nvim`:
    `util/pdf.create()` + Feature `pdf_create` (Marks/aktueller Node/Ordner,
-   Bestätigung über `lib.nvim.ui.kit`), dokumentiert in filetrees eigenen
-   Docs. Weiterhin offen, weil eigene Repos außerhalb dieses
-   Änderungsumfangs: `images.convert.to_pdf`-Weiche, `:Markdown export pdf`.
+   Bestätigung über `lib.nvim.ui.kit`). `images.nvim`: `convert.to_pdf`/
+   `M.export` routen asynchron über `pdfport.create()`, wenn verfügbar (sonst
+   unverändert `magick`). `markdown.nvim`: `:Markdown export pdf`
+   (`markdown.commands.export`, exakt nach dem `commands.image`-Muster). Alle
+   drei dokumentiert im jeweils eigenen Repo. Nicht umgesetzt: `:Image
+   gallery`/Mehrfachauswahl → ein gemeinsames mehrseitiges PDF — eigenes
+   UI-Feature in images.nvim, keine reine Anbindung, siehe Abschnitt 5.
 4. ~~**P3 — Breite.**~~ **Erledigt (2026-08-09).** `weasyprint`/`chromium`
    (HTML), `soffice` (Office), `pdfport.merge()` über
    `qpdf`/`pdftk`/`ghostscript` (registriert als normale "pdf"-Producer,
