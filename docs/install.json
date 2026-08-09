@@ -87,6 +87,120 @@
         "brew": "chafa",
         "scoop": "chafa"
       }
+    },
+    {
+      "bin": "img2pdf",
+      "required": false,
+      "why": "Enables the img2pdf creation producer — the lossless first choice for image -> PDF (embeds JPEG/PNG data unchanged instead of recompressing).",
+      "pkg": {
+        "apt": "img2pdf",
+        "dnf": "img2pdf",
+        "pacman": "img2pdf",
+        "brew": "img2pdf"
+      }
+    },
+    {
+      "bin": "magick",
+      "required": false,
+      "why": "Enables the magick creation producer — pragmatic default for image -> PDF, handles multi-image -> multi-page natively.",
+      "pkg": {
+        "apt": "imagemagick",
+        "dnf": "ImageMagick",
+        "pacman": "imagemagick",
+        "zypper": "ImageMagick",
+        "apk": "imagemagick",
+        "brew": "imagemagick",
+        "winget": "ImageMagick.ImageMagick",
+        "scoop": "imagemagick",
+        "choco": "imagemagick"
+      }
+    },
+    {
+      "bin": "pandoc",
+      "required": false,
+      "why": "Enables the pandoc creation producer for markdown/text -> PDF. Needs one PDF engine as well (tectonic/typst/xelatex/lualatex/pdflatex).",
+      "pkg": {
+        "apt": "pandoc",
+        "dnf": "pandoc",
+        "pacman": "pandoc",
+        "zypper": "pandoc",
+        "apk": "pandoc",
+        "brew": "pandoc",
+        "winget": "JohnMacFarlane.Pandoc",
+        "scoop": "pandoc",
+        "choco": "pandoc"
+      }
+    },
+    {
+      "bin": "weasyprint",
+      "required": false,
+      "why": "Enables the weasyprint creation producer — first choice for html -> PDF (clean CSS Paged Media support).",
+      "pkg": {
+        "apt": "weasyprint",
+        "dnf": "weasyprint",
+        "pacman": "python-weasyprint",
+        "brew": "weasyprint"
+      }
+    },
+    {
+      "bin": "soffice",
+      "required": false,
+      "why": "Enables the soffice creation producer for office (docx/odt/xlsx/pptx) -> PDF, one call covers all four formats.",
+      "pkg": {
+        "apt": "libreoffice",
+        "dnf": "libreoffice",
+        "pacman": "libreoffice-fresh",
+        "zypper": "libreoffice",
+        "apk": "libreoffice",
+        "brew": "libreoffice",
+        "winget": "TheDocumentFoundation.LibreOffice",
+        "scoop": "libreoffice",
+        "choco": "libreoffice"
+      }
+    },
+    {
+      "bin": "qpdf",
+      "required": false,
+      "why": "Enables the qpdf producer — first choice for pdfport.merge() (small, exact, no page-content re-encoding).",
+      "pkg": {
+        "apt": "qpdf",
+        "dnf": "qpdf",
+        "pacman": "qpdf",
+        "zypper": "qpdf",
+        "apk": "qpdf",
+        "brew": "qpdf",
+        "winget": "qpdf.qpdf",
+        "scoop": "qpdf",
+        "choco": "qpdf"
+      }
+    },
+    {
+      "bin": "pdftk",
+      "required": false,
+      "why": "Enables the pdftk producer — pdfport.merge() fallback #2, behind qpdf.",
+      "pkg": {
+        "apt": "pdftk",
+        "dnf": "pdftk",
+        "brew": "pdftk-java",
+        "winget": "PDFLabs.PDFtk",
+        "choco": "pdftk"
+      }
+    },
+    {
+      "bin": "gs",
+      "required": false,
+      "why": "Enables the ghostscript producer — pdfport.merge() fallback #3 (last resort: recompresses page content). Windows binary is gswin64c/gswin32c, not gs.",
+      "pkg": {
+        "apt": "ghostscript",
+        "dnf": "ghostscript",
+        "pacman": "ghostscript",
+        "zypper": "ghostscript",
+        "apk": "ghostscript",
+        "brew": "ghostscript",
+        "winget": "ArtifexSoftware.GhostScript",
+        "scoop": "ghostscript",
+        "choco": "ghostscript"
+      }
     }
   ]
 }

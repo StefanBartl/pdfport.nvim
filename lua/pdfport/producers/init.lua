@@ -15,6 +15,12 @@ local BUILTIN_PRODUCERS = {
   { id = "img2pdf", module = "pdfport.producers.img2pdf" },
   { id = "magick", module = "pdfport.producers.magick" },
   { id = "pandoc", module = "pdfport.producers.pandoc" },
+  { id = "weasyprint", module = "pdfport.producers.weasyprint" },
+  { id = "chromium", module = "pdfport.producers.chromium" },
+  { id = "soffice", module = "pdfport.producers.soffice" },
+  { id = "qpdf", module = "pdfport.producers.qpdf" },
+  { id = "pdftk", module = "pdfport.producers.pdftk" },
+  { id = "ghostscript", module = "pdfport.producers.ghostscript" },
 }
 
 ---@internal

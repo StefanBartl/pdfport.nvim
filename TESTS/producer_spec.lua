@@ -72,7 +72,17 @@ return function(H)
   do
     require("pdfport.producers").load_all({})
 
-    for _, id in ipairs({ "img2pdf", "magick", "pandoc" }) do
+    for _, id in ipairs({
+      "img2pdf",
+      "magick",
+      "pandoc",
+      "weasyprint",
+      "chromium",
+      "soffice",
+      "qpdf",
+      "pdftk",
+      "ghostscript",
+    }) do
       H.ok(registry.has_producer(id), ("built-in producer %q is registered"):format(id))
       H.eq(
         package.loaded["pdfport.producers." .. id],
@@ -203,5 +213,53 @@ return function(H)
     local cache_tmp_dir = vim.fn.stdpath("cache") .. "/pdfport.nvim/tmp"
     local leftover = vim.fn.glob(cache_tmp_dir .. "/*.md", false, true)
     H.eq(#leftover, 0, "the materialized tmpfile is deleted after create() completes")
+  end
+
+  -- ------------------------------------------------------------- merge (pdf)
+  -- pdfport.merge() is a thin wrapper that calls composer.create() with
+  -- `from = "pdf"` — exercised here at the composer level (like the rest of
+  -- this file) with a fake "pdf"-accepting producer, no real qpdf/pdftk/
+  -- ghostscript required.
+
+  registry.register_producer(H.fake_producer("spec_p_pdf", true, { "pdf" }))
+  composer._set_config({ create_chain = { pdf = { "spec_p_pdf" } } })
+
+  H.ok(composer.can_create("pdf"), "can_create('pdf') is true once a merge producer resolves")
+
+  do
+    local tmp_dir = vim.fn.stdpath("cache") .. "/pdfport_spec"
+    vim.fn.mkdir(tmp_dir, "p")
+    local a, b = tmp_dir .. "/m1.pdf", tmp_dir .. "/m2.pdf"
+    vim.fn.writefile({ "x" }, a)
+    vim.fn.writefile({ "x" }, b)
+    local output = tmp_dir .. "/merged.pdf"
+    pcall(vim.fn.delete, output)
+
+    local got
+    composer.create({ inputs = { a, b }, from = "pdf", output = output }, function(result)
+      got = result
+    end)
+    vim.wait(200, function()
+      return got ~= nil
+    end)
+
+    H.ok(got, "merge (create with from='pdf') invokes the callback")
+    H.eq(got.status, "ok", "merging two pdfs resolves and succeeds")
+    H.eq(got.path, output, "the explicit merge output path is honored")
+    H.eq(got.producer, "spec_p_pdf", "result reports the merge producer that ran")
+  end
+
+  -- The real init.lua public API surface: pdfport.merge() rejects bad input
+  -- shapes before ever touching the composer.
+  do
+    local pdfport = require("pdfport")
+    H.falsy(
+      pcall(pdfport.merge, { inputs = { "only_one.pdf" }, output = "out.pdf" }),
+      "pdfport.merge: fewer than 2 inputs is rejected"
+    )
+    H.falsy(
+      pcall(pdfport.merge, { inputs = { "a.pdf", "b.pdf" } }),
+      "pdfport.merge: missing opts.output is rejected"
+    )
   end
 end

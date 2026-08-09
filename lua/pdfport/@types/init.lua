@@ -97,9 +97,16 @@
 ---@alias PdfPort.InputKind "image"|"markdown"|"html"|"text"|"office"|"pdf"
 
 ---@alias PdfPort.ProducerId
----| "img2pdf"  -- Python img2pdf CLI (lossless image embed)
----| "magick"   -- ImageMagick `magick` CLI
----| string     -- Custom/third-party producer identifier
+---| "img2pdf"     -- Python img2pdf CLI (lossless image embed)
+---| "magick"      -- ImageMagick `magick` CLI
+---| "pandoc"      -- pandoc + a PDF engine (markdown/text)
+---| "weasyprint"  -- Python weasyprint CLI (html)
+---| "chromium"    -- Chromium-family headless print-to-pdf (html)
+---| "soffice"     -- LibreOffice headless (office)
+---| "qpdf"        -- qpdf CLI (pdf merge)
+---| "pdftk"       -- pdftk CLI (pdf merge)
+---| "ghostscript" -- Ghostscript (pdf merge)
+---| string        -- Custom/third-party producer identifier
 
 ---@class PdfPort.ProducerCapabilities
 ---@field batch boolean      # Multiple inputs → one document
@@ -178,7 +185,7 @@
 ---@field extract_opts PdfPort.ExtractOpts
 ---@field render_opts PdfPort.RenderOpts
 ---@field create_opts PdfPort.CreateOpts
----@field create_chain table<PdfPort.InputKind, PdfPort.ProducerId[]>
+---@field create_chain table<PdfPort.InputKind, PdfPort.ProducerId[]>  # "pdf" entry is the merge chain, used by pdfport.merge()
 ---@field pdf_engine? string  # pandoc --pdf-engine preference: "auto"|"tectonic"|"typst"|"xelatex"|...
 ---@field claude_api_key? string
 ---@field ollama_host? string

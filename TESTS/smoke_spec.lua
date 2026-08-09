@@ -30,6 +30,12 @@ return function(H)
     "pdfport.producers.img2pdf",
     "pdfport.producers.magick",
     "pdfport.producers.pandoc",
+    "pdfport.producers.weasyprint",
+    "pdfport.producers.chromium",
+    "pdfport.producers.soffice",
+    "pdfport.producers.qpdf",
+    "pdfport.producers.pdftk",
+    "pdfport.producers.ghostscript",
     "pdfport.renderers.buffer",
     "pdfport.renderers.float",
     "pdfport.renderers.system",
@@ -53,6 +59,8 @@ return function(H)
 
   local pdfport = require("pdfport")
   H.eq(type(pdfport.setup), "function", "pdfport exposes setup()")
+  H.eq(type(pdfport.create), "function", "pdfport exposes create()")
+  H.eq(type(pdfport.merge), "function", "pdfport exposes merge()")
 
   local ok, err = pcall(pdfport.setup, {})
   H.ok(ok, ("setup({}) succeeds: %s"):format(tostring(err)))

@@ -48,18 +48,25 @@ Open:
   `images.nvim/docs/ROADMAP/README.md` and `CROSS-PLUGIN.md`, 2026-08-06).
 
 Done (2026-08):
-- ~~PDF creation as a public API (P0+P1: scaffold, images, Markdown/text).~~ —
-  `producers/` registry mirroring `backends/`,
+- ~~PDF creation as a public API (P0-P3: scaffold, images, Markdown/text,
+  HTML, Office, merge).~~ — `producers/` registry mirroring `backends/`,
   [`core/composer.lua`](../lua/pdfport/core/composer.lua) (now also materializing
   `opts.text`/`opts.bufnr` via [`util/tmpfile.lua`](../lua/pdfport/util/tmpfile.lua)),
   [`producers/img2pdf.lua`](../lua/pdfport/producers/img2pdf.lua) +
   [`producers/magick.lua`](../lua/pdfport/producers/magick.lua) +
   [`producers/pandoc.lua`](../lua/pdfport/producers/pandoc.lua) (PDF-engine
-  auto-detection), `pdfport.create()`/`can_create()`, `:PdfPort create`/`:PdfPort
-  producers`, a `health.lua` section. See [docs/FEATURES.md](FEATURES.md). P2 (caller
-  wiring into images.nvim/markdown.nvim/filetree.nvim) through P3 (HTML/Office
-  producers, merge) remain open — full design in
-  [ROADMAP/PDF_CREATE.md](ROADMAP/PDF_CREATE.md).
+  auto-detection) + [`producers/weasyprint.lua`](../lua/pdfport/producers/weasyprint.lua) +
+  [`producers/chromium.lua`](../lua/pdfport/producers/chromium.lua) (HTML) +
+  [`producers/soffice.lua`](../lua/pdfport/producers/soffice.lua) (Office) +
+  [`producers/qpdf.lua`](../lua/pdfport/producers/qpdf.lua) +
+  [`producers/pdftk.lua`](../lua/pdfport/producers/pdftk.lua) +
+  [`producers/ghostscript.lua`](../lua/pdfport/producers/ghostscript.lua) (merge,
+  registered as ordinary "pdf"-kind producers), `pdfport.create()`/`can_create()`/
+  `merge()`, `:PdfPort create`/`:PdfPort merge`/`:PdfPort producers`, a `health.lua`
+  section. See [docs/FEATURES.md](FEATURES.md). Of P2 (caller wiring),
+  `filetree.nvim` is now wired (`util/pdf.create()` + `pdf_create` feature,
+  documented there); `images.nvim`/`markdown.nvim` wiring remains open (own
+  repos) — full design in [ROADMAP/PDF_CREATE.md](ROADMAP/PDF_CREATE.md).
 
 Done (2026-07):
 - ~~OCR fallback backend~~ — [`tesseract`](../lua/pdfport/backends/tesseract.lua):

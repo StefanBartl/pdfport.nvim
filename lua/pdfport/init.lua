@@ -168,6 +168,40 @@ function M.can_create(kind)
   return require("pdfport.core.composer").can_create(kind)
 end
 
+---Merge two or more PDFs into one. Thin wrapper over create()/composer with
+---the input kind fixed to "pdf" — reuses the exact same resolve/on_conflict/
+---progress machinery as every other producer chain (see
+---producers/qpdf.lua, pdftk.lua, ghostscript.lua and create_chain.pdf).
+---@param opts { inputs: string[], output: string, producer_id?: PdfPort.ProducerId, on_conflict?: "overwrite"|"suffix"|"error", opts?: table, __callback?: fun(result: PdfPort.CreateResult): nil }
+---@return nil
+function M.merge(opts)
+  if not _initialized then M.setup() end
+
+  assert(type(opts) == "table", "pdfport.merge: opts must be a table")
+  assert(
+    type(opts.inputs) == "table" and #opts.inputs >= 2,
+    "pdfport.merge: opts.inputs must have at least 2 PDF paths"
+  )
+  assert(
+    type(opts.output) == "string" and opts.output ~= "",
+    "pdfport.merge: opts.output is required"
+  )
+
+  local callback = opts.__callback
+    or function(result)
+      if result.status == "ok" then
+        notify.info(
+          string.format("merged %d PDFs -> %s (%s)", #opts.inputs, result.path, result.producer)
+        )
+      else
+        notify.error(result.error or "pdfport.merge failed")
+      end
+    end
+
+  local create_opts = vim.tbl_extend("force", opts, { from = "pdf" })
+  require("pdfport.core.composer").create(create_opts, callback)
+end
+
 ---@param producer PdfPort.Producer
 ---@return nil
 function M.register_producer(producer)
