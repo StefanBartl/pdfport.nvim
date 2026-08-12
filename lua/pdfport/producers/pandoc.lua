@@ -9,6 +9,7 @@
 
 local platform = require("pdfport.platform")
 local spawn_capture = require("lib.nvim.cross.uv.spawn_capture")
+local spawn_env = require("pdfport.util.spawn_env")
 
 ---@type PdfPort.ConfigurableProducer
 local M = {
@@ -94,7 +95,7 @@ function M.create(req)
 
   local timeout_ms = req.timeout_ms or 60000
 
-  spawn_capture(argv, { timeout_ms = timeout_ms }, function(spawn_result)
+  spawn_capture(argv, { timeout_ms = timeout_ms, env = spawn_env.array() }, function(spawn_result)
     local result
     if spawn_result.timed_out then
       result = {
