@@ -132,6 +132,27 @@ function M.config()
   return vim.deepcopy(config.get())
 end
 
+---Rasterize a single PDF page to a PNG file via pdftoppm. Same primitive the
+---`terminal` renderer uses internally, but returns a real, caller-owned PNG
+---path instead of display-and-delete — lets consumers like images.nvim show
+---a PDF page as an image without depending on pdfport's terminal renderer or
+---reimplementing rasterization themselves. Caller is responsible for
+---deleting the returned file once done with it.
+---@param path string
+---@param page integer
+---@param opts? PdfPort.RenderPageOpts
+---@param callback fun(png_path: string|nil, err: string|nil): nil
+---@return nil
+function M.render_page(path, page, opts, callback)
+  if not _initialized then M.setup() end
+
+  assert(type(path) == "string" and path ~= "", "pdfport.render_page: path must be a non-empty string")
+  assert(type(page) == "number", "pdfport.render_page: page must be a number")
+  assert(type(callback) == "function", "pdfport.render_page: callback must be a function")
+
+  require("pdfport.core.rasterize").render_page(path, page, opts, callback)
+end
+
 -- #############################################################################
 -- Creation ("write") API — the reverse of open/extract
 -- #############################################################################

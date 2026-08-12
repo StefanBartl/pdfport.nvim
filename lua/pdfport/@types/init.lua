@@ -90,6 +90,10 @@
 ---@field model? string
 ---@field timeout_ms? integer
 
+---@class PdfPort.RenderPageOpts
+---@field dpi? integer          # Rasterization DPI passed to pdftoppm (default 216)
+---@field output_path? string   # Base path for the PNG (".png" appended/stripped as needed); default a fresh vim.fn.tempname()
+
 -- #############################################################################
 -- Producer types (PDF creation — the reverse of extraction)
 -- #############################################################################

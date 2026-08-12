@@ -31,22 +31,6 @@ Done, moved out of this list (2026-07):
 
 ## Features
 
-Open:
-- **Expose page rasterization as a public API.** `renderers/terminal.lua`
-  already rasterizes a PDF page to a throwaway PNG via `pdftoppm` (its local
-  `rasterize()`, deleted again ~2s after display) — every ingredient for a
-  general "PDF page → image file" API already exists internally, it just
-  isn't reusable outside this one renderer. Extract it into something like
-  `require("pdfport").render_page(path, page, opts, callback)` that returns
-  a real (non-throwaway) PNG path via callback instead of display-and-delete.
-  This is what would let `images.nvim` (or any other consumer) show a PDF
-  page without pdfport depending on images.nvim or reimplementing rasterization
-  itself — pdfport owns the PDF-specific part (backend selection, `pdftoppm`
-  invocation, DPI/page-range handling), the caller decides what to do with
-  the resulting image. images.nvim's own roadmap explicitly points here now
-  instead of carrying a "PDF page as image" item itself (see
-  `images.nvim/docs/ROADMAP/README.md` and `CROSS-PLUGIN.md`, 2026-08-06).
-
 Done (2026-08):
 - ~~PDF creation as a public API (P0-P3: scaffold, images, Markdown/text,
   HTML, Office, merge).~~ — `producers/` registry mirroring `backends/`,
