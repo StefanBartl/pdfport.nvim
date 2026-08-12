@@ -7,6 +7,7 @@
 
 local platform = require("pdfport.platform")
 local spawn_capture = require("lib.nvim.cross.uv.spawn_capture")
+local spawn_env = require("pdfport.util.spawn_env")
 
 ---@type PdfPort.ConfigurableBackend
 local M = {
@@ -53,7 +54,12 @@ local function rasterize_sync(pdf_path, page)
     pdf_path,
     tmp,
   }
-  vim.fn.system(vim.list_extend({ "pdftoppm" }, args))
+  local cmd = vim.list_extend({ "pdftoppm" }, args)
+  if vim.system then
+    vim.system(cmd, spawn_env.opts()):wait()
+  else
+    vim.fn.system(cmd)
+  end
   local png = tmp .. ".png"
   return vim.fn.filereadable(png) == 1 and png or nil
 end
@@ -129,7 +135,7 @@ local function query_ollama(b64, prompt, model, host, timeout_ms, callback)
     "@" .. body_file,
   }
 
-  spawn_capture(argv, { timeout_ms = timeout_ms }, function(spawn_result)
+  spawn_capture(argv, { timeout_ms = timeout_ms, env = spawn_env.array() }, function(spawn_result)
     vim.fn.delete(body_file)
 
     if spawn_result.timed_out then
@@ -263,8 +269,13 @@ function M.extract(path, opts)
         process_next()
       end)
     else
-      local raw_text =
-        vim.fn.system({ "pdftotext", "-f", tostring(page), "-l", tostring(page), path, "-" })
+      local pdftotext_argv = { "pdftotext", "-f", tostring(page), "-l", tostring(page), path, "-" }
+      local raw_text
+      if vim.system then
+        raw_text = vim.system(pdftotext_argv, spawn_env.opts({ text = true })):wait().stdout or ""
+      else
+        raw_text = vim.fn.system(pdftotext_argv)
+      end
       local page_prompt = string.format("%s\n\nPage %d content:\n%s", prompt, page, raw_text)
       query_ollama(nil, page_prompt, model, host, timeout_ms, function(text, err)
         if err then

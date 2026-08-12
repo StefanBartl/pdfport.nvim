@@ -6,6 +6,7 @@
 
 local platform = require("pdfport.platform")
 local spawn_capture = require("lib.nvim.cross.uv.spawn_capture")
+local spawn_env = require("pdfport.util.spawn_env")
 
 ---@type PdfPort.StatefulBackend
 local M = {
@@ -50,7 +51,7 @@ function M.extract(path, opts)
     argv[#argv + 1] = a
   end
 
-  spawn_capture(argv, { timeout_ms = timeout_ms }, function(spawn_result)
+  spawn_capture(argv, { timeout_ms = timeout_ms, env = spawn_env.array() }, function(spawn_result)
     local result
     if spawn_result.timed_out then
       result = {
