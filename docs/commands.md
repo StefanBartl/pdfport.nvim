@@ -99,6 +99,15 @@ p.merge({
     end
   end,
 })
+
+-- Rasterize a single page to a real, caller-owned PNG (same pdftoppm
+-- primitive the `terminal` renderer uses internally, without the
+-- display-and-delete): lets other plugins (e.g. images.nvim) show a PDF
+-- page as an image without depending on pdfport's terminal renderer.
+p.render_page("/some/file.pdf", 1, { dpi = 216 }, function(png_path, err)
+  if err then return end
+  -- png_path is real and caller-owned; delete it yourself when done
+end)
 ```
 
 See [docs/ROADMAP/PDF_CREATE.md](ROADMAP/PDF_CREATE.md) for the full design and roadmap

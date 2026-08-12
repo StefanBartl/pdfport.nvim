@@ -1,65 +1,15 @@
 ---@module 'pdfport.renderers.terminal'
 ---@brief Renders PDF pages as images in the terminal.
 ---@description
---- Rasterizes pages via pdftoppm then displays via ueberzug++, chafa, kitty icat, or imgcat.
+--- Rasterizes pages via pdftoppm (delegated to core/rasterize.lua, shared
+--- with the public pdfport.render_page() API) then displays via ueberzug++,
+--- chafa, kitty icat, or imgcat. Unlike render_page(), the PNG here is a
+--- throwaway tempname() deleted shortly after display.
 
 local M = {}
 local platform = require("pdfport.platform")
+local rasterize_page = require("pdfport.core.rasterize").render_page
 local notify = require("pdfport.util.notify").create("[pdfport.terminal]")
-local uv = vim.uv or vim.loop
-
----@internal
----@param pdf_path string
----@param page integer
----@param dpi integer
----@param callback fun(png_path: string|nil, err: string|nil): nil
----@return nil
-local function rasterize(pdf_path, page, dpi, callback)
-  if not platform.has("pdftoppm") then
-    callback(nil, "pdftoppm not found (install poppler-utils)")
-    return
-  end
-
-  local tmp = vim.fn.tempname()
-  local args = {
-    "-png",
-    "-r",
-    tostring(dpi),
-    "-f",
-    tostring(page),
-    "-l",
-    tostring(page),
-    "-singlefile",
-    pdf_path,
-    tmp,
-  }
-  local stderr = uv.new_pipe(false)
-  if not stderr then
-    callback(nil, "failed to create stderr pipe")
-    return
-  end
-
-  local stderr_chunks = {}
-
-  uv.spawn("pdftoppm", {
-    args = args,
-    stdio = { nil, nil, stderr },
-  }, function(code, _)
-    if stderr and not stderr:is_closing() then stderr:close() end
-    vim.schedule(function()
-      local png = tmp .. ".png"
-      if code ~= 0 or vim.fn.filereadable(png) ~= 1 then
-        callback(nil, string.format("pdftoppm exited %d: %s", code, table.concat(stderr_chunks)))
-        return
-      end
-      callback(png, nil)
-    end)
-  end)
-
-  stderr:read_start(function(_, data)
-    if data then stderr_chunks[#stderr_chunks + 1] = data end
-  end)
-end
 
 ---@internal
 ---@param path string
@@ -138,7 +88,7 @@ function M.render(_result, opts)
 
   local function render_next(idx)
     if idx > #pages then return end
-    rasterize(path, pages[idx], dpi, function(png, err)
+    rasterize_page(path, pages[idx], { dpi = dpi }, function(png, err)
       if err then
         notify.error(err)
         return

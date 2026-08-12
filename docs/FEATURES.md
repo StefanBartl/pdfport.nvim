@@ -101,6 +101,19 @@ Four renderers, selectable per call or via `render_opts.mode`:
 | `system` | Opens the original PDF with the OS default application |
 | `terminal` | Rasterizes a page via `pdftoppm`, displays with chafa/kitty/imgcat; page-range prompt |
 
+### Page rasterization API *(2026-08-12)*
+
+`pdfport.render_page(path, page, opts, callback)` exposes the same
+`pdftoppm` rasterization the `terminal` renderer uses internally as a public
+function — `core/rasterize.lua`, shared by both. Unlike the renderer's own
+use of it (throwaway PNG, deleted ~2s after display), `render_page()` hands
+back a real, caller-owned PNG path; the caller decides what to do with it
+and is responsible for deleting it. This is what lets `images.nvim` (or any
+other consumer) show a PDF page without depending on pdfport.nvim's terminal
+renderer or reimplementing rasterization itself — pdfport still owns the
+PDF-specific part (backend selection, `pdftoppm` invocation, DPI/page
+handling).
+
 ## File-tree & fuzzy-finder integrations
 
 Buffer-local keymaps (`<leader>po/pt/ps/pi/pb`) for neo-tree, nvim-tree,
