@@ -3,7 +3,7 @@
 > **Generated** by `documentation`. Do not edit by hand — run `:DocMap`
 > (or `nvim --headless -l scripts/gen_map.lua`) to regenerate.
 
-**6 modules** · 5 namespaces · 42 helper files
+**6 modules** · 5 namespaces · 43 helper files
 
 The [interactive map](index.html) has filtering, full descriptions and
 source links; this page is the version the code host renders directly.
@@ -59,6 +59,7 @@ flowchart LR
   nlua_pdfport_backends --> nlua_pdfport_util
   nlua_pdfport_bindings --> nlua_pdfport_core
   nlua_pdfport_bindings --> nlua_pdfport_util
+  nlua_pdfport_core --> nlua_pdfport_platform
   nlua_pdfport_core --> nlua_pdfport_util
   nlua_pdfport_health_lua --> nlua_pdfport_core
   nlua_pdfport_health_lua --> nlua_pdfport_platform
@@ -67,6 +68,7 @@ flowchart LR
   nlua_pdfport_producers --> nlua_pdfport_core
   nlua_pdfport_producers --> nlua_pdfport_platform
   nlua_pdfport_producers --> nlua_pdfport_util
+  nlua_pdfport_renderers --> nlua_pdfport_core
   nlua_pdfport_renderers --> nlua_pdfport_platform
   nlua_pdfport_renderers --> nlua_pdfport_util
 ```
@@ -76,7 +78,7 @@ flowchart LR
 
 | Module | Description | Fns | Docs |
 |---|---|---|---|
-| `pdfport` | Quick start: | 17 | [src](../../lua/pdfport/init.lua) |
+| `pdfport` | Quick start: | 18 | [src](../../lua/pdfport/init.lua) |
 | &nbsp;&nbsp;`pdfport.backends` | Backends are registered as lazy proxies: the real module (and whatever work its top-level `require`s do) is only loaded the first time the proxy's… | 3 | [src](../../lua/pdfport/backends/init.lua) |
 | &nbsp;&nbsp;`bindings` |  |  |  |
 | &nbsp;&nbsp;`pdfport.config` | See config/DEFAULTS.lua for every configurable key and its default value. | 2 | [src](../../lua/pdfport/config/init.lua) |
