@@ -13,7 +13,10 @@
 
 # pdfport.nvim
 
-A Neovim plugin for extracting and displaying PDF content using a pluggable backend/renderer architecture.
+A Neovim plugin for working with PDFs in both directions: **reading** — extracting and
+displaying PDF content via a pluggable backend architecture — and **writing** —
+creating PDFs from images/Markdown/text/HTML/Office files, **merging** PDFs, and
+**rasterizing** single pages to PNG, via a pluggable producer architecture.
 
 > Requires [StefanBartl/lib.nvim](https://github.com/StefanBartl/lib.nvim) — the `:PdfPort`
 > command itself is built on `lib.nvim.usercmd.composer`. It also automatically uses
@@ -26,10 +29,25 @@ A Neovim plugin for extracting and displaying PDF content using a pluggable back
 
 ## Table of contents
 
+- [Capabilities](#capabilities)
 - [Features](#features)
 - [Quickstart](#quickstart)
 - [File-tree integrations](#file-tree-integrations)
 - [Documentation](#documentation)
+
+## Capabilities
+
+| Capability | What it does | Details |
+|---|---|---|
+| `open()` / `:PdfPort [path]` | Open a PDF via a backend + renderer (buffer/float/system/terminal) | [Commands](docs/commands.md) |
+| `extract()` / `:PdfPort text` | Extract PDF text without rendering | [Commands](docs/commands.md) |
+| `render_page()` | Rasterize one PDF page to a caller-owned PNG (used by [images.nvim](https://github.com/StefanBartl/images.nvim) to show PDF pages as images) | [Commands](docs/commands.md) |
+| `create()` / `:PdfPort create` | Create a PDF from an image, Markdown, text, HTML, or Office file, via 9 creation producers (img2pdf, magick, pandoc, weasyprint, chromium, soffice, qpdf, pdftk, ghostscript) | [Commands](docs/commands.md) |
+| `merge()` / `:PdfPort merge` | Merge two or more PDFs into one | [Commands](docs/commands.md) |
+| `can_create()` | Check whether a producer is available for a given input kind | [Commands](docs/commands.md) |
+| `register_backend()` / `register_producer()` | Register a custom extraction backend or creation producer | [Commands](docs/commands.md) |
+| `:PdfPort backends` / `:PdfPort producers` | List registered backends/producers with live availability | [Commands](docs/commands.md) |
+| File-tree & fuzzy-finder integrations | neo-tree, nvim-tree, netrw, oil.nvim, Telescope, fzf-lua | [Integrations](docs/integrations.md) |
 
 ## Features
 
@@ -44,6 +62,9 @@ A Neovim plugin for extracting and displaying PDF content using a pluggable back
 - **which-key support** — every keymap gets a description under the `<leader>p` group when [which-key.nvim](https://github.com/folke/which-key.nvim) is installed
 - **Health check** — `:checkhealth pdfport`
 - **Declared, installable external tools** — `docs/install.json` lists every optional CLI tool (poppler, tesseract, ollama, chafa, …) with why it matters; `:Lib deps show pdfport.nvim` reports what's missing, `:Lib deps install pdfport.nvim` offers to install it (via [lib.nvim.deps](https://github.com/StefanBartl/lib.nvim/blob/main/lua/lib/nvim/deps/README.md)). A popup shows this automatically the first time `setup()` runs after installing pdfport.nvim — disable it **right in this plugin's own spec**: `require("pdfport").setup({ deps_popup = false })`. `vim.g.lib_nvim_deps_disable_first_run = true` (every plugin) / `vim.g.lib_nvim_deps_disabled_plugins = { "pdfport.nvim" }` also still work, for turning it off without touching any plugin's config.
+- **PDF creation** — `:PdfPort create` / `create()` turns an image, Markdown, text, HTML, or Office file into a PDF, via 9 pluggable producers (img2pdf, magick, pandoc, weasyprint, chromium, soffice, qpdf, pdftk, ghostscript) with the same resolve/on_conflict/progress machinery as extraction backends
+- **PDF merging** — `:PdfPort merge` / `merge()` combines two or more PDFs into one
+- **Page rasterization** — `render_page()` renders a single PDF page to a caller-owned PNG file, the primitive other plugins (e.g. images.nvim) build on to show a PDF page as an image
 
 ## Quickstart
 
@@ -66,7 +87,13 @@ Requires Neovim >= 0.9, [lib.nvim](https://github.com/StefanBartl/lib.nvim), and
 ```vim
 :PdfPort             " open PDF with interactive mode picker
 :PdfPort text        " extract to buffer
+:PdfPort float       " extract to floating window (prompts for a page range)
+:PdfPort system      " open with system application
+:PdfPort terminal    " render as terminal image (prompts for a page range)
 :PdfPort backends    " list registered backends with live availability
+:PdfPort create      " create a PDF from an image/markdown/text/html/office file
+:PdfPort merge <output.pdf> <a.pdf> <b.pdf> ...   " merge two or more PDFs into one
+:PdfPort producers   " list registered creation producers with live availability
 :PdfPort health      " run :checkhealth pdfport
 :Lib deps show pdfport.nvim      " which optional tools are missing, and why they matter
 :Lib deps install pdfport.nvim   " compose + confirm an install command for what's missing
