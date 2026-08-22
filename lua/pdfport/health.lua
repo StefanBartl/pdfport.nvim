@@ -140,10 +140,13 @@ local function check_backends()
       h_warn("ANTHROPIC_API_KEY not set – claude backend unavailable")
       h_info("Set: export ANTHROPIC_API_KEY=sk-ant-...")
     end
-    if check_exe("base64", false) then
-      h_ok("base64 binary found (required for claude backend)")
+    -- The claude backend encodes in-process via vim.base64.encode now; the
+    -- external `base64` binary is no longer involved (and never existed on
+    -- Windows, nor supported `-w 0` on macOS).
+    if type(vim.base64) == "table" and type(vim.base64.encode) == "function" then
+      h_ok("vim.base64.encode available (used for PDF encoding)")
     else
-      h_warn("base64 not found – claude backend will fail on PDF encode")
+      h_warn("vim.base64.encode missing - needs Neovim 0.10+ for the claude backend")
     end
   end
 end

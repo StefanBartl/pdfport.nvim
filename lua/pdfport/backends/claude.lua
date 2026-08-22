@@ -41,11 +41,30 @@ end
 ---@param path string
 ---@return string|nil base64
 ---@return string|nil error_msg
+--- Encoding happens in-process via `vim.base64.encode` (Neovim 0.10+). It used
+--- to shell out to `base64 -w 0`, which blocked the UI thread for the whole
+--- encode of a potentially multi-megabyte PDF -- and was never portable: `-w`
+--- is a GNU coreutils flag, so the call failed on macOS (BSD base64) and there
+--- is no `base64` binary on Windows at all. Reading the file with `vim.uv`
+--- keeps it a single blocking syscall on a local file rather than a process
+--- spawn; a fully async read would buy nothing measurable here.
 local function read_base64(path)
-  if not platform.has("base64") then return nil, "base64 binary not found on PATH" end
-  local result = vim.fn.system({ "base64", "-w", "0", path })
-  if vim.v.shell_error ~= 0 then return nil, "base64 encoding failed" end
-  return result:gsub("%s+$", ""), nil
+  local fd, open_err = vim.uv.fs_open(path, "r", 438)
+  if not fd then return nil, "cannot open PDF: " .. tostring(open_err) end
+
+  local stat = vim.uv.fs_fstat(fd)
+  if not stat then
+    vim.uv.fs_close(fd)
+    return nil, "cannot stat PDF: " .. path
+  end
+
+  local data = vim.uv.fs_read(fd, stat.size, 0)
+  vim.uv.fs_close(fd)
+  if not data then return nil, "cannot read PDF: " .. path end
+
+  local ok, encoded = pcall(vim.base64.encode, data)
+  if not ok then return nil, "base64 encoding failed: " .. tostring(encoded) end
+  return encoded, nil
 end
 
 ---@internal
