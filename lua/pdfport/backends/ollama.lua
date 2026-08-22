@@ -37,10 +37,17 @@ function M.available()
 end
 
 ---@internal
+---Rasterise one page to PNG. Asynchronous: the path (or nil) arrives via `cb`.
+---
+---This used to be `rasterize_sync`, blocking on `vim.system():wait()` (or
+---`vim.fn.system`). pdftoppm at 150 DPI takes hundreds of milliseconds per
+---page and this runs once per page of the document, so a 20-page PDF froze
+---Neovim twenty times over. The surrounding page loop was already a callback
+---chain (`process_next`), so nothing else had to change shape.
 ---@param pdf_path string
 ---@param page integer
----@return string|nil png_path
-local function rasterize_sync(pdf_path, page)
+---@param cb fun(png_path: string|nil)
+local function rasterize(pdf_path, page, cb)
   local tmp = vim.fn.tempname()
   local args = {
     "-png",
@@ -55,13 +62,23 @@ local function rasterize_sync(pdf_path, page)
     tmp,
   }
   local cmd = vim.list_extend({ "pdftoppm" }, args)
-  if vim.system then
-    vim.system(cmd, spawn_env.opts()):wait()
-  else
-    vim.fn.system(cmd)
+
+  local function done()
+    local png = tmp .. ".png"
+    cb(vim.fn.filereadable(png) == 1 and png or nil)
   end
-  local png = tmp .. ".png"
-  return vim.fn.filereadable(png) == 1 and png or nil
+
+  if not vim.system then
+    vim.fn.system(cmd)
+    done()
+    return
+  end
+
+  vim.system(cmd, spawn_env.opts(), function()
+    -- vim.system callbacks run off the main loop; filereadable and everything
+    -- the caller does next need the main loop.
+    vim.schedule(done)
+  end)
 end
 
 ---@internal
@@ -225,74 +242,87 @@ function M.extract(path, opts)
     page_idx = page_idx + 1
 
     if is_vision then
-      local png = rasterize_sync(path, page)
-      if not png then
-        local result = {
-          status = "error",
-          text = nil,
-          format = "markdown",
-          backend = "ollama",
-          pages_processed = page_idx - 2,
-          error = string.format("ollama: failed to rasterize page %d", page),
-        }
-        if type(opts.__callback) == "function" then opts.__callback(result) end
-        return
-      end
-      local b64, b64_err = b64_encode(png)
-      vim.fn.delete(png)
-      if not b64 then
-        local result = {
-          status = "error",
-          text = nil,
-          format = "markdown",
-          backend = "ollama",
-          pages_processed = page_idx - 2,
-          error = string.format("ollama: %s", b64_err or "base64 encoding failed"),
-        }
-        if type(opts.__callback) == "function" then opts.__callback(result) end
-        return
-      end
-      query_ollama(b64, prompt, model, host, timeout_ms, function(text, err)
-        if err then
+      rasterize(path, page, function(png)
+        if not png then
           local result = {
             status = "error",
             text = nil,
             format = "markdown",
             backend = "ollama",
             pages_processed = page_idx - 2,
-            error = err,
+            error = string.format("ollama: failed to rasterize page %d", page),
           }
           if type(opts.__callback) == "function" then opts.__callback(result) end
           return
         end
-        page_texts[#page_texts + 1] = string.format("<!-- page %d -->\n%s", page, text or "")
-        process_next()
+        local b64, b64_err = b64_encode(png)
+        vim.fn.delete(png)
+        if not b64 then
+          local result = {
+            status = "error",
+            text = nil,
+            format = "markdown",
+            backend = "ollama",
+            pages_processed = page_idx - 2,
+            error = string.format("ollama: %s", b64_err or "base64 encoding failed"),
+          }
+          if type(opts.__callback) == "function" then opts.__callback(result) end
+          return
+        end
+        query_ollama(b64, prompt, model, host, timeout_ms, function(text, err)
+          if err then
+            local result = {
+              status = "error",
+              text = nil,
+              format = "markdown",
+              backend = "ollama",
+              pages_processed = page_idx - 2,
+              error = err,
+            }
+            if type(opts.__callback) == "function" then opts.__callback(result) end
+            return
+          end
+          page_texts[#page_texts + 1] = string.format("<!-- page %d -->\n%s", page, text or "")
+          process_next()
+        end)
       end)
     else
       local pdftotext_argv = { "pdftotext", "-f", tostring(page), "-l", tostring(page), path, "-" }
-      local raw_text
-      if vim.system then
-        raw_text = vim.system(pdftotext_argv, spawn_env.opts({ text = true })):wait().stdout or ""
-      else
-        raw_text = vim.fn.system(pdftotext_argv)
+
+      -- pdftotext used to run through vim.system():wait() / vim.fn.system(),
+      -- once per page. Same problem as the vision branch above: a freeze per
+      -- page. It hands its stdout over through a callback now.
+      local function with_text(raw_text)
+        local page_prompt = string.format("%s\n\nPage %d content:\n%s", prompt, page, raw_text)
+        query_ollama(nil, page_prompt, model, host, timeout_ms, function(text, err)
+          if err then
+            local result = {
+              status = "error",
+              text = nil,
+              format = "markdown",
+              backend = "ollama",
+              pages_processed = page_idx - 2,
+              error = err,
+            }
+            if type(opts.__callback) == "function" then opts.__callback(result) end
+            return
+          end
+          page_texts[#page_texts + 1] = string.format("<!-- page %d -->\n%s", page, text or "")
+          process_next()
+        end)
       end
-      local page_prompt = string.format("%s\n\nPage %d content:\n%s", prompt, page, raw_text)
-      query_ollama(nil, page_prompt, model, host, timeout_ms, function(text, err)
-        if err then
-          local result = {
-            status = "error",
-            text = nil,
-            format = "markdown",
-            backend = "ollama",
-            pages_processed = page_idx - 2,
-            error = err,
-          }
-          if type(opts.__callback) == "function" then opts.__callback(result) end
-          return
-        end
-        page_texts[#page_texts + 1] = string.format("<!-- page %d -->\n%s", page, text or "")
-        process_next()
-      end)
+
+      if not vim.system then
+        with_text(vim.fn.system(pdftotext_argv))
+      else
+        vim.system(pdftotext_argv, spawn_env.opts({ text = true }), function(res)
+          -- Off the main loop here; query_ollama and the result handling below
+          -- both touch Neovim state.
+          vim.schedule(function()
+            with_text(res.stdout or "")
+          end)
+        end)
+      end
     end
   end
 
