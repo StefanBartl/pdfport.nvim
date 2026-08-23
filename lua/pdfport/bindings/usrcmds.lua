@@ -121,94 +121,12 @@ function M.register(pdfport)
           local path = require_path(ctx, "PdfPort")
           if not path then return end
 
-          local choices = {
-            {
-              label = "buffer  – auto",
-              mode = "buffer",
-              backend = nil,
-            },
-            {
-              label = "buffer  – pdftotext",
-              mode = "buffer",
-              backend = "pdftotext",
-            },
-            {
-              label = "buffer  – marker (Markdown AI)",
-              mode = "buffer",
-              backend = "marker",
-            },
-            {
-              label = "buffer  – docling",
-              mode = "buffer",
-              backend = "docling",
-            },
-            {
-              label = "buffer  – Claude API",
-              mode = "buffer",
-              backend = "claude",
-            },
-            {
-              label = "buffer  – Ollama",
-              mode = "buffer",
-              backend = "ollama",
-            },
-            {
-              label = "float   – auto",
-              mode = "float",
-              backend = nil,
-            },
-            {
-              label = "terminal image preview",
-              mode = "terminal",
-              backend = nil,
-            },
-            {
-              label = "system application",
-              mode = "system",
-              backend = nil,
-            },
-          }
-
-          local items = { [#choices] = nil }
-          for i, c in ipairs(choices) do
-            items[i] = c.label
-          end
-
-          local function on_select(_, idx)
-            local c = choices[idx]
-            if not c then return end
-
-            -- Built once and reused by both branches. Also keeps the call out
-            -- of a deeply nested inline table: stylua does not reach a stable
-            -- fixpoint on that shape here (it alternates between two layouts
-            -- on successive runs), which would make `stylua --check` in CI
-            -- fail no matter which of the two is committed.
-            local open_opts = {
-              path = path,
-              mode = c.mode,
-              backend_id = c.backend,
-              focus = true,
-            }
-
-            if c.mode == "float" or c.mode == "terminal" then
-              page_range.prompt(function(pages)
-                open_opts.pages = pages
-                pdfport.open(open_opts, notify.error)
-              end)
-              return
-            end
-
-            pdfport.open(open_opts, notify.error)
-          end
-
-          local kit_ok, kit = pcall(require, "lib.nvim.ui.kit")
-          if kit_ok and type(kit.select) == "function" then
-            kit.select({ title = "pdfport – open as", items = items, on_select = on_select })
-          else
-            vim.ui.select(items, { prompt = "pdfport – open as:" }, function(_, idx)
-              if idx then on_select(nil, idx) end
-            end)
-          end
+          -- Delegates to pdfport.util.picker (also `pdfport.pick_open()`) so
+          -- there is exactly one choice list — and exactly one place that
+          -- guarantees "system application" is always an option — instead of
+          -- this command keeping its own hand-maintained copy that can drift
+          -- from lua/pdfport/util/picker.lua's.
+          pdfport.pick_open(path, { title = "pdfport – open as" })
         end,
       },
 

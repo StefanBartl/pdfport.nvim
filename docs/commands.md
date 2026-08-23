@@ -47,6 +47,20 @@ p.extract({
   end,
 })
 
+-- Same "open PDF as…" mode picker :PdfPort uses, for OTHER plugins to embed
+-- instead of hand-rolling their own two/three-item chooser. "System
+-- application" is always one of the choices — see
+-- lua/pdfport/util/picker.lua's module docs.
+p.pick_open("/some/file.pdf", {
+  title = "Open PDF as…",
+  -- Route the system entry through your own opener (e.g. for WSL path
+  -- translation) instead of pdfport's `system` renderer:
+  system_open = function(path) end,
+  -- Put "system application" first, for callers whose pre-pdfport
+  -- behaviour was "always the system viewer":
+  system_first = true,
+})
+
 -- Register a custom backend
 p.register_backend({
   id        = "my_tool",

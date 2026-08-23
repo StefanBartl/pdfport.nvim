@@ -115,6 +115,29 @@ function M.open(opts, on_error)
   require("pdfport.core.dispatcher").open(opts, on_error or notify.error)
 end
 
+---Ask the user how to open `path`, then open it that way. This is the same
+---picker `:PdfPort` and every file-tree integration in this plugin use — the
+---public entry point so OTHER plugins that embed pdfport.nvim (filetree.nvim,
+---gopath.nvim, markdown.nvim, documentation.nvim, …) can offer one consistent
+---picker instead of each hand-rolling its own two/three-item dialog.
+---
+---"System application" is always one of the choices (see
+---pdfport.util.picker's module docs) — pass `opts.system_open` to route that
+---one entry through your own OS-opener (e.g. for WSL path translation)
+---instead of pdfport's `system` renderer, or `opts.system_first` to put it at
+---the top of the list for callers whose pre-pdfport behaviour was "always the
+---system viewer".
+---@param path string
+---@param opts? PdfPort.PickerOpts
+---@return nil
+function M.pick_open(path, opts)
+  if not _initialized then M.setup() end
+
+  assert(type(path) == "string" and path ~= "", "pdfport.pick_open: path must be a non-empty string")
+
+  require("pdfport.util.picker").pick_and_open(path, opts)
+end
+
 ---@param opts PdfPort.InternalExtractOpts
 ---@return nil
 function M.extract(opts)
