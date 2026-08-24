@@ -29,6 +29,11 @@ local specs = {
   "resolver_spec.lua",
   "producer_spec.lua",
   "smoke_spec.lua",
+  -- Last on purpose: it calls setup() and performs real opens, which
+  -- loads producer/backend modules. registry_spec and producer_spec
+  -- assert those are NOT yet in package.loaded, so anything that
+  -- requires them has to run after both.
+  "open_done_spec.lua",
 }
 
 --- Straight to stdout rather than through `print`: a spec that opens a window

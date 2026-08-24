@@ -47,11 +47,39 @@ function M.open_selected(resolve_path)
     return
   end
 
+  -- The summary used to read `opened %d PDF(s)` with `#paths` -- the number
+  -- of files *attempted*. Opening is asynchronous and reports failures
+  -- through its own error callback, so a selection where three of five failed
+  -- still claimed all five had opened. Counting the settled outcomes instead
+  -- means waiting for them, which is what `on_done` exists for.
   local pdfport = require("pdfport")
+  local total = #paths
+  local opened, failed, settled = 0, 0, 0
+
   for _, p in ipairs(paths) do
-    pdfport.open({ path = p, mode = "buffer", split = "vsplit", focus = false }, notify.error)
+    pdfport.open(
+      { path = p, mode = "buffer", split = "vsplit", focus = false },
+      -- Per-file errors still surface immediately: a summary at the end is
+      -- not a substitute for saying which file failed and why.
+      notify.error,
+      function(ok)
+        if ok then
+          opened = opened + 1
+        else
+          failed = failed + 1
+        end
+
+        settled = settled + 1
+        if settled < total then return end
+
+        if failed == 0 then
+          notify.info(("opened %d PDF(s)"):format(opened))
+        else
+          notify.warn(("opened %d of %d PDF(s), %d failed"):format(opened, total, failed))
+        end
+      end
+    )
   end
-  notify.info(string.format("opened %d PDF(s)", #paths))
 end
 
 return M

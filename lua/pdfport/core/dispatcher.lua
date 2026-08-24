@@ -240,10 +240,24 @@ end
 ---Defaults to a no-op: callers that don't pass one get silent failure, which
 ---matches this module's job of staying decoupled from any particular UI.
 ---@return nil
-function M.open(opts, on_error)
+---@param opts table
+---@param on_error? fun(err: string)
+---@param on_done? fun(ok: boolean, err: string|nil)  settles exactly once, on
+---       every path -- the only way a caller can know an open finished, since
+---       dispatch is asynchronous throughout and success is otherwise silent
+function M.open(opts, on_error, on_done)
   assert(type(opts) == "table", "opts must be a table")
   assert(type(opts.path) == "string", "opts.path must be a string")
   on_error = on_error or function() end
+
+  -- Guarded because a caller counting outcomes must not be able to
+  -- double-count: a renderer that raises still has to settle exactly once.
+  local settled = false
+  local function settle(ok, err)
+    if settled then return end
+    settled = true
+    if on_done then on_done(ok, err) end
+  end
 
   local cfg_render = (_config and _config.render_opts) or {}
   local mode = opts.mode or cfg_render.mode or "buffer"
@@ -251,18 +265,29 @@ function M.open(opts, on_error)
 
   M.dispatch(opts, function(result)
     if result.status == "error" then
-      on_error(result.error or "unknown extraction error")
+      local err = result.error or "unknown extraction error"
+      on_error(err)
+      settle(false, err)
       return
     end
 
     local renderer = registry.get_renderer(mode)
     if not renderer then
-      on_error(string.format("renderer '%s' not registered", mode))
+      local err = string.format("renderer '%s' not registered", mode)
+      on_error(err)
+      settle(false, err)
       return
     end
 
     local render_opts = vim.tbl_deep_extend("force", cfg_render, opts)
-    renderer(result, render_opts)
+    local ok, err = pcall(renderer, result, render_opts)
+    if not ok then
+      local msg = ("renderer '%s' failed: %s"):format(mode, tostring(err))
+      on_error(msg)
+      settle(false, msg)
+      return
+    end
+    settle(true, nil)
   end)
 end
 

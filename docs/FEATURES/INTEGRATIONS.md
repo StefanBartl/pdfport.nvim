@@ -94,4 +94,19 @@ selected line range and re-runs the owning integration's own cursor-based
 path resolver per line, opening every `.pdf` it finds — mode `buffer`,
 unfocused, one after another.
 
-- **Module:** `lua/pdfport/util/batch.lua`
+**Summary (corrected 2026-08-24).** It reports `opened N of M PDF(s), K
+failed` once every open has settled, and stays a plain `opened N PDF(s)` when
+none failed. Individual failures are still notified as they happen — a
+summary is not a substitute for saying which file failed and why.
+
+The previous summary counted the files it *attempted*, so a selection where
+three of five failed still claimed all five had opened. Counting real
+outcomes needs a completion signal, and there was none: opening is
+asynchronous end to end and success is silent. `pdfport.open` therefore took
+an optional third argument, `on_done(ok, err)`, which settles exactly once on
+every path — extraction error, unregistered renderer, a renderer that raises,
+or success. Existing two-argument callers are unaffected.
+
+- **Module:** `lua/pdfport/util/batch.lua`, `pdfport.open`/
+  `core.dispatcher.open` (`on_done`)
+- **Tests:** `TESTS/open_done_spec.lua`

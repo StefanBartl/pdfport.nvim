@@ -11,9 +11,9 @@ completing with no input yet).
 |----------------------------|-------------------------------------------|
 | `:PdfPort [path]`         | Open PDF with interactive mode picker     |
 | `:PdfPort text [path]`     | Extract to buffer (auto backend)          |
-| `:PdfPort float [path]`    | Extract to floating window (prompts for a page range) |
+| `:PdfPort float [path] [pages=…]` | Extract to floating window (prompts for a page range unless `pages=` is given) |
 | `:PdfPort system [path]`   | Open with system application               |
-| `:PdfPort terminal [path]` | Render as terminal image (prompts for a page range) |
+| `:PdfPort terminal [path] [pages=…]` | Render as terminal image (prompts for a page range unless `pages=` is given) |
 | `:PdfPort backends`        | List all registered backends with live availability |
 | `:PdfPort create [path]`   | Create a PDF from an image/markdown/text/html/office file (path arg, `<cfile>`, or current buffer) |
 | `:PdfPort merge <output.pdf> <a.pdf> <b.pdf> ...` | Merge two or more PDFs into one |
@@ -25,6 +25,21 @@ All subcommands accept an optional path argument; if omitted they use the word u
 `float` and `terminal` prompt for a page range first (`vim.ui.input`, e.g. `1-3,5` — blank
 means the default: all pages for `float`, page 1 for `terminal`; `<Esc>` cancels without
 opening anything).
+
+**Skipping the prompt:** pass `pages=` and the prompt is not shown at all:
+
+```vim
+:PdfPort float report.pdf pages=1-3,5
+:PdfPort terminal report.pdf pages=2
+```
+
+The prompt is fine when a human is driving, but it makes these two
+subcommands unusable from a script, a mapping, or another plugin — there is
+no way to answer it non-interactively. A `pages=` value that parses to no
+page number at all (`pages=`, `pages=abc`) is reported and nothing opens,
+rather than silently falling back to the prompt or to the whole document:
+the caller asked for a specific range, and quietly doing something else is
+what goes unnoticed in a script.
 
 See [docs/BINDINGS.md](BINDINGS.md) for the full keymap/command/autocmd cheatsheet.
 

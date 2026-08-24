@@ -103,7 +103,14 @@ end
 ---errors without having to opt in explicitly. Pass your own to decide
 ---presentation yourself (as bindings/usrcmds.lua does).
 ---@return nil
-function M.open(opts, on_error)
+---@param opts table
+---@param on_error? fun(err: string)
+---@param on_done? fun(ok: boolean, err: string|nil)  optional completion
+---       signal, settling exactly once. Opening is asynchronous end to end and
+---       success is otherwise silent, so a caller opening several files (see
+---       `pdfport.util.batch`) has no other way to report an accurate summary.
+---@return nil
+function M.open(opts, on_error, on_done)
   if not _initialized then M.setup() end
 
   assert(type(opts) == "table", "pdfport.open: opts must be a table")
@@ -112,7 +119,7 @@ function M.open(opts, on_error)
     "pdfport.open: opts.path must be a non-empty string"
   )
 
-  require("pdfport.core.dispatcher").open(opts, on_error or notify.error)
+  require("pdfport.core.dispatcher").open(opts, on_error or notify.error, on_done)
 end
 
 ---Ask the user how to open `path`, then open it that way. This is the same
@@ -133,7 +140,10 @@ end
 function M.pick_open(path, opts)
   if not _initialized then M.setup() end
 
-  assert(type(path) == "string" and path ~= "", "pdfport.pick_open: path must be a non-empty string")
+  assert(
+    type(path) == "string" and path ~= "",
+    "pdfport.pick_open: path must be a non-empty string"
+  )
 
   require("pdfport.util.picker").pick_and_open(path, opts)
 end
@@ -169,7 +179,10 @@ end
 function M.render_page(path, page, opts, callback)
   if not _initialized then M.setup() end
 
-  assert(type(path) == "string" and path ~= "", "pdfport.render_page: path must be a non-empty string")
+  assert(
+    type(path) == "string" and path ~= "",
+    "pdfport.render_page: path must be a non-empty string"
+  )
   assert(type(page) == "number", "pdfport.render_page: page must be a number")
   assert(type(callback) == "function", "pdfport.render_page: callback must be a function")
 

@@ -95,6 +95,38 @@ end
 function M.register(pdfport)
   local path_arg = { { name = "path", type = "PDF_PATH", optional = true } }
 
+  -- `pages=1-3,5` as an alternative to the interactive prompt. The prompt is
+  -- fine when a human is driving, but it makes `:PdfPort float` unusable from
+  -- a script, a mapping, or another plugin -- there is no way to answer it
+  -- non-interactively. Supplying the key skips the prompt entirely; omitting
+  -- it keeps the old behaviour exactly.
+  local pages_kv = { { key = "pages", type = "STRING" } }
+
+  ---Resolve the page range for a route that accepts `pages=`.
+  ---
+  --- An explicitly supplied `pages=` is used as-is; anything else prompts.
+  --- A `pages=` that parses to nothing (`pages=`, `pages=abc`) is reported
+  --- rather than silently falling through to the prompt: the caller asked for
+  --- a specific range, and quietly opening the whole document instead is the
+  --- kind of thing that goes unnoticed in a script.
+  ---@param ctx table
+  ---@param on_pages fun(pages: integer[]|nil)
+  ---@return nil
+  local function resolve_pages(ctx, on_pages)
+    local raw = ctx.kv and ctx.kv.pages
+    if raw == nil then
+      page_range.prompt(on_pages)
+      return
+    end
+
+    local pages = page_range.parse(raw)
+    if not pages or #pages == 0 then
+      notify.warn(("pages=%s did not parse to any page number"):format(tostring(raw)))
+      return
+    end
+    on_pages(pages)
+  end
+
   --- Shared "no path found" guard, mirroring the original per-command error text.
   ---@param ctx Lib.UserCmd.Composer.Ctx
   ---@param label string
@@ -145,11 +177,12 @@ function M.register(pdfport)
       {
         path = { "float" },
         args = path_arg,
-        desc = "Show PDF text in float window",
+        kv = pages_kv,
+        desc = "Show PDF text in float window  :PdfPort float [path] [pages=1-3,5]",
         run = function(ctx)
           local path = require_path(ctx, "PdfPort float")
           if not path then return end
-          page_range.prompt(function(pages)
+          resolve_pages(ctx, function(pages)
             pdfport.open({ path = path, mode = "float", focus = true, pages = pages }, notify.error)
           end)
         end,
@@ -168,11 +201,12 @@ function M.register(pdfport)
       {
         path = { "terminal" },
         args = path_arg,
-        desc = "Render PDF as terminal image",
+        kv = pages_kv,
+        desc = "Render PDF as terminal image  :PdfPort terminal [path] [pages=1-3,5]",
         run = function(ctx)
           local path = require_path(ctx, "PdfPort terminal")
           if not path then return end
-          page_range.prompt(function(pages)
+          resolve_pages(ctx, function(pages)
             pdfport.open({ path = path, mode = "terminal", pages = pages }, notify.error)
           end)
         end,

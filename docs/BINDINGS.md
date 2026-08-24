@@ -31,7 +31,8 @@ These are buffer-local and only active inside the corresponding file-tree buffer
 
 `open_batch` walks the visual-mode line range and re-runs each integration's own
 cursor-based path resolver per line, opening every `.pdf` it finds (mode `buffer`,
-unfocused, one after another) — see
+unfocused, one after another). It reports `opened N of M PDF(s), K failed` once every
+open has settled, and each failure is also notified individually as it happens — see
 [lua/pdfport/util/batch.lua](../lua/pdfport/util/batch.lua). For neo-tree, it is registered
 as a nested `["v"] = { [lhs] = "pdfport_batch" }` entry inside `M.keymaps()`'s returned
 table rather than a top-level one, matching neo-tree's per-mode `window.mappings` shape.
@@ -55,9 +56,9 @@ they fall back to `<cfile>` and then the current buffer name.
 |----------------------------|-------------------------------------------|
 | `:PdfPort [path]`         | Open PDF with interactive mode picker     |
 | `:PdfPort text [path]`     | Extract to buffer (auto backend)          |
-| `:PdfPort float [path]`    | Extract to floating window (prompts for a page range) |
+| `:PdfPort float [path] [pages=…]` | Extract to floating window (prompts unless `pages=` is given, e.g. `pages=1-3,5`) |
 | `:PdfPort system [path]`   | Open with system application               |
-| `:PdfPort terminal [path]` | Render as terminal image (prompts for a page range) |
+| `:PdfPort terminal [path] [pages=…]` | Render as terminal image (prompts unless `pages=` is given) |
 | `:PdfPort backends`        | List all registered backends with live availability |
 | `:PdfPort create [path]`   | Create a PDF from an image (path arg, `<cfile>`, or current buffer) |
 | `:PdfPort producers`       | List all registered creation producers with live availability |
