@@ -1,8 +1,14 @@
 # Zentrale Prinzipien — applied to pdfport.nvim
 
 Audit of pdfport.nvim against
-[`Zentrale-Prinzipien.md`](E:/repos/Notes/MyNotes/Checklists/Lua/Zentrale-Prinzipien.md).
+[`regeln/PRINCIPLES.md`](../../../WKDBooks/Development/wkdbook-Lua/Checklists/regeln/PRINCIPLES.md).
 Status: ✅ good · 🟡 partial / improvable · ❌ gap (action item) · ➖ N/A.
+
+> The source checklists (`Arch&Coding-Regeln.md`, `Checklist.md`,
+> `Zentrale-Prinzipien.md`) were retired: they were absorbed into the rule
+> collection under `WKDBooks/Development/wkdbook-Lua/Checklists/`, which is
+> now the canonical one. The links above point there.
+
 
 ## lib.nvim usage (the "WICHTIG" preamble)
 

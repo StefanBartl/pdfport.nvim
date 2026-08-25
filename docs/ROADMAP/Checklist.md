@@ -1,8 +1,14 @@
 # Lua/Neovim Checklist — applied to pdfport.nvim
 
 Audit against
-[`Checklist.md`](E:/repos/Notes/MyNotes/Checklists/Lua/Checklist.md).
+[`regeln/`](../../../WKDBooks/Development/wkdbook-Lua/Checklists/regeln/).
 ✅ good · 🟡 partial · ❌ gap · ➖ N/A for this plugin.
+
+> The source checklists (`Arch&Coding-Regeln.md`, `Checklist.md`,
+> `Zentrale-Prinzipien.md`) were retired: they were absorbed into the rule
+> collection under `WKDBooks/Development/wkdbook-Lua/Checklists/`, which is
+> now the canonical one. The links above point there.
+
 
 Several sections of this checklist overlap directly with
 [Arch&Coding.md](Arch%26Coding.md) (same source-checklist content, audited from a slightly
