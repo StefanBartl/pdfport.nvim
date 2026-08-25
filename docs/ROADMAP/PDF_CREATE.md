@@ -1,154 +1,154 @@
-# Konzept — PDF-Erstellung als öffentliche API
+# Concept — PDF creation as a public API
 
-Status: **P0–P3 implementiert (2026-08-09)** — Gerüst + Bild-Producer
-(`img2pdf`/`magick`) + Text/Markdown-Producer (`pandoc` mit
-Engine-Auto-Erkennung) + HTML-Producer (`weasyprint`/`chromium`) +
-Office-Producer (`soffice`) + Merge-Producer (`qpdf`/`pdftk`/`ghostscript`,
-über `pdfport.merge()`), `pdfport.create()`/`can_create()`/`merge()` (inkl.
-`text`/`bufnr`-Eingaben über `util/tmpfile.lua`), `:PdfPort
-create`/`:PdfPort merge`/`:PdfPort producers`, Tests, Doku. Siehe
-[docs/FEATURES/](../FEATURES/). **P2 (Aufrufer-Anbindung) ist jetzt
-vollständig:** `filetree.nvim` (`util/pdf.create()` +
-`features/system/pdf_create`), `images.nvim` (`convert.to_pdf`/`M.export`
-routen asynchron über `pdfport.create()`, wenn verfügbar, sonst der
-bisherige `magick`-Pfad unverändert) und `markdown.nvim` (`:Markdown export
-pdf`, neues `markdown.commands.export`, exakt nach dem Muster von
-`markdown.commands.image` für images.nvim) — jeweils dokumentiert im
-eigenen Repo. Stand des Konzepts: 2026-08-07.
+Status: **P0–P3 implemented (2026-08-09)** — the scaffolding plus the image
+producers (`img2pdf`/`magick`), the text/Markdown producer (`pandoc`, with
+engine auto-detection), the HTML producers (`weasyprint`/`chromium`), the
+Office producer (`soffice`) and the merge producers
+(`qpdf`/`pdftk`/`ghostscript`, through `pdfport.merge()`), plus
+`pdfport.create()`/`can_create()`/`merge()` (including `text`/`bufnr` inputs via
+`util/tmpfile.lua`), `:PdfPort create`/`:PdfPort merge`/`:PdfPort producers`,
+tests and documentation. See [docs/FEATURES/](../FEATURES/). **P2 (wiring up
+the callers) is complete:** `filetree.nvim` (`util/pdf.create()` plus
+`features/system/pdf_create`), `images.nvim` (`convert.to_pdf`/`M.export` route
+asynchronously through `pdfport.create()` when it is available, otherwise the
+previous `magick` path unchanged) and `markdown.nvim` (`:Markdown export pdf`,
+the new `markdown.commands.export`, following `markdown.commands.image`
+exactly) — each documented in its own repository. The concept itself is as of
+2026-08-07.
 
-pdfport.nvim kann heute ausschließlich *lesen*: PDF → Text/Markdown
-(`backends/`, `core/dispatcher.lua`) bzw. PDF-Seite → Bild (intern in
-`renderers/terminal.lua`). Dieses Dokument beschreibt die Gegenrichtung —
-**etwas → PDF** — und zwar so, dass sie primär als **API für andere Plugins**
-taugt (`images.nvim`, `markdown.nvim`, `filetree.nvim`), nicht nur als
-Benutzerkommando.
+Today pdfport can only *read*: PDF to text/Markdown (`backends/`,
+`core/dispatcher.lua`), or a PDF page to an image (internally, in
+`renderers/terminal.lua`). This document describes the other direction —
+**something to PDF** — shaped so that it primarily works as an **API for other
+plugins** (`images.nvim`, `markdown.nvim`, `filetree.nvim`), not just as a user
+command.
 
-Leitgedanke: pdfport ist der eine Ort im Setup, der PDF-spezifisches Wissen
-hält (welches Werkzeug kann was, wie ruft man es auf, was passiert unter
-Windows). Alle anderen Plugins rufen an, kennen aber weder `pandoc` noch
-`magick` noch eine Fallback-Kette.
-
----
-
-## 1. Warum überhaupt in pdfport und nicht je Plugin
-
-Der Ist-Zustand ist bereits eine dreifache Doppelung in Zeitlupe:
-
-- `images.nvim` hat `images.convert.to_pdf` — ImageMagick, ein Bild, keine
-  Optionen, synchrones `vim.system():wait()`.
-- `markdown.nvim` hat keinen Export, das wäre der offensichtliche nächste
-  Wunsch (`:Markdown export pdf`).
-- `filetree.nvim` hat gar nichts, würde einen Export einer Auswahl aber
-  natürlicherweise anbieten (mehrere Bilder → ein PDF).
-
-Jedes Plugin einzeln bekäme sonst seine eigene Werkzeugerkennung, seine eigene
-Fehlerbehandlung, seine eigene Windows-Eigenheit. Genau das ist der Fall, für
-den pdfport schon eine Registry, einen Resolver, eine Fallback-Kette, eine
-Fortschrittsanzeige und `platform.has()` besitzt — die Erstellung ist
-strukturell dasselbe Problem wie die Extraktion, nur mit umgedrehtem Pfeil.
+The guiding idea: pdfport is the one place in this setup that holds
+PDF-specific knowledge — which tool can do what, how it is invoked, what
+happens on Windows. Every other plugin calls in, and knows about neither
+`pandoc` nor `magick` nor a fallback chain.
 
 ---
 
-## 2. Werkzeuge — Erörterung der Alternativen
+## 1. Why in pdfport at all, rather than per plugin
 
-Wichtig vorweg: **es gibt kein Werkzeug, das alle Eingaben abdeckt.** `pandoc`
-ist kein PDF-Erzeuger, sondern ein Konverter, der für PDF *immer* eine
-externe Engine braucht. Deshalb wird das keine „wir nehmen pandoc"-Entscheidung,
-sondern eine Kette pro Eingabeart.
+What exists today is already a threefold duplication in slow motion:
 
-### Bild → PDF
+- `images.nvim` has `images.convert.to_pdf` — ImageMagick, one image, no
+  options, a synchronous `vim.system():wait()`.
+- `markdown.nvim` has no export, and that would be the obvious next wish
+  (`:Markdown export pdf`).
+- `filetree.nvim` has nothing at all, but would naturally offer exporting a
+  selection (several images into one PDF).
 
-| Werkzeug | Bewertung |
+Left to themselves, each plugin would grow its own tool detection, its own
+error handling, its own Windows quirk. This is exactly the case pdfport already
+has a registry, a resolver, a fallback chain, a progress indicator and
+`platform.has()` for — creation is structurally the same problem as extraction,
+with the arrow reversed.
+
+---
+
+## 2. Tools — weighing the alternatives
+
+First, the thing that decides the shape: **no single tool covers every input.**
+`pandoc` is not a PDF producer but a converter, and for PDF it *always* needs
+an external engine. So this cannot be a "we'll use pandoc" decision; it is a
+chain per input kind.
+
+### Image to PDF
+
+| Tool | Assessment |
 |---|---|
-| **`img2pdf`** (Python) | **Erste Wahl.** Verlustfrei: bettet JPEG/PNG-Daten *unverändert* ein, statt sie neu zu kodieren. Winziges Paket, keine Systemabhängigkeit, kann mehrere Bilder → ein PDF, Seitengröße/Ränder als Argumente. Nachteil: braucht Python, nicht überall da. |
-| **ImageMagick** (`magick a.png b.png out.pdf`) | **Zweite Wahl / pragmatischer Default.** In diesem Setup ohnehin vorausgesetzt (`images.nvim` baut auf `magick`, siehe dessen `convert.lua`), kann Mehrfachbild → mehrseitiges PDF nativ. Nachteil: rekomprimiert, PDFs werden größer und minimal schlechter. |
-| `typst` / LaTeX mit `\includegraphics` | Overkill für „Bild rein, PDF raus", aber interessant, sobald Kopf-/Fußzeile, Titel oder Bildunterschriften dazukommen (Galerie-Export als kontaktbogenartiges Dokument). |
-| Ghostscript | Kann kein Bild einlesen. Für *Zusammenführen/Komprimieren* fertiger PDFs relevant, nicht hier. |
+| **`img2pdf`** (Python) | **First choice.** Lossless: embeds the JPEG/PNG data *unchanged* rather than re-encoding it. Tiny package, no system dependency, handles several images into one PDF, takes page size and margins as arguments. Downside: needs Python, which is not everywhere. |
+| **ImageMagick** (`magick a.png b.png out.pdf`) | **Second choice, and the pragmatic default.** Assumed present in this setup anyway (`images.nvim` builds on `magick`, see its `convert.lua`), and can do multi-image to multi-page PDF natively. Downside: it recompresses, so PDFs come out larger and marginally worse. |
+| `typst` / LaTeX with `\includegraphics` | Overkill for "image in, PDF out", but interesting the moment headers, footers, a title or captions come into it (a gallery export as a contact-sheet-like document). |
+| Ghostscript | Cannot read an image at all. Relevant for *merging and compressing* finished PDFs, not here. |
 
-### Markdown/Text → PDF
+### Markdown/text to PDF
 
-| Werkzeug | Bewertung |
+| Tool | Assessment |
 |---|---|
-| **`typst compile`** | **Erste Wahl für „ohne Ballast".** Eine einzelne Binärdatei (~30 MB), keine TeX-Distribution, Kompilierung in Millisekunden, gute Typografie ab Werk. Nachteil: Markdown ist nicht seine Eingabesprache — es braucht entweder pandoc davor oder eine kleine eigene Markdown→Typst-Vorlage. |
-| **`pandoc --pdf-engine=…`** | **Erste Wahl für Korrektheit.** Beherrscht Markdown-Dialekte, Fußnoten, Zitate, Inhaltsverzeichnis, Vorlagen. Aber: braucht zwingend eine Engine. Reihenfolge der Engine-Suche: `tectonic` (lädt TeX-Pakete selbst nach, kein 4-GB-TeXLive) → `typst` (pandoc ≥ 3.1.11 kann `--pdf-engine=typst`) → `xelatex`/`lualatex`/`pdflatex` → `weasyprint`/`wkhtmltopdf` (HTML-Umweg, schlechtere Seitenumbrüche). |
-| `mdview.nvim` + Browserdruck | Vorhanden im eigenen Ökosystem, aber der Weg führt über einen Browser-Tab und manuelles Drucken — nicht scriptbar. Verworfen. |
-| `md-to-pdf`, `mdpdf` (npm) | Node-Abhängigkeit für etwas, das pandoc/typst besser können. Verworfen. |
+| **`typst compile`** | **First choice for "without the baggage".** A single binary (~30 MB), no TeX distribution, compiles in milliseconds, good typography out of the box. Downside: Markdown is not its input language — it needs either pandoc in front of it or a small Markdown-to-Typst template of one's own. |
+| **`pandoc --pdf-engine=…`** | **First choice for correctness.** Handles Markdown dialects, footnotes, citations, tables of contents, templates. But: it strictly requires an engine. Engine search order: `tectonic` (fetches TeX packages itself, no 4 GB TeXLive) → `typst` (pandoc ≥ 3.1.11 supports `--pdf-engine=typst`) → `xelatex`/`lualatex`/`pdflatex` → `weasyprint`/`wkhtmltopdf` (the HTML detour, with worse page breaks). |
+| `mdview.nvim` plus browser printing | Present in this ecosystem, but the path runs through a browser tab and a manual print dialog — not scriptable. Rejected. |
+| `md-to-pdf`, `mdpdf` (npm) | A Node dependency for something pandoc and typst do better. Rejected. |
 
-### HTML → PDF
+### HTML to PDF
 
-`weasyprint` (sauberes CSS-Paged-Media, Python) → `chromium --headless
---print-to-pdf` (überall vorhanden, aber gruselige Kommandozeile und
-Ränder-Voreinstellungen) → `wkhtmltopdf` (unmaintained, alte WebKit-Engine,
-nur als letztes Glied).
+`weasyprint` (clean CSS paged media, Python) → `chromium --headless
+--print-to-pdf` (available everywhere, but with a dreadful command line and
+dreadful default margins) → `wkhtmltopdf` (unmaintained, an old WebKit engine,
+last link only).
 
-### Office → PDF
+### Office to PDF
 
-`soffice --headless --convert-to pdf --outdir <dir> <file>` deckt
-docx/odt/xlsx/pptx in einem Aufruf ab. Schwergewichtig und langsam beim
-ersten Start, aber die einzige realistische Option. Optional, ganz hinten.
+`soffice --headless --convert-to pdf --outdir <dir> <file>` covers
+docx/odt/xlsx/pptx in one call. Heavyweight and slow on first start, but the
+only realistic option. Optional, and last in line.
 
-### PDF → PDF (Zusammenführen, Phase 2)
+### PDF to PDF (merging, phase 2)
 
-`qpdf --empty --pages a.pdf b.pdf -- out.pdf` (klein, exakt, keine
-Neukodierung) → `pdftk` → Ghostscript. Nicht Teil der ersten Ausbaustufe,
-aber die API wird so geschnitten, dass es später ohne Bruch dazukommt.
+`qpdf --empty --pages a.pdf b.pdf -- out.pdf` (small, exact, no re-encoding) →
+`pdftk` → Ghostscript. Not part of the first stage, but the API is cut so that
+it can be added later without a break.
 
-### Fazit
+### Conclusion
 
-Erste Ausbaustufe: **`img2pdf` → `magick`** für Bilder, **`pandoc` (+ Engine)
-→ `typst`** für Text/Markdown. Alles andere sind zusätzliche Producer in
-derselben Registry, kein Umbau.
+First stage: **`img2pdf` → `magick`** for images, **`pandoc` (plus an engine) →
+`typst`** for text and Markdown. Everything else is additional producers in the
+same registry, not a rebuild.
 
 ---
 
-## 3. Architektur
+## 3. Architecture
 
-Bewusst spiegelbildlich zum vorhandenen Lesepfad, damit niemand zwei Muster
-lernen muss:
+Deliberately a mirror image of the existing read path, so nobody has to learn
+two patterns:
 
 ```
-                LESEN (heute)                    SCHREIBEN (neu)
+                READING (today)                  WRITING (new)
   API           pdfport.open/extract             pdfport.create
-  Koordination  core/dispatcher.lua              core/composer.lua
-  Auswahl       core/resolver.lua                core/resolver.lua  (erweitert)
+  Coordination  core/dispatcher.lua              core/composer.lua
+  Selection     core/resolver.lua                core/resolver.lua  (extended)
   Registry      registry.register_backend        registry.register_producer
-  Implementierung backends/*.lua                 producers/*.lua
-  Ausgabe       renderers/*.lua                  (Datei auf Platte)
+  Implementation backends/*.lua                  producers/*.lua
+  Output        renderers/*.lua                  (a file on disk)
 ```
 
-Neue Dateien:
+New files:
 
 ```
-lua/pdfport/producers/init.lua      -- Lazy-Proxy-Registrierung, wie backends/init.lua
+lua/pdfport/producers/init.lua      -- lazy proxy registration, like backends/init.lua
 lua/pdfport/producers/img2pdf.lua
 lua/pdfport/producers/magick.lua
 lua/pdfport/producers/pandoc.lua
 lua/pdfport/producers/typst.lua
-lua/pdfport/producers/weasyprint.lua   -- Phase 2
-lua/pdfport/producers/soffice.lua      -- Phase 2
+lua/pdfport/producers/weasyprint.lua   -- phase 2
+lua/pdfport/producers/soffice.lua      -- phase 2
 lua/pdfport/core/composer.lua
-lua/pdfport/util/tmpfile.lua        -- Puffer-/String-Eingaben materialisieren
+lua/pdfport/util/tmpfile.lua        -- materialize buffer/string inputs
 ```
 
-Wiederverwendet ohne Änderung: `platform.has`, `util/notify`, die
-Fortschrittsanzeige aus `dispatcher.lua` (wandert dafür in einen kleinen
-gemeinsamen Helfer, statt kopiert zu werden), `lib.nvim.cross.uv.spawn_capture`.
+Reused unchanged: `platform.has`, `util/notify`, the progress indicator from
+`dispatcher.lua` (which moves into a small shared helper for this rather than
+being copied), and `lib.nvim.cross.uv.spawn_capture`.
 
-**Kein Cache.** Der Lesepfad cached, weil dieselbe PDF wiederholt gelesen wird;
-ein Export ist eine einmalige, explizite Aktion mit einem Zielpfad — dieselbe
-Begründung, die in `images.convert` schon für `to_pdf` steht.
+**No cache.** The read path caches because the same PDF is read repeatedly; an
+export is a one-off, explicit action with a target path — the same reasoning
+already written down for `to_pdf` in `images.convert`.
 
-### Producer-Schnittstelle
+### The producer interface
 
 ```lua
 ---@alias PdfPort.InputKind "image"|"markdown"|"html"|"text"|"office"|"pdf"
 
 ---@class PdfPort.ProducerCapabilities
----@field batch boolean      # mehrere Eingaben → ein Dokument
----@field lossless boolean   # bettet Quelldaten unverändert ein
----@field styling boolean    # Seitengröße/Ränder/Vorlage werden beachtet
----@field toc boolean        # kann ein Inhaltsverzeichnis erzeugen
----@field remote boolean     # braucht Netz
+---@field batch boolean      # several inputs into one document
+---@field lossless boolean   # embeds the source data unchanged
+---@field styling boolean    # honours page size / margins / template
+---@field toc boolean        # can generate a table of contents
+---@field remote boolean     # needs the network
 
 ---@class PdfPort.Producer
 ---@field id PdfPort.ProducerId
@@ -159,16 +159,16 @@ Begründung, die in `images.convert` schon für `to_pdf` steht.
 ---@field create fun(req: PdfPort.InternalCreateOpts): PdfPort.CreateResult|nil
 ```
 
-`create` folgt exakt der Konvention von `Backend.extract`: asynchrone Producer
-geben `nil` zurück und rufen `req.__callback`, synchrone geben direkt ein
-Ergebnis zurück — der Composer behandelt beides (siehe `dispatcher.lua:228`).
+`create` follows `Backend.extract`'s convention exactly: an asynchronous
+producer returns `nil` and calls `req.__callback`, a synchronous one returns a
+result directly — the composer handles both (see `dispatcher.lua:228`).
 
-### Ergebnis
+### The result
 
 ```lua
 ---@class PdfPort.CreateResult
 ---@field status "ok"|"error"|"partial"
----@field path string|nil        # erzeugte Datei
+---@field path string|nil        # the file that was produced
 ---@field producer PdfPort.ProducerId
 ---@field pages integer|nil
 ---@field error string|nil
@@ -176,72 +176,73 @@ Ergebnis zurück — der Composer behandelt beides (siehe `dispatcher.lua:228`).
 
 ---
 
-## 4. Öffentliche API
+## 4. The public API
 
-Ein Einstiegspunkt, absichtlich in derselben Form wie `open`/`extract`
-(Tabelle rein, `__callback` raus):
+One entry point, deliberately in the same shape as `open`/`extract` (a table
+in, `__callback` out):
 
 ```lua
 require("pdfport").create({
-  -- Eingabe: genau eines von inputs / text / bufnr
-  inputs  = { "/pfad/a.png", "/pfad/b.png" },  -- Dateien, Reihenfolge = Seitenreihenfolge
-  -- text = "# Titel\n\nAbsatz",               -- Inhalt direkt
-  -- bufnr = 0,                                -- Pufferinhalt
+  -- Input: exactly one of inputs / text / bufnr
+  inputs  = { "/path/a.png", "/path/b.png" },  -- files; order is page order
+  -- text = "# Title\n\nParagraph",            -- content directly
+  -- bufnr = 0,                                -- buffer content
 
-  from    = "image",          -- optional; sonst aus Endung/`filetype` erraten
-  output  = "/pfad/out.pdf",  -- optional; Default: neben der ersten Eingabe, gleicher Stamm
+  from    = "image",          -- optional; otherwise guessed from extension/`filetype`
+  output  = "/path/out.pdf",  -- optional; default: beside the first input, same stem
 
-  producer_id = nil,          -- optional; nil = Auto über die Kette
+  producer_id = nil,          -- optional; nil = automatic, via the chain
   on_conflict = "overwrite",  -- "overwrite" | "suffix" (out-1.pdf) | "error"
 
-  opts = {                    -- alles optional, Producer ignorieren Unbekanntes
+  opts = {                    -- all optional; producers ignore what they do not know
     page_size = "A4",
     margin    = "20mm",
-    dpi       = 300,          -- nur Bildpfad
+    dpi       = 300,          -- image path only
     fit       = "contain",    -- "contain" | "fill" | "native"
     title     = nil,
-    toc       = false,        -- nur Textpfad
-    template  = nil,          -- pandoc/typst-Vorlage
+    toc       = false,        -- text path only
+    template  = nil,          -- a pandoc/typst template
     timeout_ms = 60000,
   },
 
-  __callback = function(res) ... end,  -- optional; ohne = Fire-and-forget mit notify
+  __callback = function(res) ... end,  -- optional; without it, fire-and-forget with notify
 })
 ```
 
-Zusätzlich, weil beides in der Praxis sofort gebraucht wird:
+Plus these two, because both are needed immediately in practice:
 
 ```lua
-require("pdfport").register_producer(p)            -- analog register_backend
-require("pdfport").can_create("markdown")          -- boolean, für Soft-Deps der Aufrufer
-require("pdfport").merge({ inputs, output, ... })  -- Phase 2, qpdf/Ghostscript
+require("pdfport").register_producer(p)            -- as register_backend
+require("pdfport").can_create("markdown")          -- boolean, for callers' soft deps
+require("pdfport").merge({ inputs, output, ... })  -- phase 2, qpdf/Ghostscript
 ```
 
-Und der Vollständigkeit halber die schon in [ROADMAP.md](../ROADMAP.md)
-notierte Gegenrichtung `render_page(path, page, opts, cb)` (PDF-Seite → PNG):
-gleiche Signaturform, gleiche Registry-Denkweise, sollte zusammen mit diesem
-Konzept entworfen werden, damit `images.nvim` beide Richtungen einheitlich
-anspricht.
+And for completeness, the opposite direction already noted in
+[ROADMAP.md](../ROADMAP.md): `render_page(path, page, opts, cb)` (a PDF page to
+a PNG). Same signature shape, same registry thinking; it should be designed
+together with this concept, so `images.nvim` addresses both directions the same
+way.
 
-### Kommandos
+### Commands
 
-Im vorhandenen Ein-Verb-Komposer (`:PdfPort <sub>`), keine neuen Flachbefehle:
+Inside the existing one-verb composer (`:PdfPort <sub>`), with no new flat
+commands:
 
 ```
-:PdfPort create              " aktueller Puffer → PDF daneben
-:PdfPort create <datei…>     " eine oder mehrere Dateien → ein PDF
-:PdfPort producers           " Diagnose, analog `:PdfPort backends`
+:PdfPort create              " the current buffer, to a PDF beside it
+:PdfPort create <file…>      " one or more files into one PDF
+:PdfPort producers           " diagnostics, as `:PdfPort backends`
 ```
 
-Visuelle Auswahl im Dateibaum → ein PDF läuft über `util/batch.lua`, das die
-Zeilen-für-Zeile-Auflösung schon kann.
+A visual selection in the file tree into one PDF runs through
+`util/batch.lua`, which already knows how to resolve line by line.
 
-### Konfiguration
+### Configuration
 
 ```lua
 require("pdfport").setup({
   create_opts = { page_size = "A4", margin = "20mm", dpi = 300, timeout_ms = 60000 },
-  create_chain = {                       -- pro Eingabeart, wie fallback_chain
+  create_chain = {                       -- per input kind, like fallback_chain
     image    = { "img2pdf", "magick" },
     markdown = { "pandoc", "typst" },
     html     = { "weasyprint", "chromium", "wkhtmltopdf" },
@@ -253,23 +254,23 @@ require("pdfport").setup({
 
 ---
 
-## 5. Anbindung der drei Aufrufer
+## 5. Wiring up the three callers
 
-Überall **Soft-Dependency über `pcall`**, wie im ganzen Ökosystem üblich: fehlt
-pdfport, bleibt das bisherige Verhalten.
+Everywhere a **soft dependency through `pcall`**, as is usual across this
+ecosystem: without pdfport, the previous behaviour stands.
 
-### `images.nvim` — erledigt (2026-08-09)
+### `images.nvim` — done (2026-08-09)
 
-`images.convert.to_pdf` ist jetzt die dünne Weiche: ist pdfport da und meldet
-`can_create("image")` einen Producer, geht der Export dorthin (asynchron,
-verlustfrei über `img2pdf`, sonst `magick` — welcher Producer greift,
-entscheidet pdfports eigene `create_chain`); sonst bleibt der bisherige
-synchrone `magick`-Pfad wortgleich als Fallback stehen. Fast wortgleich zum
-hier skizzierten Code umgesetzt, nur mit einem `on_done(ok, out_or_err)`
-statt eines synchronen Rückgabewerts — der pdfport-Pfad ist async, der
-magick-Pfad ruft `on_done` synchron auf, damit `images.export()` (der
-öffentliche `:Image export`-Einstieg) beide Pfade einheitlich behandelt,
-statt zwei Aufrufkonventionen zu unterscheiden:
+`images.convert.to_pdf` is now the thin switch: if pdfport is there and
+`can_create("image")` reports a producer, the export goes that way
+(asynchronous, lossless via `img2pdf`, otherwise `magick` — which producer
+wins is pdfport's own `create_chain` to decide); otherwise the previous
+synchronous `magick` path stands word for word as the fallback. Implemented
+almost exactly as sketched below, except with an `on_done(ok, out_or_err)`
+instead of a synchronous return value — the pdfport path is async and the
+magick path calls `on_done` synchronously, so that `images.export()` (the
+public `:Image export` entry point) treats both the same way instead of
+distinguishing two calling conventions:
 
 ```lua
 function M.to_pdf(path, on_done)
@@ -280,112 +281,114 @@ function M.to_pdf(path, on_done)
     end })
     return nil, nil
   end
-  -- … bisheriger magick-Pfad unverändert, ruft on_done synchron …
+  -- … the previous magick path unchanged, calling on_done synchronously …
 end
 ```
 
-**Nicht umgesetzt** (bewusst außerhalb dieses Umfangs): `:Image gallery` /
-eine Mehrfachauswahl → **ein** mehrseitiges PDF statt n Einzeldateien. Bliebe
-ein sinnvoller Folgeschritt, ist aber ein neues UI-/Auswahl-Feature in
-images.nvim selbst, keine reine Anbindung.
+**Not implemented**, and deliberately out of scope: `:Image gallery` or a
+multi-selection producing **one** multi-page PDF rather than n separate files.
+It would be a sensible follow-up, but it is a new UI/selection feature inside
+images.nvim, not a matter of wiring.
 
-### `markdown.nvim` — erledigt (2026-08-09)
+### `markdown.nvim` — done (2026-08-09)
 
-`:Markdown export pdf` — neues `markdown.commands.export`, exakt nach dem
-Muster von `markdown.commands.image` (der bestehenden images.nvim-Anbindung):
-ein unveränderter Puffer mit Datei auf der Platte exportiert die Datei direkt
-(`from = "markdown"`); ein ungespeicherter/neuer Puffer exportiert stattdessen
-den Pufferinhalt (`bufnr = 0`, `from = "markdown"`, `output` explizit gesetzt
-— pdfport materialisiert selbst über `util/tmpfile.lua`). Das Plugin kennt
-weder pandoc noch eine Engine; die Enttäuschung „nichts installiert"
-formuliert pdfport, nicht markdown.nvim (`can_create("markdown")` gated die
-Subcommand-Ausführung vorab). Gated über `config.feature_enabled("export")`,
-wie jedes andere `:Markdown`-Subcommand.
+`:Markdown export pdf` — the new `markdown.commands.export`, following
+`markdown.commands.image` (the existing images.nvim wiring) exactly: an
+unmodified buffer with a file on disk exports that file directly
+(`from = "markdown"`); an unsaved or new buffer exports the buffer content
+instead (`bufnr = 0`, `from = "markdown"`, `output` set explicitly — pdfport
+materializes it itself through `util/tmpfile.lua`). The plugin knows about
+neither pandoc nor an engine; the "nothing installed" disappointment is
+pdfport's to phrase, not markdown.nvim's (`can_create("markdown")` gates the
+subcommand before it runs). Gated behind `config.feature_enabled("export")`,
+like every other `:Markdown` subcommand.
 
-### `filetree.nvim` — erledigt (2026-08-09)
+### `filetree.nvim` — done (2026-08-09)
 
-`util/pdf.lua` war bereits „der eine Ort, an dem filetree mit pdfport
-spricht" und bekam `M.create(paths, opts)`. Ziel-Ermittlung wie bei
-`trash`/`copy_move` (markierte Knoten, sonst aktueller Knoten; ein
-Ordner-Knoten expandiert zu seinen direkten Kind-Dateien, nicht rekursiv) im
-neuen Feature `features/system/pdf_create` (Taste `gP`), das immer über
-`filetree.util.confirm` (= `lib.nvim.ui.kit.confirm`) nachfragt, bevor
-irgendetwas geschrieben wird. Eine PDF pro Eingabedatei (kein Merge einer
-Mehrfachauswahl in eine gemeinsame PDF — bei gemischten Dateitypen in einem
-Ordner ergäbe das ohnehin keinen Sinn).
+`util/pdf.lua` was already "the one place where filetree talks to pdfport", and
+gained `M.create(paths, opts)`. Target resolution works as it does for
+`trash`/`copy_move` (marked nodes, otherwise the node under the cursor; a
+directory node expands to its immediate child files, not recursively) in the
+new `features/system/pdf_create` feature (key `gP`), which always asks through
+`filetree.util.confirm` (= `lib.nvim.ui.kit.confirm`) before anything is
+written. One PDF per input file — no merging of a multi-selection into a shared
+PDF, which would make no sense anyway for mixed file types in one folder.
 
-> **Bereits gefixt (2026-08-07):** `filetree/util/pdf.lua`s `M.has_pdfport()`
-> und `M.open()` riefen schon vor diesem Durchgang korrekt `require("pdfport")`
-> auf, nicht `require("pdfport_nvim")` — der Bug aus der persönlichen Roadmap
-> bestand zu diesem Zeitpunkt bereits nicht mehr.
+> **Already fixed (2026-08-07):** `filetree/util/pdf.lua`'s `M.has_pdfport()`
+> and `M.open()` were already calling `require("pdfport")` correctly rather
+> than `require("pdfport_nvim")` before this pass — the bug from the personal
+> roadmap no longer existed by then.
 
 ---
 
-## 6. Fallstricke, vorab entschieden
+## 6. Pitfalls, decided up front
 
-- **Nie eine Shell-Zeichenkette, immer eine Argumenttabelle.** Der
-  `cmd /c start`-`&`-Bug (2026-07-25, fünf Repos) ist genau daran entstanden.
-  Alle Producer spawnen über `spawn_capture` mit `argv`-Tabelle.
-- **ImageMagick unter Windows**: `magick` ist der Aufruf, `convert.exe`
-  kollidiert mit Windows' eigenem `convert`. `platform.has("magick")`, nie
+- **Never a shell string, always an argument table.** The `cmd /c start` `&`
+  bug (2026-07-25, five repos) came from exactly that. Every producer spawns
+  through `spawn_capture` with an `argv` table.
+- **ImageMagick on Windows**: `magick` is the invocation; `convert.exe`
+  collides with Windows' own `convert`. So `platform.has("magick")`, never
   `convert`.
-- **Zielpfad-Konflikt** ist eine bewusste Entscheidung des Aufrufers
-  (`on_conflict`), keine stille Überschreibung im Kern. Default für die
-  Kommandos: `suffix`; für den API-Aufruf: was der Aufrufer setzt,
-  `overwrite` als Default, weil `images.convert.to_pdf` sich heute schon so
-  verhält.
-- **Puffer ohne Datei / `text`-Eingabe** landen über `util/tmpfile.lua` in
-  `stdpath("cache")/pdfport.nvim/tmp` und werden nach dem Lauf gelöscht —
-  auch im Fehlerfall (`vim.schedule` + `pcall`).
-- **Relative Bildpfade in Markdown** brechen, wenn im Temp-Verzeichnis
-  kompiliert wird. pandoc/typst deshalb mit `--resource-path` bzw. `--root`
-  auf das Verzeichnis der Quelldatei aufrufen.
-- **Timeouts**: Erstellung darf lange dauern (LaTeX-Erstlauf, soffice-Start),
-  Default deshalb 60 s statt der 30 s des Lesepfads.
-- **Fortschritt** kommt geschenkt, sobald der Composer denselben
-  `start_progress`-Helfer nutzt wie der Dispatcher — der wandert dafür aus
-  `dispatcher.lua` in ein gemeinsames Modul.
+- **A target-path conflict** is a deliberate decision by the caller
+  (`on_conflict`), not a silent overwrite in the core. Default for the
+  commands: `suffix`; for the API call: whatever the caller sets, with
+  `overwrite` as the default, because that is how `images.convert.to_pdf`
+  behaves today.
+- **A buffer with no file, or a `text` input**, lands in
+  `stdpath("cache")/pdfport.nvim/tmp` via `util/tmpfile.lua` and is deleted
+  after the run — including on failure (`vim.schedule` plus `pcall`).
+- **Relative image paths in Markdown** break when compilation happens in a
+  temp directory. pandoc and typst are therefore invoked with
+  `--resource-path` / `--root` pointing at the source file's directory.
+- **Timeouts**: creation is allowed to take a while (a first LaTeX run, an
+  soffice start), so the default is 60 s rather than the read path's 30 s.
+- **Progress** comes for free once the composer uses the same `start_progress`
+  helper as the dispatcher — which moves out of `dispatcher.lua` into a shared
+  module for that.
 
 ---
 
-## 7. Ausbaustufen
+## 7. Stages
 
-1. ~~**P0 — Gerüst + Bilder.**~~ **Erledigt (2026-08-09).** `@types`-Erweiterung,
-   `registry.register_producer`, `core/composer.lua`, `producers/img2pdf.lua` +
-   `producers/magick.lua`, `pdfport.create`/`can_create`, `:PdfPort create`,
-   `:PdfPort producers`, `health.lua`-Abschnitt, Tests (`TESTS/producer_spec.lua`).
-   Die API ist jetzt nutzbar (`opts.inputs` = Dateipfade; `text`/`bufnr`-Eingaben
-   bleiben P1). Noch offen: die eigentliche Anbindung in `images.nvim` selbst (P2).
-2. ~~**P1 — Text.**~~ **Erledigt (2026-08-09), reduzierter Zuschnitt.**
-   `producers/pandoc.lua` mit interner Engine-Auto-Erkennung (tectonic →
-   typst → xelatex → lualatex → pdflatex, via `--pdf-engine`), `from =
-   "markdown"|"text"`, `util/tmpfile.lua` (`opts.text`/`opts.bufnr` in
-   `pdfport.create()`, mit Pflicht-`from`+`output`, Cleanup nach dem
-   Ergebnis-Callback). Kein separater `producers/typst.lua` — laut Abschnitt
-   2 braucht typst als direkte Markdown-Quelle ohnehin pandoc davor oder
-   eine eigene Vorlage, deckt sich also mit pandocs `--pdf-engine=typst`
-   statt ein zweiter Top-Level-Producer zu sein. `:Markdown export pdf`
-   selbst ist weiterhin P2 (Aufrufer-Anbindung).
-3. ~~**P2 — Aufrufer anbinden.**~~ **Erledigt (2026-08-09), alle drei.**
-   filetree-Bugfix (`pdfport_nvim`) bereits gefixt vorgefunden. `filetree.nvim`:
-   `util/pdf.create()` + Feature `pdf_create` (Marks/aktueller Node/Ordner,
-   Bestätigung über `lib.nvim.ui.kit`). `images.nvim`: `convert.to_pdf`/
-   `M.export` routen asynchron über `pdfport.create()`, wenn verfügbar (sonst
-   unverändert `magick`). `markdown.nvim`: `:Markdown export pdf`
-   (`markdown.commands.export`, exakt nach dem `commands.image`-Muster). Alle
-   drei dokumentiert im jeweils eigenen Repo. Nicht umgesetzt: `:Image
-   gallery`/Mehrfachauswahl → ein gemeinsames mehrseitiges PDF — eigenes
-   UI-Feature in images.nvim, keine reine Anbindung, siehe Abschnitt 5.
-4. ~~**P3 — Breite.**~~ **Erledigt (2026-08-09).** `weasyprint`/`chromium`
-   (HTML), `soffice` (Office), `pdfport.merge()` über
-   `qpdf`/`pdftk`/`ghostscript` (registriert als normale "pdf"-Producer,
-   `merge()` ist ein dünner Wrapper um `composer.create({ from = "pdf" })`).
+1. ~~**P0 — scaffolding and images.**~~ **Done (2026-08-09).** The `@types`
+   extension, `registry.register_producer`, `core/composer.lua`,
+   `producers/img2pdf.lua` and `producers/magick.lua`,
+   `pdfport.create`/`can_create`, `:PdfPort create`, `:PdfPort producers`, the
+   `health.lua` section, and tests (`TESTS/producer_spec.lua`). The API is
+   usable from here (`opts.inputs` = file paths; `text`/`bufnr` inputs stayed
+   for P1). Still open at that point: the actual wiring inside `images.nvim`
+   (P2).
+2. ~~**P1 — text.**~~ **Done (2026-08-09), with a reduced cut.**
+   `producers/pandoc.lua` with internal engine auto-detection (tectonic →
+   typst → xelatex → lualatex → pdflatex, via `--pdf-engine`),
+   `from = "markdown"|"text"`, and `util/tmpfile.lua` (`opts.text`/`opts.bufnr`
+   in `pdfport.create()`, requiring `from` and `output`, cleaned up after the
+   result callback). No separate `producers/typst.lua`: per section 2, typst as
+   a direct Markdown source needs pandoc in front of it or a template of its
+   own anyway, which is the same thing as pandoc's `--pdf-engine=typst` rather
+   than a second top-level producer. `:Markdown export pdf` itself remained P2
+   (caller wiring).
+3. ~~**P2 — wire up the callers.**~~ **Done (2026-08-09), all three.** The
+   filetree bugfix (`pdfport_nvim`) was found already fixed. `filetree.nvim`:
+   `util/pdf.create()` plus the `pdf_create` feature (marks / node under cursor
+   / folder, confirmed through `lib.nvim.ui.kit`). `images.nvim`:
+   `convert.to_pdf`/`M.export` route asynchronously through `pdfport.create()`
+   when available, otherwise `magick` unchanged. `markdown.nvim`:
+   `:Markdown export pdf` (`markdown.commands.export`, following the
+   `commands.image` pattern exactly). All three documented in their own
+   repositories. Not implemented: `:Image gallery` / a multi-selection into one
+   shared multi-page PDF — a UI feature inside images.nvim, not wiring; see
+   section 5.
+4. ~~**P3 — breadth.**~~ **Done (2026-08-09).** `weasyprint`/`chromium` (HTML),
+   `soffice` (Office), and `pdfport.merge()` over `qpdf`/`pdftk`/`ghostscript`
+   (registered as ordinary "pdf" producers; `merge()` is a thin wrapper around
+   `composer.create({ from = "pdf" })`).
 
 ## 8. Tests
 
-Nach dem Muster von `TESTS/registry_spec.lua`/`resolver_spec.lua`, headless und
-ohne Framework: ein **Stub-Producer**, der keine externe Binärdatei braucht,
-deckt Registrierung, Ketten-Auflösung pro `InputKind`, `on_conflict`, den
-synchronen *und* den `__callback`-Rückgabeweg sowie den Fehlerfall „kein
-Producer verfügbar" ab. Die echten Producer bleiben in CI ungetestet — dieselbe
-Linie wie bei den Extraktions-Backends.
+Following `TESTS/registry_spec.lua`/`resolver_spec.lua`: headless, and with no
+framework. A **stub producer** that needs no external binary covers
+registration, chain resolution per `InputKind`, `on_conflict`, both the
+synchronous *and* the `__callback` return paths, and the "no producer
+available" failure. The real producers stay untested in CI — the same line
+taken for the extraction backends.
