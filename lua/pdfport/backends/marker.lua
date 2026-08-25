@@ -33,6 +33,20 @@ function M.extract(path, opts)
   local tmp_dir = vim.fn.tempname()
   vim.fn.mkdir(tmp_dir, "p")
 
+  -- Resolve the short name out before anything globs this directory.
+  -- `tempname()` sits under %TEMP%, which on Windows is the 8.3 form
+  -- (`C:/Users/STEFAN~1/...`) for any profile name over eight characters --
+  -- and `vim.fn.glob` reads its argument as a *pattern*, where `~1` is a
+  -- home-directory reference it cannot resolve. It then returns an empty list
+  -- rather than an error, so the recovery search below found nothing and the
+  -- "Present: ..." line in the failure message listed an empty directory that
+  -- was not empty. Only after mkdir: fs_realpath needs the path to exist.
+  do
+    local uv = vim.uv or vim.loop
+    local real = uv.fs_realpath(tmp_dir)
+    if real then tmp_dir = real end
+  end
+
   local args = { path, tmp_dir, "--output_format", "markdown" }
   if opts.max_pages then
     args[#args + 1] = "--max_pages"
