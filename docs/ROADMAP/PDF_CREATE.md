@@ -7,7 +7,7 @@ Office-Producer (`soffice`) + Merge-Producer (`qpdf`/`pdftk`/`ghostscript`,
 über `pdfport.merge()`), `pdfport.create()`/`can_create()`/`merge()` (inkl.
 `text`/`bufnr`-Eingaben über `util/tmpfile.lua`), `:PdfPort
 create`/`:PdfPort merge`/`:PdfPort producers`, Tests, Doku. Siehe
-[docs/FEATURES.md](../FEATURES.md). **P2 (Aufrufer-Anbindung) ist jetzt
+[docs/FEATURES/](../FEATURES/). **P2 (Aufrufer-Anbindung) ist jetzt
 vollständig:** `filetree.nvim` (`util/pdf.create()` +
 `features/system/pdf_create`), `images.nvim` (`convert.to_pdf`/`M.export`
 routen asynchron über `pdfport.create()`, wenn verfügbar, sonst der
