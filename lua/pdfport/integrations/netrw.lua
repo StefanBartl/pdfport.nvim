@@ -2,7 +2,7 @@
 ---@brief netrw integration for pdfport.nvim.
 ---@description
 --- Registers buffer-local keymaps whenever netrw opens.
---- netrw does not provide a Lua API — paths are derived from vim.b.netrw_curdir
+--- netrw does not provide a Lua API -- paths are derived from vim.b.netrw_curdir
 --- and the word under cursor.
 ---
 --- Usage:
@@ -12,12 +12,14 @@
 --- Pass `false` for any action to disable that default keymap, e.g.:
 ---
 ---   require("pdfport.integrations.netrw").setup({ open_system = false })
+---
+--- What each key does lives in `pdfport.bindings.keymaps`, shared with the
+--- other file trees: the only thing that differs here is how the path under
+--- the cursor is found.
 
 local M = {}
 
-local map = require("lib.nvim.bindings.keymap")
 local notify = require("pdfport.util.notify").create("[pdfport.netrw]")
-local picker = require("pdfport.util.picker")
 local autocmds = require("pdfport.bindings.autocmds")
 local keymaps = require("pdfport.bindings.keymaps")
 
@@ -33,60 +35,12 @@ local function current_node_path()
   return dir .. sep .. file
 end
 
----@internal
----@see pdfport.integrations.nvim_tree, pdfport.integrations.oil, pdfport.integrations.neotree  Same check, duplicated per-tree
----@param path string
----@return boolean
-local function is_pdf(path)
-  return path:lower():match("%.pdf$") ~= nil
-end
-
 ---@param opts? PdfPort.KeymapOpts
 ---@return nil
 function M.setup(opts)
-  local resolved = keymaps.resolve(opts)
-
   autocmds.on_filetype("netrw", "pdfport_netrw", function(buf)
-    local function bind(key, fn, desc)
-      if not key then return end
-      map("n", key, fn, { buffer = buf }, desc)
-    end
-
-    bind(resolved.open, function()
-      local path = current_node_path()
-      if not path or not is_pdf(path) then
-        notify.warn("not a PDF file")
-        return
-      end
-      picker.pick_and_open(path)
-    end, keymaps.DESCRIPTIONS.open)
-
-    bind(resolved.open_text, function()
-      local path = current_node_path()
-      if not path or not is_pdf(path) then return end
-      require("pdfport").open({ path = path, mode = "buffer", split = "vsplit", focus = true })
-    end, keymaps.DESCRIPTIONS.open_text)
-
-    bind(resolved.open_system, function()
-      local path = current_node_path()
-      if not path or not is_pdf(path) then return end
-      require("pdfport").open({ path = path, mode = "system" })
-    end, keymaps.DESCRIPTIONS.open_system)
-
-    bind(resolved.open_terminal, function()
-      local path = current_node_path()
-      if not path or not is_pdf(path) then return end
-      require("pdfport").open({ path = path, mode = "terminal" })
-    end, keymaps.DESCRIPTIONS.open_terminal)
-
-    if resolved.open_batch then
-      map("v", resolved.open_batch, function()
-        require("pdfport.util.batch").open_selected(current_node_path)
-      end, { buffer = buf }, keymaps.DESCRIPTIONS.open_batch)
-    end
+    keymaps.bind(buf, "netrw", current_node_path, notify, opts)
   end)
-
-  keymaps.register_which_key(resolved)
 end
 
 return M

@@ -37,11 +37,22 @@ open has settled, and each failure is also notified individually as it happens â
 as a nested `["v"] = { [lhs] = "pdfport_batch" }` entry inside `M.keymaps()`'s returned
 table rather than a top-level one, matching neo-tree's per-mode `window.mappings` shape.
 
-Disabling an action:
+Overriding or disabling an action:
 
 ```lua
-require("pdfport.integrations.oil").setup({ open_system = false })
+require("pdfport.integrations.oil").setup({
+  open        = "<leader>zo",            -- move one key
+  open_text   = { "<leader>zt", "gO" },  -- or give it several
+  open_system = false,                   -- or drop it
+  preset      = true,                    -- `false` binds nothing at all
+})
 ```
+
+The keys are declared as named actions through
+[`lib.nvim.bindings.keymap`](https://github.com/StefanBartl/lib.nvim), so a
+misspelled action name is reported instead of silently binding nothing.
+neo-tree is the exception: it installs mappings itself from a table of lhs to
+command name, so a list override there uses the first key.
 
 ## User commands
 
