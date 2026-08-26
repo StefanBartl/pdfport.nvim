@@ -89,6 +89,9 @@ are worse fits for an entire long document than `buffer` is. The parsed
 range flows into `opts.pages`, forwarded through `extract_opts.pages` on the
 backend side and, for `terminal`, directly into the rasterize loop.
 
+- **Module:** `util/page_range.lua` (`prompt`), invoked from `bindings/usrcmds.lua`
+- **Config:** `opts.pages`, forwarded as `extract_opts.pages`
+
 ## Custom renderer registration
 
 Any `fun(result: PdfPort.Result, opts: PdfPort.RenderOpts): nil` can be
