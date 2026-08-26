@@ -11,7 +11,7 @@
 
 local M = {}
 
-local map = require("lib.nvim.map")
+local map = require("lib.nvim.bindings.keymap")
 local notify = require("pdfport.util.notify").create("[pdfport.oil]")
 local picker = require("pdfport.util.picker")
 local autocmds = require("pdfport.bindings.autocmds")

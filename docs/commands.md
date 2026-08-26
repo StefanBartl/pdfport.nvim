@@ -3,7 +3,7 @@
 ## Commands
 
 One command, `:PdfPort [subcommand] [path]` (built via
-[`lib.nvim.usercmd.composer`](https://github.com/StefanBartl/lib.nvim), with
+[`lib.nvim.bindings.usercmd.composer`](https://github.com/StefanBartl/lib.nvim), with
 `<Tab>` completion — `.pdf` files are prioritized, `<cfile>` is suggested when
 completing with no input yet).
 

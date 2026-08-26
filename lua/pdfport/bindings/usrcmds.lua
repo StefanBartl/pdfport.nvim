@@ -8,7 +8,7 @@
 --- omitted they fall back to <cfile> and then the current buffer name. See
 --- docs/BINDINGS.md for the full cheatsheet.
 
-local composer = require("lib.nvim.usercmd.composer")
+local composer = require("lib.nvim.bindings.usercmd.composer")
 local notify = require("pdfport.util.notify").create("[pdfport.usrcmds]")
 local page_range = require("pdfport.util.page_range")
 

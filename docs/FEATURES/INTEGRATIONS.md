@@ -34,7 +34,7 @@ top-level entry like the other three integrations.
 ## nvim-tree integration
 
 Imperative — `require("pdfport.integrations.nvim_tree").setup(opts)`
-registers buffer-local keymaps via `lib.nvim.map`, augroup `pdfport_tree`
+registers buffer-local keymaps via `lib.nvim.bindings.keymap`, augroup `pdfport_tree`
 on `FileType NvimTree`. Same per-action `false`-to-disable opts shape as
 neo-tree.
 

@@ -6,7 +6,7 @@
 --- (re-running setup() clears and re-creates its own augroup instead of
 --- accumulating duplicate autocmds/keymaps).
 
-local autocmd = require("lib.nvim.autocmd")
+local autocmd = require("lib.nvim.bindings.autocmd")
 
 local M = {}
 

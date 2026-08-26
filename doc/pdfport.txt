@@ -30,7 +30,7 @@ to AI-powered cloud and local backends.
 
 - Neovim >= 0.9
 - lib.nvim (github.com/StefanBartl/lib.nvim) -- required: the :PdfPort
-  command is built on lib.nvim.usercmd.composer
+  command is built on lib.nvim.bindings.usercmd.composer
 - At least one extraction backend installed (see |pdfport-backends|)
 
 ==============================================================================
@@ -123,7 +123,7 @@ See lua/pdfport/config/DEFAULTS.lua for the authoritative defaults.
 5. COMMANDS                                        *pdfport-commands*
 
 One command, :PdfPort [subcommand] [path] (built via
-lib.nvim.usercmd.composer, with <Tab> completion -- .pdf files prioritized,
+lib.nvim.bindings.usercmd.composer, with <Tab> completion -- .pdf files prioritized,
 <cfile> suggested when completing with no input yet).
                                                               *:PdfPort*
 :PdfPort [path]

@@ -298,8 +298,8 @@ local function check_integrations()
   h_ok("netrw: built-in (always available)")
 
   -- lib.nvim itself is required (the :PdfPort command is built on
-  -- lib.nvim.usercmd.composer); lib.nvim.ui.kit stays a soft enhancement.
-  local composer_ok = pcall(require, "lib.nvim.usercmd.composer")
+  -- lib.nvim.bindings.usercmd.composer); lib.nvim.ui.kit stays a soft enhancement.
+  local composer_ok = pcall(require, "lib.nvim.bindings.usercmd.composer")
   if composer_ok then
     h_ok("lib.nvim found – :PdfPort available")
   else
@@ -385,7 +385,7 @@ function M.check()
   check_deps()
   check_registry_state()
 
-  require("lib.nvim.usercmd.composer").checkhealth("PdfPort")
+  require("lib.nvim.bindings.usercmd.composer").checkhealth("PdfPort")
 end
 
 return M

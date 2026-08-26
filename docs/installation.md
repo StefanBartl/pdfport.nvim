@@ -3,7 +3,7 @@
 ## Requirements
 
 - Neovim >= 0.9
-- [lib.nvim](https://github.com/StefanBartl/lib.nvim) — required: the `:PdfPort` command is built on `lib.nvim.usercmd.composer`
+- [lib.nvim](https://github.com/StefanBartl/lib.nvim) — required: the `:PdfPort` command is built on `lib.nvim.bindings.usercmd.composer`
 - At least one extraction backend (see [Backends](configuration.md#backends))
 
 pdfport.nvim only does anything once one of its commands or its Lua API is invoked, so it

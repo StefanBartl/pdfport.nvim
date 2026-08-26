@@ -19,7 +19,7 @@ creating PDFs from images/Markdown/text/HTML/Office files, **merging** PDFs, and
 **rasterizing** single pages to PNG, via a pluggable producer architecture.
 
 > Requires [StefanBartl/lib.nvim](https://github.com/StefanBartl/lib.nvim) — the `:PdfPort`
-> command itself is built on `lib.nvim.usercmd.composer`. It also automatically uses
+> command itself is built on `lib.nvim.bindings.usercmd.composer`. It also automatically uses
 > lib.nvim's UI kit for a nicer mode picker when available, falling back to `vim.ui.select`
 > otherwise.
 
