@@ -161,6 +161,46 @@ directly for the preview pane (`opts.max_pages` bounds it), not through
 `open()`, so they never touch a renderer at all; what you see in the
 preview pane is raw extracted text/Markdown, not a rendered buffer.
 
+## `pages=` when something other than a person is driving
+
+`:PdfPort float` and `:PdfPort terminal` both prompt for a page range, which
+makes them unusable from a script, a mapping or another plugin — there is no
+way to answer a prompt non-interactively. `pages=1-3,5` skips the prompt;
+omitting it keeps the prompt exactly as before.
+
+A value that parses to no page number (`pages=`, `pages=abc`) is **reported and
+nothing opens** — not a fall-through to the prompt, and not the whole document.
+The caller asked for a range, and quietly doing something else is precisely
+what goes unnoticed in a script.
+
+## The batch summary counts outcomes now, not attempts
+
+It used to read `opened %d PDF(s)` with the number of files *attempted*, while
+failures arrived through a separate error callback — so a selection where three
+of five failed still claimed five had opened.
+
+Counting real outcomes needed a completion signal, and dispatch is asynchronous
+end to end with success being silent. `pdfport.open` therefore takes an optional
+third argument, `on_done(ok, err)`, settling exactly once on every path:
+extraction error, unregistered renderer, a renderer that raises, or success.
+Two-argument callers are unaffected.
+
+Worth knowing if you embed this: that callback is how you find out, and without
+it a batch is as silent as it ever was.
+
+## `pdfport.pick_open()` instead of hand-rolling a mode prompt
+
+The mode picker used to exist twice — the utility and a hand-maintained copy
+inside the command — and the two had already drifted apart in labels and in
+whether "system application" was offered at all.
+
+There is one canonical list now, and it **always appends "system application"**
+when a caller's choice list omits it, exposed as a public API. Embedding
+plugins (filetree.nvim, gopath.nvim, markdown.nvim) call it rather than
+building their own prompt, which is why the mode question looks the same
+wherever you meet it — and why it still works when pdfport itself is not
+installed.
+
 ## Gotchas worth knowing before they cost you a debugging session
 
 - **`system`/`terminal` never populate `result.text`.** If you're chaining `pdfport.open()`'s callback into something that reads the extracted text, those two modes hand the renderer a synthetic `status = "ok"` result with `text = nil` — there's nothing to read. Only `buffer`/`float` (and `pdfport.extract()` directly) return real text.
