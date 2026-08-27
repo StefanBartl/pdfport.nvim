@@ -80,8 +80,8 @@ local function show_diagnostics(title)
       filetype = "text",
       title = title,
       title_pos = "center",
-      width = math.floor(vim.o.columns * 0.6),
-      height = math.floor(vim.o.lines * 0.5),
+      width = 0.6,
+      height = 0.5,
       wo = { wrap = false },
       nice_quit = true,
     })

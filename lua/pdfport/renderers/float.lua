@@ -27,8 +27,8 @@ function M.render(result, opts)
     filetype = ft,
     title = string.format(" pdfport: %s ", vim.fn.fnamemodify(opts.path or "", ":t")),
     title_pos = "center",
-    width = math.floor(vim.o.columns * 0.8),
-    height = math.floor(vim.o.lines * 0.8),
+    width = 0.8,
+    height = 0.8,
     wo = { wrap = true, linebreak = true },
     nice_quit = true,
   }, opts.float_opts or {})
