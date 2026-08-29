@@ -193,7 +193,7 @@ end
 -- Creation ("write") API — the reverse of open/extract
 -- #############################################################################
 
----@param opts PdfPort.CreateOpts|table  # exactly one of inputs/text/bufnr; see docs/ROADMAP/PDF_CREATE.md
+---@param opts PdfPort.CreateOpts|table  # exactly one of inputs/text/bufnr
 ---@return nil
 function M.create(opts)
   if not _initialized then M.setup() end

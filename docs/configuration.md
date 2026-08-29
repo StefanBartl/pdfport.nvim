@@ -95,8 +95,7 @@ the resolver actually calls `available()`/`extract()` on it.
 
 ## Creation producers
 
-The reverse direction: something → PDF, via `pdfport.create()`/`:PdfPort create`. Full
-design and roadmap in [docs/ROADMAP/PDF_CREATE.md](ROADMAP/PDF_CREATE.md).
+The reverse direction: something → PDF, via `pdfport.create()`/`:PdfPort create`.
 
 | ID          | Accepts          | Requires                          | Notes                              |
 |-------------|------------------|------------------------------------|-------------------------------------|

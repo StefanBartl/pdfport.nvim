@@ -310,8 +310,7 @@ registered backend's live availability.
 The per-input-kind chain (create_chain) is tried in order until one producer
 is both registered and available(); |:PdfPort-producers| lists every
 registered producer's live availability, including the "pdf"-kind merge
-producers used by |pdfport.merge()|. See docs/ROADMAP/PDF_CREATE.md in the
-repo for the full design and roadmap.
+producers used by |pdfport.merge()|.
 
 ==============================================================================
 9. RENDERERS                                      *pdfport-renderers*

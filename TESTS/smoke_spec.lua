@@ -1,6 +1,6 @@
 -- TESTS/smoke_spec.lua — every module loads, and setup() wires the plugin up.
 --
--- This is the "clearest gap" the docs/ROADMAP audit named: nothing previously
+-- This is the clearest gap the checklist audit named: nothing previously
 -- caught a syntax error or a bad require in a module that only runs when an
 -- external tool happens to be installed.
 

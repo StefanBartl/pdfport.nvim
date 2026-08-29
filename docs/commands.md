@@ -139,9 +139,8 @@ p.render_page("/some/file.pdf", 1, { dpi = 216 }, function(png_path, err)
 end)
 ```
 
-See [docs/ROADMAP/PDF_CREATE.md](ROADMAP/PDF_CREATE.md) for the full design and roadmap
-(P0–P3 shipped: image/Markdown/text/HTML/Office producers + `merge()`; P2 caller wiring
-into `filetree.nvim`/`images.nvim`/`markdown.nvim` all shipped too).
+P0–P3 shipped: image/Markdown/text/HTML/Office producers + `merge()`; P2 caller
+wiring into `filetree.nvim`/`images.nvim`/`markdown.nvim` all shipped too.
 
 ## Health check
 
