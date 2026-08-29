@@ -8,7 +8,9 @@ local platform = require("pdfport.platform")
 local spawn_capture = require("lib.nvim.cross.uv.spawn_capture")
 local spawn_env = require("pdfport.util.spawn_env")
 
----@type PdfPort.StatefulBackend
+--- See the note on `Backend` in `@types/init.lua`: declared as a class so
+--- the methods defined below the literal count as implementing it.
+---@class PdfPort.Backend.Pdftotext : PdfPort.StatefulBackend
 local M = {
   id = "pdftotext",
   name = "pdftotext (poppler-utils)",

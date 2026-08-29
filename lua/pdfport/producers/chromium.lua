@@ -10,7 +10,9 @@
 local platform = require("pdfport.platform")
 local spawn_capture = require("lib.nvim.cross.uv.spawn_capture")
 
----@type PdfPort.Producer
+--- See the note on `Producer` in `@types/init.lua`: declared as a class so
+--- the methods defined below the literal count as implementing it.
+---@class PdfPort.Producer.Chromium : PdfPort.Producer
 local M = {
   id = "chromium",
   name = "chromium (headless print-to-pdf)",

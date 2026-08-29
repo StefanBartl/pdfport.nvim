@@ -1,3 +1,6 @@
+---@diagnostic disable: missing-fields
+-- The backend/producer doubles below implement only what the registry test
+-- exercises; a full interface per case would be noise, not coverage.
 -- TESTS/registry_spec.lua — pdfport.core.registry + the lazy backend proxies
 --
 -- The lazy-proxy behaviour is the interesting part: backends must NOT be

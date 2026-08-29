@@ -9,7 +9,9 @@ local platform = require("pdfport.platform")
 local spawn_capture = require("lib.nvim.cross.uv.spawn_capture")
 local spawn_env = require("pdfport.util.spawn_env")
 
----@type PdfPort.ConfigurableBackend
+--- See the note on `Backend` in `@types/init.lua`: declared as a class so
+--- the methods defined below the literal count as implementing it.
+---@class PdfPort.Backend.Ollama : PdfPort.ConfigurableBackend
 local M = {
   id = "ollama",
   name = "Ollama (local multimodal)",

@@ -53,6 +53,9 @@ function M.render_page(path, page, opts, callback)
 
   local stderr_chunks = {}
 
+  -- luv's meta declares every uv.spawn option required (cwd, env, uid, gid,
+  -- verbatim, detached, hide), which no real caller passes.
+  ---@diagnostic disable-next-line: missing-fields
   uv.spawn("pdftoppm", {
     args = args,
     stdio = { nil, nil, stderr },

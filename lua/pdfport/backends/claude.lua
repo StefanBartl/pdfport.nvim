@@ -8,7 +8,9 @@
 local platform = require("pdfport.platform")
 local spawn_capture = require("lib.nvim.cross.uv.spawn_capture")
 
----@type PdfPort.ConfigurableBackend
+--- See the note on `Backend` in `@types/init.lua`: declared as a class so
+--- the methods defined below the literal count as implementing it.
+---@class PdfPort.Backend.Claude : PdfPort.ConfigurableBackend
 local M = {
   id = "claude",
   name = "Anthropic Claude API",

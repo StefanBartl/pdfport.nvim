@@ -22,6 +22,16 @@
 ---@field remote boolean         # Requires network access
 ---@field gpu_optional boolean   # Can use GPU but does not require it
 
+--- One text-extraction backend.
+---
+--- **Implementations declare a subclass, not `---@type PdfPort.Backend`.**
+--- A backend module is a table literal carrying the data fields, with
+--- `available`/`extract` defined as functions underneath it. Against a
+--- `@type` annotation LuaLS checks the literal alone and reports both
+--- methods as missing -- they are not, they are three lines further down.
+--- `---@class PdfPort.Backend.Foo : PdfPort.Backend` makes the later
+--- `function M.extract(...)` a definition of that class's field instead.
+--- Same for `Producer` below.
 ---@class PdfPort.Backend
 ---@field id PdfPort.BackendId
 ---@field name string
@@ -184,12 +194,12 @@
 -- #############################################################################
 
 ---@class PdfPort.Config
----@field default_backend PdfPort.BackendId|"auto"
----@field fallback_chain PdfPort.BackendId[]
----@field extract_opts PdfPort.ExtractOpts
----@field render_opts PdfPort.RenderOpts
----@field create_opts PdfPort.CreateOpts
----@field create_chain table<PdfPort.InputKind, PdfPort.ProducerId[]>  # "pdf" entry is the merge chain, used by pdfport.merge()
+---@field default_backend? PdfPort.BackendId|"auto"
+---@field fallback_chain? PdfPort.BackendId[]
+---@field extract_opts? PdfPort.ExtractOpts
+---@field render_opts? PdfPort.RenderOpts
+---@field create_opts? PdfPort.CreateOpts
+---@field create_chain? table<PdfPort.InputKind, PdfPort.ProducerId[]>  # "pdf" entry is the merge chain, used by pdfport.merge()
 ---@field pdf_engine? string  # pandoc --pdf-engine preference: "auto"|"tectonic"|"typst"|"xelatex"|...
 ---@field claude_api_key? string
 ---@field ollama_host? string
@@ -197,7 +207,7 @@
 ---@field auto_open_on_read? boolean  # Opt-in BufReadCmd *.pdf that auto-invokes the mode picker on `:e file.pdf` (default false)
 ---@field progress_style? "auto"|"notify"|"statusline"|"fidget"|"float"|"kit"  # Indicator while a backend extracts; needs lib.nvim, no-op without it (default "auto")
 ---@field deps_popup? boolean  # Show the lib.nvim.deps "declared tools" popup once, ever, on first setup() after install (default true; needs lib.nvim.deps — a no-op without it)
----@field debug boolean
+---@field debug? boolean
 
 -- #############################################################################
 -- Integration types

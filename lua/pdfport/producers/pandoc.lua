@@ -11,7 +11,9 @@ local platform = require("pdfport.platform")
 local spawn_capture = require("lib.nvim.cross.uv.spawn_capture")
 local spawn_env = require("pdfport.util.spawn_env")
 
----@type PdfPort.ConfigurableProducer
+--- See the note on `Producer` in `@types/init.lua`: declared as a class so
+--- the methods defined below the literal count as implementing it.
+---@class PdfPort.Producer.Pandoc : PdfPort.ConfigurableProducer
 local M = {
   id = "pandoc",
   name = "pandoc",

@@ -1,3 +1,6 @@
+---@diagnostic disable: missing-fields
+-- The backend/producer doubles below implement only what the registry test
+-- exercises; a full interface per case would be noise, not coverage.
 -- TESTS/producer_spec.lua — pdfport.core.registry producer half +
 -- pdfport.core.composer (the create() mirror of dispatcher/resolver).
 --
