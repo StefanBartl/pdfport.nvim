@@ -53,9 +53,8 @@ Every module has `---@module` + `---@brief` (often `---@description`); public fu
 carry `---@param`/`---@return`. Types are centralized in `@types/init.lua` with
 `---@alias`/`---@class`/`---@field` (expanded this session with `PdfPort.RendererSplit`,
 `PdfPort.TerminalTool`, `PdfPort.TerminalSizeRatio`). *Minor gap vs. convention:* `@types`
-is a single file rather than split per concern (the pattern noted from `github_stats.nvim`
-in this repo's own `NEOTREE_FEATURES.md`) — acceptable at the current ~130-line size, would
-warrant splitting only if it keeps growing.
+is a single file rather than split per concern — acceptable at the current ~130-line size,
+would warrant splitting only if it keeps growing.
 
 ## 6. Testbarkeit & Lesbarkeit — ❌
 **The single clearest gap.** No `test/` directory and no automated test of any kind — unlike
