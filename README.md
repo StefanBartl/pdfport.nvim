@@ -1,3 +1,5 @@
+> **Active development.** This repository is in its development phase — breaking changes are to be expected at any time. Pin a commit or tag if you depend on it.
+
 ```
       _  __             _                   _
  _ __ | |/ _|_ __   ___ | |_ __ _ __      __(_)_ __ ___
