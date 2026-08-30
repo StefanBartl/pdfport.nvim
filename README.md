@@ -11,9 +11,11 @@
 |_|         |_|
 ```
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Neovim](https://img.shields.io/badge/Neovim-0.9%2B-57A143?logo=neovim&logoColor=white)](https://neovim.io)
+[![Lua](https://img.shields.io/badge/Lua-5.1%2FLuaJIT-2C2D72?logo=lua&logoColor=white)](https://www.lua.org)
+![Status](https://img.shields.io/badge/status-active%20development-blue)
 [![CI](https://github.com/StefanBartl/pdfport.nvim/actions/workflows/ci.yml/badge.svg)](https://github.com/StefanBartl/pdfport.nvim/actions/workflows/ci.yml)
-[![Neovim](https://img.shields.io/badge/Neovim-%3E%3D%200.9-57A143?logo=neovim&logoColor=white)](https://neovim.io)
-[![Lua](https://img.shields.io/badge/Lua-blue?logo=lua&logoColor=white)](https://www.lua.org)
 
 A Neovim plugin for working with PDFs in both directions: **reading** — extracting and
 displaying PDF content via a pluggable backend architecture — and **writing** —
