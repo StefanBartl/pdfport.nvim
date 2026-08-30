@@ -24,6 +24,7 @@ package.path = table.concat({
 -- NOT yet loaded (the lazy-proxy contract), so it has to run before
 -- smoke_spec, which requires every one of them on purpose.
 local specs = {
+  "install_spec_spec.lua",
   "page_range_spec.lua",
   "registry_spec.lua",
   "resolver_spec.lua",

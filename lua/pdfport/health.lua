@@ -94,6 +94,13 @@ local function check_backends()
   end
 
   -- marker
+  --
+  -- Not in `docs/install.json`, and that is not an oversight: `marker-pdf` is
+  -- a pip package with no OS-package-manager entry anywhere, so a spec entry
+  -- would need a `pkg` map it cannot honestly fill and `:Lib deps install`
+  -- would compose a command that fails. Same line the spec already draws
+  -- around pdfplumber and docling, which are probed here and declared
+  -- nowhere for the same reason.
   if check_exe("marker_single", false) then
     h_ok("marker backend: ready")
   else
@@ -132,7 +139,14 @@ local function check_backends()
   end
 
   -- claude
-  if check_exe("curl", true) then
+  --
+  -- `false`, not `true`: curl is optional. Only the claude backend and the
+  -- ollama daemon check use it, both optional, and `backends/claude.lua`'s
+  -- own `available()` returns false without it rather than failing. Reporting
+  -- it as required made one `:checkhealth pdfport` run contradict itself --
+  -- an error here, a warning three sections down where `docs/install.json`
+  -- declares `required: false`. The spec was the half that was right.
+  if check_exe("curl", false) then
     local key = vim.env.ANTHROPIC_API_KEY
     if key and key ~= "" then
       h_ok("ANTHROPIC_API_KEY set (" .. #key .. " chars)")

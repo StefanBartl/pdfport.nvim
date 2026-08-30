@@ -148,4 +148,49 @@ wiring into `filetree.nvim`/`images.nvim`/`markdown.nvim` all shipped too.
 :checkhealth pdfport
 ```
 
-Reports status for: core modules, all backends (available/unavailable), creation producers, renderers, integrations, and the live registry.
+Reports status for: core modules, all backends (available/unavailable), creation producers, renderers, integrations, the declared-tools inventory, and the live registry.
+
+### Why some tools appear twice
+
+The **capability** sections (backends, producers, renderers) and the
+**declared tools (lib.nvim.deps)** section deliberately overlap. They answer
+different questions:
+
+| Section | Answers |
+| --- | --- |
+| Backends / producers / renderers | *Can pdfport do this?* — "pandoc found but no PDF engine on PATH", "ollama daemon not running", "tesseract backend: ready (requires pdftoppm too)" |
+| Declared tools | *What does pdfport want, why, and how do I get it?* — each tool's `why` from `docs/install.json`, plus a pointer to `:Lib deps install pdfport.nvim` |
+
+A tool being ready is not the same fact as a tool being installed: `pandoc` on
+PATH with no LaTeX engine is present and unusable. That is why the second
+section is an inventory and not a summary of the first.
+
+### Two tools are probed here but not declared
+
+`marker_single` and the Python modules `pdfplumber` / `docling` are checked in
+the capability sections and appear in **no** `docs/install.json` entry. That is
+a boundary, not an oversight: all three come from `pip` and no OS package
+manager ships them, so a spec entry would need a `pkg` map it cannot honestly
+fill — and `:Lib deps install` would compose a command that fails. Their
+install commands live in [`configuration.md`](configuration.md#backends)
+instead.
+
+`ueberzugpp` **is** declared, with a `pacman` package and nothing else. It is
+in Arch's `extra` repository; on Debian, Ubuntu, Fedora and openSUSE it exists
+only in a third-party repository that has to be added first. A missing
+package-manager key means "no known package on that manager", which is the
+truth — inventing one would produce an install command that fails.
+
+### Ghostscript is spelled differently on Windows
+
+`gs` on Linux and macOS, `gswin64c` (or `gswin32c`) on Windows. The spec
+declares the alternatives (`bin_alternatives`), so the declared-tools section
+finds it either way and names the spelling that answered:
+
+```
+gs found (as gswin64c)
+```
+
+Before that field existed, a Windows host with Ghostscript installed got
+"ghostscript producer: ready (exe: gswin64c)" in one section and "gs NOT
+found" in the other.

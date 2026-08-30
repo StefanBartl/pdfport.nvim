@@ -27,6 +27,7 @@ without the tools and a corpus.
 
 | Spec | Covers |
 | --- | --- |
+| `install_spec_spec.lua` | `docs/install.json` itself: it validates with **zero** errors through the real parser, `gs` declares its Windows spellings, and every tool is optional with a non-empty `why` and at least one package. The file is data nothing else reads, so a typo there surfaces only as a tool quietly missing from `:checkhealth` — which looks exactly like a tool nobody declared. |
 | `page_range_spec.lua` | `util.page_range.parse` — ranges, dedup, sorting, reversed ranges, junk input |
 | `registry_spec.lua` | backend/renderer registration, input guards, defensive copies, and the lazy-proxy contract |
 | `resolver_spec.lua` | fallback-chain resolution: explicit request, `default_backend`, `auto`, nothing available |
