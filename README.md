@@ -115,3 +115,7 @@ for setup snippets.
 - [Commands](docs/commands.md) — user commands, the Lua API, and the health check.
 - [Integrations](docs/integrations.md) — file-tree integrations (neo-tree, nvim-tree, netrw, oil.nvim) and fuzzy-finder integrations (Telescope, fzf-lua).
 - [Bindings cheatsheet](docs/BINDINGS.md) — full keymap/command/autocmd reference.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
