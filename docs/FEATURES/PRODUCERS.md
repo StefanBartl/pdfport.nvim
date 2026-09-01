@@ -75,13 +75,18 @@ scratch directory.
 - **Accepts:** `office`
 - **Requires:** LibreOffice (`soffice` on PATH)
 
-**Also used from outside this plugin.** `lib.nvim.hover` calls
+**Also used from outside this plugin.**
+[hover.nvim](https://github.com/StefanBartl/hover.nvim) calls
 `can_create("office")` and then `create()` to preview an office document:
 there is no way to show a `.docx` in a float, but there is a way to show a
 PDF, so it converts one into the other and rasterizes page 1 through
-`render_page()`. That path is opt-in there (`:Lib hover office on`) precisely
+`render_page()`. That path is opt-in there (`:Hover office on`) precisely
 because this producer starts LibreOffice, which is seconds on a first run —
 worth knowing if a bug report says "the hover freezes on Word documents".
+
+`can_create("office")` is asked *first*, which is why "LibreOffice is not
+installed" arrives there as a sentence in the float rather than as a failed
+conversion.
 
 ## qpdf merge producer
 
