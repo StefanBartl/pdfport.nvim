@@ -47,7 +47,7 @@ creating PDFs from images/Markdown/text/HTML/Office files, **merging** PDFs, and
 | `pick_open()` | Show the same "open PDF as…" mode picker `:PdfPort` uses — for OTHER plugins to embed instead of hand-rolling their own; always offers "system application" | [Commands](docs/commands.md) |
 | `extract()` / `:PdfPort text` | Extract PDF text without rendering | [Commands](docs/commands.md) |
 | `render_page()` | Rasterize one PDF page to a caller-owned PNG (used by [images.nvim](https://github.com/StefanBartl/images.nvim) to show PDF pages as images) | [Commands](docs/commands.md) |
-| `create()` / `:PdfPort create` | Create a PDF from an image, Markdown, text, HTML, or Office file, via 9 creation producers (img2pdf, magick, pandoc, weasyprint, chromium, soffice, qpdf, pdftk, ghostscript) | [Commands](docs/commands.md) |
+| `create()` / `:PdfPort create` | Create a PDF from an image, Markdown, text, HTML, or Office file, via 9 creation producers (img2pdf, magick, pandoc, weasyprint, chromium, soffice, qpdf, pdftk, ghostscript). Also how [lib.nvim](https://github.com/StefanBartl/lib.nvim)'s hover previews a `.docx`: convert, then rasterize page 1 | [Commands](docs/commands.md) |
 | `merge()` / `:PdfPort merge` | Merge two or more PDFs into one | [Commands](docs/commands.md) |
 | `can_create()` | Check whether a producer is available for a given input kind | [Commands](docs/commands.md) |
 | `register_backend()` / `register_producer()` | Register a custom extraction backend or creation producer | [Commands](docs/commands.md) |

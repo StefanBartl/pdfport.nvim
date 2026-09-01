@@ -153,7 +153,7 @@
     {
       "bin": "soffice",
       "required": false,
-      "why": "Enables the soffice creation producer for office (docx/odt/xlsx/pptx) -> PDF, one call covers all four formats.",
+      "why": "Enables the soffice creation producer for office (docx/odt/xlsx/pptx) -> PDF, one call covers all four formats. Also what lib.nvim's hover uses to preview a Word/Excel/PowerPoint document (:Lib hover office on).",
       "pkg": {
         "apt": "libreoffice",
         "dnf": "libreoffice",
