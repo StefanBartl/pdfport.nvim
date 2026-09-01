@@ -241,12 +241,16 @@ function M.create(opts, callback)
 
   local cfg_create = (_config and _config.create_opts) or {}
 
-  ---@type PdfPort.InternalCreateOpts
+  -- A cast on the result rather than a `---@type` on the binding:
+  -- `tbl_deep_extend` types its return as the union of what went in, so the
+  -- annotation was being checked against `PdfPort.Config|PdfPort.CreateOpts|nil`
+  -- instead of describing what comes out.
   local create_opts = vim.tbl_deep_extend("force", cfg_create, opts.opts or {}, {
     inputs = inputs,
     output = output,
     on_conflict = opts.on_conflict or "overwrite",
   })
+  ---@cast create_opts PdfPort.InternalCreateOpts
 
   create_opts.__callback = callback
 

@@ -45,8 +45,11 @@ function M.extract(path, opts)
   -- was not empty. Only after mkdir: fs_realpath needs the path to exist.
   do
     local uv = vim.uv or vim.loop
+    -- `type(real) == "string"` rather than a bare truth test: `fs_realpath`
+    -- has an async overload that answers a request handle, so its type is
+    -- `string|uv.uv_fs_t` and the handle half would land in `tmp_dir`.
     local real = uv.fs_realpath(tmp_dir)
-    if real then tmp_dir = real end
+    if type(real) == "string" then tmp_dir = real end
   end
 
   local args = { path, tmp_dir, "--output_format", "markdown" }

@@ -83,10 +83,14 @@ end
 ---@return nil
 function M.dispatch(opts, callback)
   assert(type(opts) == "table", "opts must be a table")
-  assert(type(opts.path) == "string", "opts.path must be a string")
+  -- Bound here rather than re-read at each use: `ExtractOpts.path` is optional
+  -- and `OpenOpts.path` is not, so every later `opts.path` read as maybe-nil
+  -- even though this assert had already settled it.
+  local path = opts.path
+  assert(type(path) == "string", "opts.path must be a string")
   assert(type(callback) == "function", "callback must be a function")
 
-  local ok, err = validate_path(opts.path)
+  local ok, err = validate_path(path)
   if not ok then
     vim.schedule(function()
       callback(err_result(err or "unknown path error"))
@@ -95,6 +99,7 @@ function M.dispatch(opts, callback)
   end
 
   if opts.mode == "system" then
+    ---@cast opts PdfPort.OpenOpts
     local sys_renderer = registry.get_renderer("system")
     if not sys_renderer then
       vim.schedule(function()
@@ -116,6 +121,7 @@ function M.dispatch(opts, callback)
   end
 
   if opts.mode == "terminal" then
+    ---@cast opts PdfPort.OpenOpts
     local term_renderer = registry.get_renderer("terminal")
     if not term_renderer then
       vim.schedule(function()
@@ -126,7 +132,7 @@ function M.dispatch(opts, callback)
     vim.schedule(function()
       term_renderer({
         status = "ok",
-        text = opts.path,
+        text = path,
         format = "plain",
         backend = "terminal",
         pages_processed = nil,
@@ -146,7 +152,8 @@ function M.dispatch(opts, callback)
 
   local cfg_extract = (_config and _config.extract_opts) or {}
 
-  ---@type PdfPort.InternalExtractOpts
+  -- Cast on the result, not `---@type` on the binding: see composer.lua for
+  -- why -- `tbl_deep_extend` types its return as the union of its arguments.
   local extract_opts = vim.tbl_deep_extend("force", cfg_extract, {
     pages = (opts --[[@as PdfPort.OpenOpts]]).pages,
     max_pages = (opts --[[@as PdfPort.OpenOpts]]).max_pages,
@@ -154,8 +161,8 @@ function M.dispatch(opts, callback)
     model = (opts --[[@as PdfPort.OpenOpts]]).model,
     timeout_ms = (opts --[[@as PdfPort.OpenOpts]]).timeout_ms,
   })
+  ---@cast extract_opts PdfPort.InternalExtractOpts
 
-  local path = opts.path
   local backend_id = backend.id
   local cache_enabled = extract_opts.cache ~= false
 
@@ -236,15 +243,14 @@ end
 
 ---@param opts PdfPort.OpenOpts
 ---@param on_error? fun(msg: string): nil  Called instead of notifying directly,
----so the caller (the UI/binding layer) decides how to surface the failure.
----Defaults to a no-op: callers that don't pass one get silent failure, which
----matches this module's job of staying decoupled from any particular UI.
----@return nil
----@param opts table
----@param on_error? fun(err: string)
+---       so the caller (the UI/binding layer) decides how to surface the
+---       failure. Defaults to a no-op: callers that don't pass one get silent
+---       failure, which matches this module's job of staying decoupled from
+---       any particular UI.
 ---@param on_done? fun(ok: boolean, err: string|nil)  settles exactly once, on
 ---       every path -- the only way a caller can know an open finished, since
 ---       dispatch is asynchronous throughout and success is otherwise silent
+---@return nil
 function M.open(opts, on_error, on_done)
   assert(type(opts) == "table", "opts must be a table")
   assert(type(opts.path) == "string", "opts.path must be a string")

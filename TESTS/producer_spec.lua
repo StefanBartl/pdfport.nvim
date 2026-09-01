@@ -1,4 +1,6 @@
----@diagnostic disable: missing-fields
+---@diagnostic disable: missing-fields, assign-type-mismatch
+-- `available = true` is off-type on purpose: that the registry rejects a
+-- non-function rather than raising is the property under test.
 -- The backend/producer doubles below implement only what the registry test
 -- exercises; a full interface per case would be noise, not coverage.
 -- TESTS/producer_spec.lua — pdfport.core.registry producer half +

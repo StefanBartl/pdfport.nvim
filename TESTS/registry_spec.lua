@@ -1,4 +1,7 @@
----@diagnostic disable: missing-fields
+---@diagnostic disable: missing-fields, assign-type-mismatch, param-type-mismatch
+-- Every value below that is off-type is off-type on purpose: what these
+-- cases check is that the registry *rejects* it rather than raising, and a
+-- renderer mode outside the alias is exactly the unknown mode being probed.
 -- The backend/producer doubles below implement only what the registry test
 -- exercises; a full interface per case would be noise, not coverage.
 -- TESTS/registry_spec.lua — pdfport.core.registry + the lazy backend proxies

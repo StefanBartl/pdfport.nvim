@@ -12,6 +12,8 @@ return function(H)
   -- which is why an empty selection must not come back as an empty list.
   H.eq(parse(""), nil, "empty string yields nil, not an empty list")
   H.eq(parse("   "), nil, "whitespace-only yields nil")
+  -- Deliberately invalid: answering nil rather than raising is the point.
+  ---@diagnostic disable-next-line: param-type-mismatch
   H.eq(parse(nil), nil, "nil input yields nil")
 
   -- --------------------------------------------------------- single pages

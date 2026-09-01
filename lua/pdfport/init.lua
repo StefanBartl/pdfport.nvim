@@ -99,12 +99,9 @@ end
 
 ---@param opts PdfPort.OpenOpts
 ---@param on_error? fun(msg: string): nil  Defaults to this plugin's own
----notifier, so existing callers (integrations, the picker) keep seeing
----errors without having to opt in explicitly. Pass your own to decide
----presentation yourself (as bindings/usrcmds.lua does).
----@return nil
----@param opts table
----@param on_error? fun(err: string)
+---       notifier, so existing callers (integrations, the picker) keep seeing
+---       errors without having to opt in explicitly. Pass your own to decide
+---       presentation yourself (as bindings/usrcmds.lua does).
 ---@param on_done? fun(ok: boolean, err: string|nil)  optional completion
 ---       signal, settling exactly once. Opening is asynchronous end to end and
 ---       success is otherwise silent, so a caller opening several files (see

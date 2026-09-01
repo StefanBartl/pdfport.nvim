@@ -206,16 +206,21 @@ function M.extract(path, opts)
     or "Extract all visible text from this image. Format the output as Markdown."
   local timeout_ms = opts.timeout_ms or 60000
 
-  local pages
-  if opts.pages and #opts.pages > 0 then
-    pages = opts.pages
+  -- Two things at once. The default is the initialiser rather than a trailing
+  -- `else`, because declared bare `pages` reads as maybe-nil inside
+  -- `process_next` below -- a closure does not carry the narrowing the
+  -- branches established. And `opts.pages` goes through a local, because
+  -- narrowing a *field* does not carry into the assignment that follows it.
+  ---@type integer[]
+  local pages = { 1 }
+  local requested = opts.pages
+  if requested and #requested > 0 then
+    pages = requested
   elseif opts.max_pages then
     pages = {}
     for i = 1, opts.max_pages do
       pages[i] = i
     end
-  else
-    pages = { 1 }
   end
 
   local is_vision = model:lower():match("llava")
@@ -236,7 +241,8 @@ function M.extract(path, opts)
         pages_processed = #pages,
         error = nil,
       }
-      if type(opts.__callback) == "function" then opts.__callback(result) end
+      local cb = opts.__callback
+      if type(cb) == "function" then cb(result) end
       return
     end
 

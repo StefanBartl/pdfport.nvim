@@ -14,7 +14,7 @@ local M = {}
 
 local notify = require("pdfport.util.notify").create("[pdfport.integrations]")
 
----@return string|nil  pdf_path, or nil if cursor is not on a PDF
+---@return string|nil pdf_path  nil when the cursor is not on a PDF
 function M.current_pdf_path()
   local ok_api, api = pcall(vim.api.nvim_get_current_buf)
   local bufnr = ok_api and api or vim.api.nvim_get_current_buf()

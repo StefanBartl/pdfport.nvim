@@ -11,8 +11,20 @@ local lib_notify = require("lib.nvim.notify")
 
 local M = {}
 
+--- What `M.create` hands back.
+---
+--- A named class rather than the inline table type this used to carry: inside
+--- a table literal a `fun(...): nil` swallows everything after its return
+--- type, so LuaLS only ever saw the `info` field. `warn`, `error` and `debug`
+--- then read as undefined at all 28 call sites in this plugin.
+---@class PdfPort.Notifier
+---@field info  fun(msg: string): nil
+---@field warn  fun(msg: string): nil
+---@field error fun(msg: string): nil
+---@field debug fun(msg: string, cfg: table): nil  Emits only when `cfg.debug` is truthy.
+
 ---@param prefix string
----@return { info: fun(msg: string): nil, warn: fun(msg: string): nil, error: fun(msg: string): nil, debug: fun(msg: string, cfg: table): nil }
+---@return PdfPort.Notifier
 function M.create(prefix)
   local notifier = lib_notify.create(prefix)
 
