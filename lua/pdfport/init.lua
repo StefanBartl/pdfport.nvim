@@ -164,10 +164,17 @@ end
 
 ---Rasterize a single PDF page to a PNG file via pdftoppm. Same primitive the
 ---`terminal` renderer uses internally, but returns a real, caller-owned PNG
----path instead of display-and-delete — lets consumers like images.nvim show
+---path instead of display-and-delete — which is what lets another plugin show
 ---a PDF page as an image without depending on pdfport's terminal renderer or
----reimplementing rasterization themselves. Caller is responsible for
----deleting the returned file once done with it.
+---reimplementing rasterization itself. Caller is responsible for deleting the
+---returned file once done with it.
+---
+---Two consumers, and they own their PNGs differently. hover.nvim keeps every
+---view it has rendered for the session and sweeps them at `VimLeavePre`;
+---images.nvim (`images.pdf`, behind its picker preview surface) passes
+---`opts.output_path` into a cache under `stdpath("cache")` keyed by path,
+---mtime, page and dpi, and keeps them across sessions. Both are right for what
+---they do, which is the argument for handing back a path rather than a policy.
 ---
 ---`opts.crop` rasterizes one window of the page instead of all of it, which is
 ---what makes a *sharp* magnification affordable: detail comes from raising
