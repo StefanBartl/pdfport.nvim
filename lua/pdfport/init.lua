@@ -168,6 +168,13 @@ end
 ---a PDF page as an image without depending on pdfport's terminal renderer or
 ---reimplementing rasterization themselves. Caller is responsible for
 ---deleting the returned file once done with it.
+---
+---`opts.crop` rasterizes one window of the page instead of all of it, which is
+---what makes a *sharp* magnification affordable: detail comes from raising
+---`dpi`, and a full page at 5x the dpi costs 15x the time (measured: 176 ms to
+---2 653 ms on a dense A4 page), while a window the size of the original page
+---costs the same at every dpi. hover.nvim's PDF zoom is built on that pairing
+---— see `PdfPort.RenderPageCrop`.
 ---@param path string
 ---@param page integer
 ---@param opts? PdfPort.RenderPageOpts

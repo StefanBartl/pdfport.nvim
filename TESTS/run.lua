@@ -26,6 +26,7 @@ package.path = table.concat({
 local specs = {
   "install_spec_spec.lua",
   "page_range_spec.lua",
+  "rasterize_args_spec.lua",
   "registry_spec.lua",
   "resolver_spec.lua",
   "producer_spec.lua",
