@@ -193,6 +193,24 @@ function M.render_page(path, page, opts, callback)
   require("pdfport.core.rasterize").render_page(path, page, opts, callback)
 end
 
+---Whether this build's `render_page` understands `opts.crop`.
+---
+---A consumer cannot answer this by looking: `crop` is a field, and a build
+---that predates it ignores an unknown one in silence. For the feature it
+---exists for that silence is the worst possible outcome — the page comes back
+---rendered at a higher dpi and letterboxed into the same float, so the
+---magnification key visibly does nothing and the reader has no way to tell
+---that from a broken picture. hover.nvim asks this before offering the keys
+---at all, the same way it asks images.nvim for `convert.crop`.
+---
+---A function rather than a version number on purpose: what a consumer needs
+---to know is whether the capability is there, and a version is one indirection
+---away from that in every direction.
+---@return boolean
+function M.can_render_page_crop()
+  return true
+end
+
 -- #############################################################################
 -- Creation ("write") API — the reverse of open/extract
 -- #############################################################################

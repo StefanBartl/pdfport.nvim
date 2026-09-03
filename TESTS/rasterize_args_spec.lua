@@ -18,9 +18,7 @@ return function(H)
   ---@return integer|nil
   local function at(args, flag)
     for i, a in ipairs(args) do
-      if a == flag then
-        return i
-      end
+      if a == flag then return i end
     end
     return nil
   end
@@ -56,7 +54,8 @@ return function(H)
   -- window is exactly what a caller asks for when the centre of interest is
   -- against an edge, and dropping it would silently move the window.
   do
-    local args = rasterize.args("/tmp/doc.pdf", 1, 216, "/tmp/out", { x = 0, y = 0, w = 10, h = 10 })
+    local args =
+      rasterize.args("/tmp/doc.pdf", 1, 216, "/tmp/out", { x = 0, y = 0, w = 10, h = 10 })
     H.eq(args[at(args, "-x") + 1], "0", "x = 0 survives")
     H.eq(args[at(args, "-y") + 1], "0", "y = 0 survives")
   end
@@ -85,26 +84,14 @@ return function(H)
   end
 
   do
-    local ok = pcall(
-      rasterize.args,
-      "/tmp/doc.pdf",
-      1,
-      216,
-      "/tmp/out",
-      { x = 1, y = 2, w = 0, h = 5 }
-    )
+    local ok =
+      pcall(rasterize.args, "/tmp/doc.pdf", 1, 216, "/tmp/out", { x = 1, y = 2, w = 0, h = 5 })
     H.falsy(ok, "a zero-width window is refused")
   end
 
   do
-    local ok = pcall(
-      rasterize.args,
-      "/tmp/doc.pdf",
-      1,
-      216,
-      "/tmp/out",
-      { x = -5, y = 2, w = 10, h = 5 }
-    )
+    local ok =
+      pcall(rasterize.args, "/tmp/doc.pdf", 1, 216, "/tmp/out", { x = -5, y = 2, w = 10, h = 5 })
     H.falsy(ok, "a negative origin is refused")
   end
 end
