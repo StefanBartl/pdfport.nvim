@@ -112,11 +112,16 @@ for setup snippets.
 
 ## Documentation
 
+Start at [docs/README.md](docs/README.md), which says what is where and which
+question each page answers.
+
 - [Installation](docs/installation.md) — requirements and setup for lazy.nvim, packer.nvim, vim-plug, and mini.deps.
 - [Configuration](docs/configuration.md) — all `setup()` options and the extraction backend table.
 - [Commands](docs/commands.md) — user commands, the Lua API, and the health check.
 - [Integrations](docs/integrations.md) — file-tree integrations (neo-tree, nvim-tree, netrw, oil.nvim) and fuzzy-finder integrations (Telescope, fzf-lua).
 - [Bindings cheatsheet](docs/BINDINGS.md) — full keymap/command/autocmd reference.
+- [Features](docs/FEATURES/README.md) — one page per area: the core, rendering, backends, producers, integrations.
+- [Workflow](docs/WORKFLOW.md) — how the pieces combine once several backends and producers are available at once.
 
 ## License
 
