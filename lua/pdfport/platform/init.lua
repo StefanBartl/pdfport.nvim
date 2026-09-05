@@ -77,13 +77,20 @@ function M.has_python_module(module)
   return result
 end
 
+--- Name of the executable that opens a path/URL with the OS default handler.
+--- Informational only — the `system` renderer dispatches through
+--- lib.nvim.cross.open_default, not this string; :checkhealth uses it to show
+--- what that dispatch resolves to. The names mirror open_default's own choices:
+--- `explorer.exe` on native Windows (never a bare `start`, which is a cmd.exe
+--- built-in, not a spawnable executable), `open` on macOS, xdg-open/wsl-open
+--- elsewhere.
 ---@return string|nil
 function M.open_cmd()
   local os = M.os()
   if os == "macos" then
     return "open"
   elseif os == "windows" then
-    return "start"
+    return "explorer.exe"
   else
     return M.first_available({ "xdg-open", "wsl-open" })
   end
