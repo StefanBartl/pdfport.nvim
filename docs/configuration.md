@@ -44,6 +44,11 @@ require("pdfport").setup({
   auto_open_on_read = false,        -- opt-in BufReadCmd *.pdf: `:e file.pdf` invokes the mode picker
   progress_style = "auto",          -- indicator while a backend extracts; see below
   debug          = false,
+
+  -- One-time "which CLI tools does this plugin want, and why" popup on first
+  -- setup() after install (via lib.nvim.deps). false disables it here, in the
+  -- spec passed to setup() — no vim.g needed. See the root README.
+  deps_popup = true,
 })
 ```
 

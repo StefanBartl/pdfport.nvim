@@ -117,6 +117,7 @@ question each page answers.
 
 - [Installation](docs/installation.md) — requirements and setup for lazy.nvim, packer.nvim, vim-plug, and mini.deps.
 - [Configuration](docs/configuration.md) — all `setup()` options and the extraction backend table.
+- [Health](docs/health.md) — the ten `:checkhealth pdfport` sections, and which findings are actually problems.
 - [Commands](docs/commands.md) — user commands, the Lua API, and the health check.
 - [Integrations](docs/integrations.md) — file-tree integrations (neo-tree, nvim-tree, netrw, oil.nvim) and fuzzy-finder integrations (Telescope, fzf-lua).
 - [Bindings cheatsheet](docs/BINDINGS.md) — full keymap/command/autocmd reference.
