@@ -75,7 +75,7 @@
 ---| "tab"      -- Open in a new tab
 ---| "current"  -- Replace the current window
 
----@alias PdfPort.TerminalTool "ueberzug"|"chafa"|"kitty"|"imgcat"
+---@alias PdfPort.TerminalTool "chafa"|"kitty"|"imgcat"
 
 ---@class PdfPort.TerminalSizeRatio
 ---@field width number   # Fraction of vim.o.columns (0.0–1.0)

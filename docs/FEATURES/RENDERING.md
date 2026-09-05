@@ -69,8 +69,8 @@ works with zero backends installed.
 Rasterizes one or more pages via `pdftoppm` (delegated to
 `core/rasterize.lua`, the same primitive the public `pdfport.render_page()`
 API exposes — see [CORE.md](CORE.md)) then displays each PNG with whichever
-terminal image tool is available: ueberzug++, chafa, kitty (`kitten icat`/
-`kitty icat`), or imgcat, chosen by `platform.best_terminal_renderer()` or
+terminal image tool is available: chafa, kitty (`kitten icat` / `kitty
+icat`), or imgcat, chosen by `platform.best_terminal_renderer()` or
 forced via `opts.terminal_tool`. Like `system`, this bypasses backend
 resolution entirely — `core/dispatcher.lua` special-cases `opts.mode ==
 "terminal"` the same way.
@@ -83,7 +83,7 @@ rely on existing past that window.
 
 - **Module:** `lua/pdfport/renderers/terminal.lua`
 - **Config:** `opts.terminal_dpi` (default `216`), `opts.terminal_size_ratio` (default `{ width = 0.9, height = 0.8 }`), `opts.terminal_tool`
-- **Requires:** `pdftoppm` + one of chafa/ueberzug++/kitty/imgcat
+- **Requires:** `pdftoppm` + one of chafa/kitty/imgcat
 
 ## Page-range picker
 

@@ -2,8 +2,8 @@
 ---@brief Renders PDF pages as images in the terminal.
 ---@description
 --- Rasterizes pages via pdftoppm (delegated to core/rasterize.lua, shared
---- with the public pdfport.render_page() API) then displays via ueberzug++,
---- chafa, kitty icat, or imgcat. Unlike render_page(), the PNG here is a
+--- with the public pdfport.render_page() API) then displays via chafa,
+--- kitty icat, or imgcat. Unlike render_page(), the PNG here is a
 --- throwaway tempname() deleted shortly after display.
 
 local M = {}
@@ -25,13 +25,13 @@ end
 
 ---@internal
 ---@param png_path string
----@param tool "ueberzug"|"chafa"|"kitty"|"imgcat"|nil
+---@param tool "chafa"|"kitty"|"imgcat"|nil
 ---@param size_ratio { width: number, height: number }
 ---@return nil
 local function display_png(png_path, tool, size_ratio)
   tool = tool or platform.best_terminal_renderer()
   if not tool then
-    notify.error("no image renderer (install chafa or ueberzug++)")
+    notify.error("no image renderer (install chafa)")
     vim.fn.delete(png_path)
     return
   end
@@ -46,7 +46,7 @@ local function display_png(png_path, tool, size_ratio)
     local width = math.floor(vim.o.columns * size_ratio.width)
     local height = math.floor(vim.o.lines * size_ratio.height)
 
-    if tool == "chafa" or tool == "ueberzug" then
+    if tool == "chafa" then
       if not platform.has("chafa") then
         notify.warn("chafa not installed")
         vim.fn.delete(png_path)
