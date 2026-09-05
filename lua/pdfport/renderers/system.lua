@@ -1,8 +1,15 @@
 ---@module 'pdfport.renderers.system'
 ---@brief Opens a PDF with the operating system's default application.
+---@description
+--- Dispatch is delegated to lib.nvim.cross.open_default — the shared helper
+--- that already handles Windows/WSL/macOS/Linux correctly, including the
+--- `cmd.exe /C start` quoting/tokenizing hazard (it uses `explorer.exe` on
+--- native Windows, never a bare `start`, which is a cmd.exe built-in and not
+--- an executable jobstart/libuv could spawn without a shell). It spawns the
+--- viewer detached, so it outlives Neovim.
 
 local M = {}
-local platform = require("pdfport.platform")
+local open_default = require("lib.nvim.cross.open_default")
 local notify = require("pdfport.util.notify").create("[pdfport.system]")
 
 ---@param _result PdfPort.Result
@@ -15,18 +22,10 @@ function M.render(_result, opts)
     return
   end
 
-  local cmd = platform.open_cmd()
-  if not cmd then
-    notify.error("no system open command found")
-    return
+  local ok, err = open_default(path)
+  if not ok then
+    notify.error(err or "could not open the PDF with the system default application")
   end
-
-  vim.fn.jobstart({ cmd, path }, {
-    detach = true,
-    on_exit = function(_, code, _)
-      if code ~= 0 then notify.warn(string.format("%s exited with code %d", cmd, code)) end
-    end,
-  })
 end
 
 return M

@@ -52,9 +52,13 @@ worse fit for a whole long document.
 ## system renderer
 
 Opens the *original PDF file* (not extracted text) with the OS default
-application, via `platform.open_cmd()` (`xdg-open`/`open`/`start`
-equivalent) and `vim.fn.jobstart({ cmd, path }, { detach = true })`. No
-backend/extraction involved at all — `core/dispatcher.lua` special-cases
+application. Dispatch is delegated to `lib.nvim.cross.open_default`, the
+shared helper that resolves the right launcher per platform —
+`explorer.exe <path>` on native Windows (deliberately not a bare `start`,
+which is a `cmd.exe` built-in, not an executable that jobstart/libuv could
+spawn without a shell), `open` on macOS, `xdg-open` elsewhere, plus WSL
+path translation — and spawns it detached. No backend/extraction involved
+at all — `core/dispatcher.lua` special-cases
 `opts.mode == "system"` before backend resolution even runs, so this mode
 works with zero backends installed.
 
