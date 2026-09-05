@@ -27,7 +27,7 @@ local function check_exe(name, required)
   if required then
     h_err(name .. " NOT found on PATH (required)")
   else
-    h_warn(name .. " NOT found on PATH (optional)")
+    h_info(name .. " NOT found on PATH (optional)")
   end
   return false
 end
@@ -128,7 +128,7 @@ local function check_backends()
       h_warn("ollama daemon not running  (ollama serve)")
     end
   else
-    h_warn("ollama: not installed (optional)")
+    h_info("ollama: not installed (optional)")
   end
 
   -- tesseract
@@ -218,7 +218,7 @@ local function check_producers()
   if browser then
     h_ok("chromium producer: ready (html -> PDF, browser: " .. browser .. ")")
   else
-    h_warn("chromium producer: no Chromium-family browser on PATH (optional html fallback)")
+    h_info("chromium producer: no Chromium-family browser on PATH (optional html fallback)")
   end
 
   if check_exe("soffice", false) then
