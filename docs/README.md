@@ -9,6 +9,7 @@ is the short version of all of it.
 | --- | --- |
 | [installation.md](installation.md) | What has to be there first — this plugin's job is to drive external tools, so the requirements are the interesting part — and a spec per plugin manager |
 | [configuration.md](configuration.md) | Every option `setup()` takes |
+| [health.md](health.md) | The ten `:checkhealth pdfport` sections, and which findings are actually problems |
 
 ## Using it
 
