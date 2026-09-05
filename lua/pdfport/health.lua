@@ -77,7 +77,7 @@ local function check_backends()
   if check_exe("pdftotext", false) then
     h_ok("pdftotext backend: ready")
   else
-    h_warn("pdftotext backend: install poppler-utils")
+    h_warn("pdftotext backend: not on PATH", { "install poppler-utils" })
   end
 
   -- pdfplumber
@@ -87,10 +87,13 @@ local function check_backends()
     if platform.has_python_module("pdfplumber") then
       h_ok("pdfplumber: available")
     else
-      h_warn("pdfplumber: not installed  (pip install pdfplumber)")
+      h_warn("pdfplumber: not installed", { "pip install pdfplumber" })
     end
   else
-    h_warn("no python interpreter found (python3/python/py) – pdfplumber/docling unavailable")
+    h_warn(
+      "no python interpreter found (python3/python/py) – pdfplumber/docling unavailable",
+      { "Install Python 3" }
+    )
   end
 
   -- marker
@@ -104,7 +107,7 @@ local function check_backends()
   if check_exe("marker_single", false) then
     h_ok("marker backend: ready")
   else
-    h_warn("marker backend: marker_single not on PATH  (pip install marker-pdf)")
+    h_warn("marker backend: marker_single not on PATH", { "pip install marker-pdf" })
   end
 
   -- docling
@@ -112,7 +115,7 @@ local function check_backends()
     if platform.has_python_module("docling") then
       h_ok("docling: available")
     else
-      h_warn("docling: not installed  (pip install docling)")
+      h_warn("docling: not installed", { "pip install docling" })
     end
   end
 
@@ -125,7 +128,7 @@ local function check_backends()
     if code == "200" then
       h_ok("ollama daemon running on localhost:11434")
     else
-      h_warn("ollama daemon not running  (ollama serve)")
+      h_warn("ollama daemon not running", { "ollama serve" })
     end
   else
     h_info("ollama: not installed (optional)")
@@ -135,7 +138,7 @@ local function check_backends()
   if check_exe("tesseract", false) then
     h_ok("tesseract backend: ready (requires pdftoppm too)")
   else
-    h_warn("tesseract backend: not on PATH  (install tesseract-ocr)")
+    h_warn("tesseract backend: not on PATH", { "install tesseract-ocr" })
   end
 
   -- claude
@@ -151,8 +154,10 @@ local function check_backends()
     if key and key ~= "" then
       h_ok("ANTHROPIC_API_KEY set (" .. #key .. " chars)")
     else
-      h_warn("ANTHROPIC_API_KEY not set – claude backend unavailable")
-      h_info("Set: export ANTHROPIC_API_KEY=sk-ant-...")
+      h_warn(
+        "ANTHROPIC_API_KEY not set – claude backend unavailable",
+        { "export ANTHROPIC_API_KEY=sk-ant-..." }
+      )
     end
     -- The claude backend encodes in-process via vim.base64.encode now; the
     -- external `base64` binary is no longer involved (and never existed on
@@ -160,7 +165,7 @@ local function check_backends()
     if type(vim.base64) == "table" and type(vim.base64.encode) == "function" then
       h_ok("vim.base64.encode available (used for PDF encoding)")
     else
-      h_warn("vim.base64.encode missing - needs Neovim 0.10+ for the claude backend")
+      h_warn("vim.base64.encode missing", { "Upgrade to Neovim 0.10+ for the claude backend" })
     end
   end
 end
@@ -180,13 +185,13 @@ local function check_producers()
   if check_exe("img2pdf", false) then
     h_ok("img2pdf producer: ready (lossless image -> PDF)")
   else
-    h_warn("img2pdf producer: not on PATH  (pip install img2pdf)")
+    h_warn("img2pdf producer: not on PATH", { "pip install img2pdf" })
   end
 
   if check_exe("magick", false) then
     h_ok("magick producer: ready (image -> PDF, ImageMagick)")
   else
-    h_warn("magick producer: not on PATH  (install ImageMagick)")
+    h_warn("magick producer: not on PATH", { "install ImageMagick" })
   end
 
   if check_exe("pandoc", false) then
@@ -195,17 +200,19 @@ local function check_producers()
     if engine then
       h_ok("pandoc producer: ready (markdown/text -> PDF, engine: " .. engine .. ")")
     else
-      h_warn("pandoc producer: pandoc found but no PDF engine on PATH")
-      h_info("Install one of: tectonic, typst, xelatex, lualatex, pdflatex")
+      h_warn(
+        "pandoc producer: pandoc found but no PDF engine on PATH",
+        { "Install one of: tectonic, typst, xelatex, lualatex, pdflatex" }
+      )
     end
   else
-    h_warn("pandoc producer: not on PATH  (install pandoc)")
+    h_warn("pandoc producer: not on PATH", { "install pandoc" })
   end
 
   if check_exe("weasyprint", false) then
     h_ok("weasyprint producer: ready (html -> PDF)")
   else
-    h_warn("weasyprint producer: not on PATH  (pip install weasyprint)")
+    h_warn("weasyprint producer: not on PATH", { "pip install weasyprint" })
   end
 
   local browser = platform.first_available({
@@ -224,7 +231,7 @@ local function check_producers()
   if check_exe("soffice", false) then
     h_ok("soffice producer: ready (office -> PDF)")
   else
-    h_warn("soffice producer: not on PATH  (install LibreOffice)")
+    h_warn("soffice producer: not on PATH", { "install LibreOffice" })
   end
 
   h_start("pdfport: merge producers (pdfport.merge())")
@@ -232,20 +239,23 @@ local function check_producers()
   if check_exe("qpdf", false) then
     h_ok("qpdf producer: ready (pdf merge)")
   else
-    h_warn("qpdf producer: not on PATH  (install qpdf)")
+    h_warn("qpdf producer: not on PATH", { "install qpdf" })
   end
 
   if check_exe("pdftk", false) then
     h_ok("pdftk producer: ready (pdf merge)")
   else
-    h_warn("pdftk producer: not on PATH  (install pdftk)")
+    h_warn("pdftk producer: not on PATH", { "install pdftk" })
   end
 
   local gs = platform.first_available({ "gs", "gswin64c", "gswin32c" })
   if gs then
     h_ok("ghostscript producer: ready (pdf merge, exe: " .. gs .. ")")
   else
-    h_warn("ghostscript producer: no gs/gswin64c/gswin32c on PATH (last-resort merge fallback)")
+    h_warn(
+      "ghostscript producer: no gs/gswin64c/gswin32c on PATH (last-resort merge fallback)",
+      { "install Ghostscript" }
+    )
   end
 end
 
@@ -277,8 +287,7 @@ local function check_renderers()
   if tool then
     h_ok("best renderer: " .. tool)
   else
-    h_warn("no terminal image renderer found")
-    h_info("Install one of: chafa, kitten, imgcat")
+    h_warn("no terminal image renderer found", { "Install one of: chafa, kitten, imgcat" })
   end
 
   check_exe("chafa", false)
@@ -316,7 +325,7 @@ local function check_integrations()
   if composer_ok then
     h_ok("lib.nvim found – :PdfPort available")
   else
-    h_err('lib.nvim not found – :PdfPort will fail to load; install "StefanBartl/lib.nvim"')
+    h_err("lib.nvim not found – :PdfPort will fail to load", { 'Install "StefanBartl/lib.nvim"' })
   end
 
   local kit_ok, _ = pcall(require, "lib.nvim.ui.kit")
@@ -335,13 +344,13 @@ local function check_registry_state()
   h_start("pdfport: registered backends")
 
   if not ok_registry then
-    h_warn("registry unavailable – call require('pdfport').setup() first")
+    h_info("registry unavailable (call setup() first)")
     return
   end
 
   local backends = registry.all_backends and registry.all_backends() or {}
   if #backends == 0 then
-    h_warn("No backends registered – call require('pdfport').setup() first")
+    h_info("No backends registered (call setup() first)")
     return
   end
 
@@ -358,7 +367,7 @@ local function check_registry_state()
 
   local producers = registry.all_producers and registry.all_producers() or {}
   if #producers == 0 then
-    h_warn("No producers registered – call require('pdfport').setup() first")
+    h_info("No producers registered (call setup() first)")
     return
   end
 
