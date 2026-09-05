@@ -175,12 +175,6 @@ fill — and `:Lib deps install` would compose a command that fails. Their
 install commands live in [`configuration.md`](configuration.md#backends)
 instead.
 
-`ueberzugpp` **is** declared, with a `pacman` package and nothing else. It is
-in Arch's `extra` repository; on Debian, Ubuntu, Fedora and openSUSE it exists
-only in a third-party repository that has to be added first. A missing
-package-manager key means "no known package on that manager", which is the
-truth — inventing one would produce an install command that fails.
-
 ### Ghostscript is spelled differently on Windows
 
 `gs` on Linux and macOS, `gswin64c` (or `gswin32c`) on Windows. The spec

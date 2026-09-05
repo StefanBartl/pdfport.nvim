@@ -278,10 +278,9 @@ local function check_renderers()
     h_ok("best renderer: " .. tool)
   else
     h_warn("no terminal image renderer found")
-    h_info("Install one of: chafa, ueberzugpp, kitten, imgcat")
+    h_info("Install one of: chafa, kitten, imgcat")
   end
 
-  check_exe("ueberzugpp", false)
   check_exe("chafa", false)
 end
 

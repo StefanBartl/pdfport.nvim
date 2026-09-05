@@ -89,14 +89,6 @@
       }
     },
     {
-      "bin": "ueberzugpp",
-      "required": false,
-      "why": "An alternative terminal image renderer for the page preview, drawing real pixels over the terminal on X11/Wayland where chafa can only approximate them in cells. Optional: chafa is the default and needs nothing extra.",
-      "pkg": {
-        "pacman": "ueberzugpp"
-      }
-    },
-    {
       "bin": "img2pdf",
       "required": false,
       "why": "Enables the img2pdf creation producer — the lossless first choice for image -> PDF (embeds JPEG/PNG data unchanged instead of recompressing).",

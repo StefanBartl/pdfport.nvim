@@ -143,7 +143,7 @@ lib.nvim.bindings.usercmd.composer, with <Tab> completion -- .pdf files prioriti
 
 :PdfPort terminal [path]                            *:PdfPort-terminal*
   Rasterize and display the first page as a terminal image.
-  Requires pdftoppm and one of: chafa, ueberzugpp, kitten, imgcat.
+  Requires pdftoppm and one of: chafa, kitten, imgcat.
   Prompts for a page range first (blank = page 1; <Esc> cancels).
 
 :PdfPort backends                                    *:PdfPort-backends*

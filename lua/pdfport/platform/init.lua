@@ -96,9 +96,18 @@ function M.open_cmd()
   end
 end
 
----@return "ueberzug"|"chafa"|"kitty"|"imgcat"|nil
+--- Which terminal image tool to use for the page preview.
+---
+--- ueberzug/ueberzugpp is deliberately not a candidate: it is not a
+--- "render into this pty" tool like the three below. It is a daemon that
+--- draws a separate X11/Wayland child window over the terminal, positioned
+--- by absolute cell coordinates and fed JSON over a FIFO — it cannot be
+--- driven from a `:terminal` split at all, and the old `"ueberzug"` return
+--- here was silently remapped to chafa anyway. In-Neovim overlay rendering
+--- is `lib.nvim.image_preview`'s job (Kitty/OSC-1337 graphics protocols),
+--- not this renderer's.
+---@return "chafa"|"kitty"|"imgcat"|nil
 function M.best_terminal_renderer()
-  if M.has("ueberzugpp") or M.has("ueberzug") then return "ueberzug" end
   local term = vim.env.TERM or ""
   local term_prog = vim.env.TERM_PROGRAM or ""
   if term == "xterm-kitty" or term_prog == "kitty" then
