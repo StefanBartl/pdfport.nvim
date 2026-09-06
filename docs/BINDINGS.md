@@ -7,7 +7,6 @@ All keymaps, user commands, and autocmds registered by pdfport.nvim.
 - [Keymaps](#keymaps)
 - [User commands](#user-commands)
 - [Autocmds](#autocmds)
-- [Which-key](#which-key)
 
 ---
 
@@ -97,10 +96,3 @@ Opt-in via `setup({ auto_open_on_read = true })`, default off. When enabled,
 `bindings/autocmds.lua`'s `M.register_bufreadcmd()` registers one `BufReadCmd` (augroup
 `pdfport_bufreadcmd`) that intercepts a direct `:e file.pdf` and invokes the mode picker
 instead of loading raw PDF bytes into a buffer.
-
-## Which-key
-
-If [which-key.nvim](https://github.com/folke/which-key.nvim) is installed, every resolved
-keymap is registered with a description under the `<leader>p` group automatically
-(`lua/pdfport/bindings/keymaps.lua`). No configuration needed; disabled if which-key
-is not present.
