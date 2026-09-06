@@ -3,10 +3,11 @@
 ---@brief composer (:Verb sub … + <Tab> completion + Markdown docgen).
 ---@description
 --- Bare `:PdfPort [path]` opens the interactive mode picker; `text`/`float`/
---- `system`/`terminal` open directly in that mode; `health` runs
---- :checkhealth. All path-taking routes accept an optional path argument; if
---- omitted they fall back to <cfile> and then the current buffer name. See
---- docs/BINDINGS.md for the full cheatsheet.
+--- `system`/`terminal` open directly in that mode. The write side: `create`
+--- and `merge`. Diagnostics: `backends`/`producers` list the live registry,
+--- `health` runs :checkhealth. All path-taking routes accept an optional path
+--- argument; if omitted they fall back to <cfile> and then the current buffer
+--- name. See docs/BINDINGS.md for the full cheatsheet.
 
 local composer = require("lib.nvim.bindings.usercmd.composer")
 local notify = require("pdfport.util.notify").create("[pdfport.usrcmds]")

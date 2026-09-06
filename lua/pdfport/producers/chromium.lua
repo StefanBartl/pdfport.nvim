@@ -4,8 +4,8 @@
 ---@description
 --- Fallback behind weasyprint: no Python dependency, but a heavier process
 --- and a gruesome CLI (fixed default margins, no CSS Paged Media). Tries
---- chromium → google-chrome → chrome → msedge, in that order — whichever
---- Chromium-family binary is actually on PATH.
+--- chromium → chromium-browser → google-chrome → chrome → msedge, in that
+--- order — whichever Chromium-family binary is actually on PATH.
 
 local platform = require("pdfport.platform")
 local spawn_capture = require("lib.nvim.cross.uv.spawn_capture")

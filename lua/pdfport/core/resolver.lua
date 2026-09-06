@@ -2,8 +2,8 @@
 ---@brief Backend selection and fallback chain resolution for pdfport.nvim.
 ---@description
 --- Resolves the first available backend for a given request.
---- The fallback chain is walked in priority order; availability checks are
---- cached in platform.lua so repeated calls are fast.
+--- The fallback chain is walked in priority order; per-binary availability
+--- checks are memoized (lib.nvim.core) so repeated walks are fast.
 
 local registry = require("pdfport.core.registry")
 

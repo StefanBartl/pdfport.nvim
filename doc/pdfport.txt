@@ -196,7 +196,7 @@ require("pdfport").extract({opts})
   PdfPort.Result fields:
     status          "ok"|"error"
     text            string?
-    format          "text"|"markdown"
+    format          "plain"|"markdown"
     backend         string
     pages_processed integer?
     error           string?
@@ -278,7 +278,8 @@ require("pdfport").merge({opts})
   docling     Requires Python + docling (pip install docling). Markdown.
   ollama      Requires ollama, pdftoppm, curl. Markdown.
   tesseract   Requires tesseract, pdftoppm. OCR fallback, plain text.
-  claude      Requires curl, base64, ANTHROPIC_API_KEY. Markdown.
+  claude      Requires curl, ANTHROPIC_API_KEY, Neovim 0.10+ (vim.base64).
+              Markdown.
 
 The fallback chain is tried in order until one succeeds. Successful extractions are
 cached across restarts (see extract_opts.cache above); |:PdfPort-backends| lists every
@@ -402,7 +403,8 @@ Reports:
     soffice, and the merge producers qpdf/pdftk/ghostscript)
   - Renderer availability (system open command, image renderer)
   - Integration status (neo-tree, nvim-tree, oil.nvim, telescope, fzf-lua, which-key)
-  - Live registry: all registered backends with available() result
+  - Declared tools inventory (docs/install.json, via lib.nvim.deps)
+  - Live registry: all registered backends and producers with available() result
 
 ==============================================================================
 vim:tw=78:ts=8:ft=help:norl:

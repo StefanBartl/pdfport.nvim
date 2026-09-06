@@ -22,7 +22,7 @@ completing with no input yet).
 
 All subcommands accept an optional path argument; if omitted they use the word under the cursor (`<cfile>`) or the current buffer.
 
-`float` and `terminal` prompt for a page range first (`vim.ui.input`, e.g. `1-3,5` — blank
+`float` and `terminal` prompt for a page range first (e.g. `1-3,5` — blank
 means the default: all pages for `float`, page 1 for `terminal`; `<Esc>` cancels without
 opening anything).
 
@@ -138,9 +138,6 @@ p.render_page("/some/file.pdf", 1, { dpi = 216 }, function(png_path, err)
   -- png_path is real and caller-owned; delete it yourself when done
 end)
 ```
-
-P0–P3 shipped: image/Markdown/text/HTML/Office producers + `merge()`; P2 caller
-wiring into `filetree.nvim`/`images.nvim`/`markdown.nvim` all shipped too.
 
 ## Health check
 
