@@ -16,7 +16,7 @@ local M = {}
 --- A named class rather than the inline table type this used to carry: inside
 --- a table literal a `fun(...): nil` swallows everything after its return
 --- type, so LuaLS only ever saw the `info` field. `warn`, `error` and `debug`
---- then read as undefined at all 28 call sites in this plugin.
+--- then read as undefined at every call site.
 ---@class PdfPort.Notifier
 ---@field info  fun(msg: string): nil
 ---@field warn  fun(msg: string): nil

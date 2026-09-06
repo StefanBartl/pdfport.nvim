@@ -10,9 +10,10 @@ directions. `setup()` only wires up a lightweight stand-in per producer; the
 real module is `require`d the first time the composer's resolver walk
 actually calls `available()`/`create()` on it.
 
-Nine builtins across two groups: five **creation** producers (accept an
-input kind, write a new PDF) and three **merge** producers (accept `"pdf"`,
-combine several into one).
+Nine builtins across two groups: six **creation** producers (accept an
+input kind, write a new PDF — img2pdf, magick, pandoc, weasyprint, chromium,
+soffice) and three **merge** producers (accept `"pdf"`, combine several into
+one — qpdf, pdftk, ghostscript).
 
 ## img2pdf creation producer
 

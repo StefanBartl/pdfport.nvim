@@ -1,8 +1,8 @@
 ---@module 'pdfport.core.registry'
----@brief Backend and renderer registry for pdfport.nvim.
+---@brief Backend, producer, and renderer registry for pdfport.nvim.
 ---@description
---- Two independent registries: extraction backends and output renderers.
---- Registration is idempotent. All lookups are O(1).
+--- Three independent registries: extraction backends, creation producers, and
+--- output renderers. Registration is idempotent. All lookups are O(1).
 
 local M = {}
 

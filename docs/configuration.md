@@ -4,7 +4,7 @@
 require("pdfport").setup({
   default_backend = "auto",          -- "auto" | backend id
   fallback_chain  = {                -- order tried when default_backend = "auto"
-    "pdftotext", "pdfplumber", "marker", "docling", "ollama", "claude"
+    "pdftotext", "pdfplumber", "marker", "docling", "ollama", "tesseract", "claude"
   },
   extract_opts = {
     max_pages  = nil,                -- nil = all pages
@@ -96,7 +96,7 @@ the resolver actually calls `available()`/`extract()` on it.
 | docling     | `pip install docling`                       | Markdown |
 | ollama      | `ollama`, `pdftoppm`, `curl`                | Markdown |
 | tesseract   | `tesseract`, `pdftoppm` (OCR fallback)      | plain    |
-| claude      | `curl`, `base64`, `ANTHROPIC_API_KEY`       | Markdown |
+| claude      | `curl`, `ANTHROPIC_API_KEY`, `vim.base64` (Neovim 0.10+) | Markdown |
 
 ## Creation producers
 

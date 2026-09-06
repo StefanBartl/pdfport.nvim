@@ -395,8 +395,9 @@ local function check_deps()
   deps_health.report_for("pdfport.nvim")
 end
 
----Runs all :checkhealth pdfport sections: core, backends, renderers,
----integrations, declared-tools (lib.nvim.deps), and the live registry state.
+---Runs all :checkhealth pdfport sections: core, backends, producers,
+---renderers, integrations, declared-tools (lib.nvim.deps), and the live
+---registry state.
 ---@return nil
 function M.check()
   check_core()

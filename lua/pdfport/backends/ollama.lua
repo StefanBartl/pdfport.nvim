@@ -84,6 +84,9 @@ local function rasterize(pdf_path, page, cb)
 end
 
 ---@internal
+--- CDX: hand-rolled base64 encoder; backends/claude.lua now uses
+--- vim.base64.encode (Neovim 0.10+) for the same job and this whole function
+--- could go the same way.
 ---@param path string
 ---@return string|nil b64
 ---@return string|nil error_msg

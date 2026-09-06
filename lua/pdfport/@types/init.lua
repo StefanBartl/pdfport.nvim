@@ -228,6 +228,4 @@
 ---@field backend_id? PdfPort.BackendId
 ---@field max_pages? integer
 
----@alias uv_process_t any
-
 return {}

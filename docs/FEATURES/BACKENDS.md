@@ -70,7 +70,7 @@ request completes.
 
 - **Module:** `lua/pdfport/backends/claude.lua` (`M.available`, `M.extract`)
 - **Config:** `opts.claude_api_key` (default `nil`, falls back to `ANTHROPIC_API_KEY` env var)
-- **Requires:** `curl`, `base64` on PATH, `ANTHROPIC_API_KEY` (or `claude_api_key`) set
+- **Requires:** `curl` on PATH, `ANTHROPIC_API_KEY` (or `claude_api_key`) set, `vim.base64` (Neovim 0.10+ — encoding is in-process now, no external `base64` binary)
 
 ## Tesseract OCR fallback backend
 
