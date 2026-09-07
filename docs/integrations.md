@@ -2,7 +2,23 @@
 
 ## File-tree integrations
 
-Every integration shares the same five actions: `open`, `open_text`, `open_system`,
+### filetree.nvim — no adapter needed
+
+[filetree.nvim](https://github.com/StefanBartl/filetree.nvim) is not in the
+list below and does not need to be: it calls
+[`pdfport.pick_open()`](../lua/pdfport/init.lua) itself. Hitting a PDF in it
+asks exactly the question `:PdfPort` asks, with the same choices and the same
+labels, and it keeps working when pdfport.nvim is not installed at all.
+
+That is the intended shape for a plugin from the same collection — an adapter
+here exists for trees this repository cannot change. If you are writing one,
+`pick_open()` is the public entry point; see
+[WORKFLOW.md](WORKFLOW.md#pdfportpick_open-instead-of-hand-rolling-a-mode-prompt).
+
+### Third-party trees: the shared five actions
+
+The four adapters below exist for trees this repository cannot change, and each
+of them exposes the same five actions: `open`, `open_text`, `open_system`,
 `open_terminal` (normal mode, defaulting to `<leader>po/pt/ps/pi`) and `open_batch`
 (visual mode, defaulting to `<leader>pb`, batch-opens every PDF in the selection) — see
 [docs/BINDINGS.md](BINDINGS.md) for the full table. Pass `false` for any action to
