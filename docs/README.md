@@ -26,6 +26,12 @@ is the short version of all of it.
 | --- | --- |
 | [FEATURES/](FEATURES/README.md) | One page per area — the core, rendering, the backends it can run on, the producers it can write, and the integrations |
 
+## Working on it
+
+| Page | Answers |
+| --- | --- |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Ground rules, project layout, and how to add a backend, a producer or a file-tree adapter |
+
 ## Here, but not prose
 
 **`install.json`** declares the external tools this plugin can use,
