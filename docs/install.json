@@ -143,6 +143,42 @@
       }
     },
     {
+      "bin": "chrome",
+      "bin_alternatives": ["google-chrome", "google-chrome-stable", "chromium", "chromium-browser", "brave", "msedge", "microsoft-edge"],
+      "required": false,
+      "why": "Enables the chromium creation producer — fallback behind weasyprint for html -> PDF: a heavier process and a gruesome CLI (fixed default margins, no CSS Paged Media), but no Python dependency. Any Chromium-family build works. `paths` below covers the default install locations (Chrome's installer does not extend PATH on Windows, the normal case there rather than the exception — same tool, same fix as hover.nvim's/casedesk.nvim's `docs/install.json`).",
+      "paths": {
+        "win": [
+          "$PROGRAMFILES\\Google\\Chrome\\Application\\chrome.exe",
+          "$PROGRAMFILES\\Chromium\\Application\\chrome.exe",
+          "$PROGRAMFILES\\BraveSoftware\\Brave-Browser\\Application\\brave.exe",
+          "$PROGRAMFILES\\Microsoft\\Edge\\Application\\msedge.exe",
+          "$LOCALAPPDATA\\Google\\Chrome\\Application\\chrome.exe",
+          "$LOCALAPPDATA\\Chromium\\Application\\chrome.exe",
+          "$LOCALAPPDATA\\BraveSoftware\\Brave-Browser\\Application\\brave.exe",
+          "$LOCALAPPDATA\\Microsoft\\Edge\\Application\\msedge.exe"
+        ],
+        "mac": [
+          "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+          "/Applications/Chromium.app/Contents/MacOS/Chromium",
+          "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+          "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"
+        ],
+        "linux": ["/usr/bin/google-chrome", "/usr/bin/chromium", "/usr/bin/chromium-browser", "/snap/bin/chromium"]
+      },
+      "pkg": {
+        "apt": "chromium",
+        "dnf": "chromium",
+        "pacman": "chromium",
+        "zypper": "chromium",
+        "apk": "chromium",
+        "brew": "--cask google-chrome",
+        "winget": "Google.Chrome",
+        "scoop": "googlechrome",
+        "choco": "googlechrome"
+      }
+    },
+    {
       "bin": "soffice",
       "required": false,
       "why": "Enables the soffice creation producer for office (docx/odt/xlsx/pptx) -> PDF, one call covers all four formats. Also what hover.nvim uses to preview a Word/Excel/PowerPoint document (:Hover office on). `paths` below covers the default install location on Windows/macOS (the LibreOffice installer does not extend PATH there — same tool, same fix as hover.nvim's `docs/install.json`).",
