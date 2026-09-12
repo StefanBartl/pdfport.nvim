@@ -4,10 +4,15 @@
 ---@description
 --- Fallback behind weasyprint: no Python dependency, but a heavier process
 --- and a gruesome CLI (fixed default margins, no CSS Paged Media). Tries
---- chromium → chromium-browser → google-chrome → chrome → msedge, in that
---- order — whichever Chromium-family binary is actually on PATH.
+--- every name `docs/install.json`'s `chrome` entry declares (chromium,
+--- chromium-browser, google-chrome, chrome, msedge, ...) on PATH, then that
+--- entry's declared `paths` fallback -- a headless browser is not something
+--- users typically add to PATH themselves, and PATH alone reports "missing"
+--- on a machine that has one plainly installed (measured for the identical
+--- tool in hover.nvim/casedesk.nvim; same fix here via `lib.nvim.deps`,
+--- rather than a hand-rolled search this module used to keep in sync with
+--- `docs/install.json` by hand).
 
-local platform = require("pdfport.platform")
 local spawn_capture = require("lib.nvim.cross.uv.spawn_capture")
 
 --- See the note on `Producer` in `@types/init.lua`: declared as a class so
@@ -26,14 +31,49 @@ local M = {
   },
 }
 
----@internal Order matters: dedicated Chromium/Chrome builds before the
----platform-bundled Edge, which not everyone wants pdfport reaching for.
-local BROWSER_CHAIN = { "chromium", "chromium-browser", "google-chrome", "chrome", "msedge" }
+---@internal
+--- This plugin's own `chrome` tool declaration from `docs/install.json` --
+--- the single source of truth `M.available()`/`M.create()` and
+--- `pdfport.health`'s browser check all resolve through, rather than each
+--- keeping its own copy of the name/location list. Resolved once; a spec
+--- that cannot be found or parsed still gets a PATH-only search (via a bare
+--- `{ bin = "chrome" }`) rather than none at all.
+---@type Lib.Deps.Tool|nil
+local _chrome_tool = nil
+
+---@internal
+---@return Lib.Deps.Tool
+local function chrome_tool()
+  if _chrome_tool ~= nil then return _chrome_tool end
+
+  local spec = require("lib.nvim.deps.spec")
+  local path = spec.find("pdfport.nvim")
+  local result = path and spec.load(path)
+  if result then
+    for _, tool in ipairs(result.tools) do
+      if tool.bin == "chrome" then
+        _chrome_tool = tool
+        return tool
+      end
+    end
+  end
+
+  _chrome_tool = { bin = "chrome" }
+  return _chrome_tool
+end
 
 ---@internal
 ---@return string|nil
 local function resolve_browser()
-  return platform.first_available(BROWSER_CHAIN)
+  return require("lib.nvim.deps.detect").found_as(chrome_tool())
+end
+
+--- The browser `M.create()` would run, or nil -- same probe, not a second
+--- copy of it. Public so `pdfport.health`'s `:checkhealth pdfport` line can
+--- report on and name the exact binary this producer would actually use.
+---@return string|nil
+function M.resolved_browser()
+  return resolve_browser()
 end
 
 ---@return boolean
