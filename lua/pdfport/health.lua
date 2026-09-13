@@ -422,17 +422,20 @@ local function check_registry_state()
 end
 
 ---@internal
----Reports pdfport's own docs/install.json via lib.nvim.deps — the same
----tools check_backends() already probes, but with each tool's declared
----`why` and a pointer to `:Lib deps show pdfport.nvim` for the install
----command. Silently does nothing if lib.nvim.deps isn't available (older
----lib.nvim) or pdfport ships no spec.
+---Points to `:Lib deps show pdfport.nvim` for each tool's declared `why`
+---and install command. Not a per-tool report: check_backends() and
+---check_producers() above already cover every tool in docs/install.json by
+---hand, with richer, section-specific messages (e.g. "pandoc producer:
+---ready (engine: xelatex)") -- looping over the spec here too would repeat
+---each one a second time in the generic, plainer wording. Silently does
+---nothing if lib.nvim.deps isn't available (older lib.nvim) or pdfport
+---ships no spec.
 ---@return nil
 local function check_deps()
   local ok_deps, deps_health = pcall(require, "lib.nvim.deps.health")
   if not ok_deps then return end
   h_start("pdfport: declared tools (lib.nvim.deps)")
-  deps_health.report_for("pdfport.nvim")
+  deps_health.pointer_for("pdfport.nvim")
 end
 
 ---Runs all :checkhealth pdfport sections: core, backends, producers,
