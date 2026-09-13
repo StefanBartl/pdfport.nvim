@@ -7,7 +7,10 @@ is the short version of all of it.
 
 | Page | Answers |
 | --- | --- |
-| [installation.md](installation.md) | What has to be there first — this plugin's job is to drive external tools, so the requirements are the interesting part — and a spec per plugin manager |
+| [requirements.md](requirements.md) | This plugin's job is to drive external tools, so this is the interesting part — required and optional, one row per tool |
+| [installation.md](installation.md) | A spec per plugin manager |
+| [quickstart.md](quickstart.md) | The first thing to run after installing |
+| [what-you-get.md](what-you-get.md) | The full command/API surface at a glance |
 | [configuration.md](configuration.md) | Every option `setup()` takes |
 | [health.md](health.md) | The ten `:checkhealth pdfport` sections, and which findings are actually problems |
 
