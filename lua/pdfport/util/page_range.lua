@@ -48,7 +48,7 @@ end
 ---@param callback fun(pages: integer[]|nil): nil  called with nil if the prompt was cancelled or left blank
 ---@return nil
 function M.prompt(callback)
-  require("lib.nvim.ui.kit").input({
+  require("ui.kit").input({
     title = "pdfport pages (e.g. 1-3,5 — blank = default): ",
     on_submit = function(input)
       callback(M.parse(input))

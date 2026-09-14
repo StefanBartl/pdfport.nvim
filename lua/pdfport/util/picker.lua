@@ -134,7 +134,7 @@ function M.pick_and_open(path, opts)
 
   local title = opts.title or "Open PDF as…"
 
-  local kit_ok, kit = pcall(require, "lib.nvim.ui.kit")
+  local kit_ok, kit = pcall(require, "ui.kit")
   if kit_ok and type(kit.select) == "function" then
     kit.select({
       title = title,

@@ -5,7 +5,7 @@
 | | |
 | --- | --- |
 | Neovim | **0.9+** |
-| [lib.nvim](https://github.com/StefanBartl/lib.nvim) | `:PdfPort` is built on its user-command composer, and its UI kit gives the mode picker its look |
+| [lib.nvim](https://github.com/StefanBartl/lib.nvim) | `:PdfPort` is built on its user-command composer |
 | At least one extraction backend | required to read anything — `pdftotext` from poppler is the usual first choice |
 
 ## Optional
@@ -14,6 +14,7 @@ Detected at runtime, and each costs exactly the one feature it powers:
 
 | | |
 | --- | --- |
+| [ui.nvim](https://github.com/StefanBartl/ui.nvim) | `ui.kit` gives the mode picker and the page-range prompt their themed look; falls back to `vim.ui.select`/`vim.ui.input` when absent |
 | `pdftotext` (poppler), `pdfplumber`, `marker`, `docling`, `tesseract` | Extraction backends, from fastest to most thorough |
 | Ollama, the Claude API | Extraction to Markdown through a model |
 | `img2pdf`, `magick`, `pandoc`, `weasyprint`, chromium, `soffice` | Creation producers, one per input kind |

@@ -16,7 +16,7 @@ member *is* installed, so one missing tool is never fatal on its own.
 | `pdfport: merge producers` | `qpdf`, `pdftk`, `ghostscript` (`gs`/`gswin64c`/`gswin32c`) — `pdfport.merge()`'s own chain, separate from the creation producers above |
 | `pdfport: renderers` | `buffer`/`float` (always `ok`, built in), `system` (the resolved system PDF opener) |
 | `pdfport: terminal image renderer` | The best available of `chafa`, `kitten`, `imgcat` — `warn` plus an install list if none is found |
-| `pdfport: integrations` | Each optional host plugin: `ok` if loaded, `info` (not `warn`) if not — inactive is not a problem. `netrw` is always `ok` (built-in). `lib.nvim` itself is checked here too (required for `:PdfPort`), plus `lib.nvim.ui.kit` (enhanced mode picker vs. `vim.ui.select` fallback) |
+| `pdfport: integrations` | Each optional host plugin: `ok` if loaded, `info` (not `warn`) if not — inactive is not a problem. `netrw` is always `ok` (built-in). `lib.nvim` itself is checked here too (required for `:PdfPort`), and separately [ui.nvim](https://github.com/StefanBartl/ui.nvim)'s `ui.kit` (enhanced mode picker vs. `vim.ui.select` fallback) |
 | `pdfport: declared tools (lib.nvim.deps)` | Cross-check against [install.json](install.json) — the same list `:Lib deps show pdfport.nvim` reads |
 | `pdfport: registered backends` | The **live** registry from the running `setup()` — `warn` if `setup()` was never called, then one `ok`/`warn` line per registered backend's actual availability |
 | `pdfport: registered producers` | Same, for producers |
