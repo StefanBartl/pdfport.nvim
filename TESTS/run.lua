@@ -29,6 +29,9 @@ local specs = {
   "rasterize_args_spec.lua",
   "registry_spec.lua",
   "resolver_spec.lua",
+  -- Pure: it calls the dispatcher's cache-key helper directly and loads
+  -- no backend, so it is free of the lazy-proxy ordering constraint below.
+  "cache_variant_spec.lua",
   "producer_spec.lua",
   -- Before smoke_spec for the same reason registry_spec is: it loads the
   -- claude/ollama backend modules (and unloads them again), which the

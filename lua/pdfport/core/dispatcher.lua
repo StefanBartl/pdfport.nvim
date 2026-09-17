@@ -81,6 +81,42 @@ end
 ---@param opts PdfPort.OpenOpts|PdfPort.InternalExtractOpts
 ---@param callback fun(result: PdfPort.Result): nil
 ---@return nil
+---@internal
+---The third component of the extraction cache key (`path::backend::variant`),
+---the one that says *which* extraction of that file this is.
+---
+---The page range alone is not enough for the model-backed backends. `claude`,
+---`gemini` and `ollama` also take `prompt` and `model`, and both change what
+---comes back for the very same pages -- so a key without them serves the
+---answer to "list every table" when the next call asks "summarise in one
+---sentence", silently and looking freshly computed. Measured before this
+---existed: two different prompts, one HTTP call, identical answers.
+---
+---The two are appended only when at least one is set, so every backend that
+---has neither (pdftotext, pdfplumber, marker, docling, tesseract) keeps
+---byte-for-byte the key it had before and its existing cache entries stay
+---valid. The prompt is hashed rather than embedded: it is arbitrary
+---user text of arbitrary length, and this is a lookup key, not a record of
+---what was asked.
+---@param extract_opts PdfPort.InternalExtractOpts
+---@return string
+function M._cache_variant(extract_opts)
+  local variant = (extract_opts.pages and #extract_opts.pages > 0)
+      and table.concat(extract_opts.pages, ",")
+    or tostring(extract_opts.max_pages or "all")
+
+  if extract_opts.prompt or extract_opts.model then
+    variant = string.format(
+      "%s::%s::%s",
+      variant,
+      vim.fn.sha256(extract_opts.prompt or ""):sub(1, 16),
+      extract_opts.model or ""
+    )
+  end
+
+  return variant
+end
+
 function M.dispatch(opts, callback)
   assert(type(opts) == "table", "opts must be a table")
   -- Bound here rather than re-read at each use: `ExtractOpts.path` is optional
@@ -166,9 +202,7 @@ function M.dispatch(opts, callback)
   local backend_id = backend.id
   local cache_enabled = extract_opts.cache ~= false
 
-  local variant = (extract_opts.pages and #extract_opts.pages > 0)
-      and table.concat(extract_opts.pages, ",")
-    or tostring(extract_opts.max_pages or "all")
+  local variant = M._cache_variant(extract_opts)
 
   if cache_enabled then
     local cached = require("pdfport.util.cache").get(path, backend_id, variant)

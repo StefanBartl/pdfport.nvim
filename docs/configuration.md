@@ -70,6 +70,10 @@ command that silently did nothing.
 `lib.nvim` is a required dependency of pdfport, so this always works. Two
 details worth knowing:
 
+- **It is keyed by path + backend + page range + prompt + model**, and
+  invalidated by the file's mtime. The prompt and model are in there because
+  `claude`, `gemini` and `ollama` answer differently for the same pages when
+  either changes; backends that take neither keep the key they always had.
 - **It lives in the dispatcher**, not in the backends — so all eight get it,
   and a backend you register yourself does too, for free.
 - **It cannot be cancelled.** Backends spawn through `spawn_capture`, which
