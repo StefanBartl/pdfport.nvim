@@ -1,12 +1,27 @@
 ---@module 'pdfport.backends.claude'
 ---@brief Extraction backend using the Anthropic Claude API.
 ---@description
---- Sends the PDF as a base64-encoded document to the Anthropic Messages API.
---- Runs curl asynchronously via lib.nvim.cross.uv.spawn_capture.
---- Requires: ANTHROPIC_API_KEY, curl, internet connection.
+--- Sends the PDF as a base64-encoded document attachment through
+--- [ai.nvim](https://github.com/StefanBartl/ai.nvim)'s provider-agnostic
+--- `ask()`, which owns the HTTP call, the JSON encoding and keeping the API
+--- key out of curl's argv.
+---
+--- This file used to carry its own curl/provider path: build the Messages
+--- API body by hand, write it to a temp file, write the key to a second
+--- `chmod`-protected temp file for `-K`, spawn curl, decode the response,
+--- clean up. All of that was correct by the end -- and it was the second
+--- copy of it in this collection. `ai.nvim` exists to be the first, so what
+--- is left here is the part that is actually about PDFs: which model, which
+--- prompt, and turning an `Ai.Response` into a `PdfPort.Result`.
+---
+--- ai.nvim is an OPTIONAL dependency: `available()` returns false when it is
+--- not installed, exactly as it does for a missing API key, so pdfport keeps
+--- working with lib.nvim alone for everyone who does not use this backend.
+---
+--- Requires: ai.nvim, ANTHROPIC_API_KEY (or `opts.claude_api_key`), curl,
+--- internet connection.
 
 local platform = require("pdfport.platform")
-local spawn_capture = require("lib.nvim.cross.uv.spawn_capture")
 
 --- See the note on `Backend` in `@types/init.lua`: declared as a class so
 --- the methods defined below the literal count as implementing it.
@@ -32,246 +47,102 @@ function M._set_config(config)
   _config = config
 end
 
+---@internal
+---@return string|nil
+local function api_key()
+  local key = (_config and _config.claude_api_key) or vim.env.ANTHROPIC_API_KEY
+  return (type(key) == "string" and key ~= "") and key or nil
+end
+
+---@internal
+---`require("ai")`, or nil when ai.nvim is not installed.
+---@return table|nil
+local function ai()
+  local ok, mod = pcall(require, "ai")
+  return ok and mod or nil
+end
+
 ---@return boolean
 function M.available()
-  if not platform.has("curl") then return false end
-  local key = (_config and _config.claude_api_key) or vim.env.ANTHROPIC_API_KEY
-  return type(key) == "string" and key ~= ""
+  return platform.has("curl") and ai() ~= nil and api_key() ~= nil
 end
 
 ---@internal
----@param path string
----@return string|nil base64
----@return string|nil error_msg
---- Encoding happens in-process via `vim.base64.encode` (Neovim 0.10+). It used
---- to shell out to `base64 -w 0`, which blocked the UI thread for the whole
---- encode of a potentially multi-megabyte PDF -- and was never portable: `-w`
---- is a GNU coreutils flag, so the call failed on macOS (BSD base64) and there
---- is no `base64` binary on Windows at all. Reading the file with `vim.uv`
---- keeps it a single blocking syscall on a local file rather than a process
---- spawn; a fully async read would buy nothing measurable here.
-local function read_base64(path)
-  local fd, open_err = vim.uv.fs_open(path, "r", 438)
-  if not fd then return nil, "cannot open PDF: " .. tostring(open_err) end
-
-  local stat = vim.uv.fs_fstat(fd)
-  if not stat then
-    vim.uv.fs_close(fd)
-    return nil, "cannot stat PDF: " .. path
-  end
-
-  local data = vim.uv.fs_read(fd, stat.size, 0)
-  vim.uv.fs_close(fd)
-  if not data then return nil, "cannot read PDF: " .. path end
-
-  local ok, encoded = pcall(vim.base64.encode, data)
-  if not ok then return nil, "base64 encoding failed: " .. tostring(encoded) end
-  return encoded, nil
+---@param message string
+---@return PdfPort.Result
+local function failure(message)
+  return {
+    status = "error",
+    text = nil,
+    format = "markdown",
+    backend = "claude",
+    pages_processed = nil,
+    error = message,
+  }
 end
 
----@internal
---- `vim.json.encode` handles quoting/escaping for `prompt` and `model`
---- correctly - a hand-rolled `gsub('"', '\\"')` only escapes quotes and
---- newlines, not backslashes, so any Windows path or regex in the prompt
---- (e.g. "C:\repos\foo" or "\d+") produced invalid JSON that
---- `vim.json.decode` rejected on the receiving end.
----@param base64_pdf string
----@param prompt string
----@param model string
----@return string json
-local function build_request(base64_pdf, prompt, model)
-  return vim.json.encode({
-    model = model,
-    max_tokens = 4096,
-    messages = {
-      {
-        role = "user",
-        content = {
-          {
-            type = "document",
-            source = { type = "base64", media_type = "application/pdf", data = base64_pdf },
-          },
-          { type = "text", text = prompt },
-        },
-      },
-    },
-  })
-end
+local DEFAULT_PROMPT = table.concat({
+  "Extract all text content from this PDF document.",
+  "Format the output as clean Markdown.",
+  "Preserve headings, lists, tables and code blocks.",
+  "Do not add commentary or preamble.",
+}, " ")
 
 ---@param path string
 ---@param opts PdfPort.InternalExtractOpts
 ---@return PdfPort.Result|nil
 function M.extract(path, opts)
-  local api_key = (_config and _config.claude_api_key) or vim.env.ANTHROPIC_API_KEY
-  if not api_key or api_key == "" then
-    -- Returned synchronously (not via opts.__callback) so the dispatcher's
-    -- own "if result ~= nil then callback(result) end" fires it exactly
-    -- once — calling opts.__callback here too would double-fire callback.
-    return {
-      status = "error",
-      text = nil,
-      format = "markdown",
-      backend = "claude",
-      pages_processed = nil,
-      error = "claude: ANTHROPIC_API_KEY not set",
-    }
+  -- Every early return below is synchronous (not via opts.__callback) so the
+  -- dispatcher's own "if result ~= nil then callback(result) end" fires it
+  -- exactly once -- calling opts.__callback here too would double-fire.
+  local ai_mod = ai()
+  if not ai_mod then
+    return failure("claude: ai.nvim is not installed -- required by this backend")
   end
 
-  local model = opts.model or "claude-opus-4-5"
-  local prompt = opts.prompt
-    or table.concat({
-      "Extract all text content from this PDF document.",
-      "Format the output as clean Markdown.",
-      "Preserve headings, lists, tables and code blocks.",
-      "Do not add commentary or preamble.",
-    }, " ")
+  local key = api_key()
+  if not key then return failure("claude: ANTHROPIC_API_KEY not set") end
 
-  local b64, b64_err = read_base64(path)
-  if not b64 then
-    -- See the ANTHROPIC_API_KEY branch above: synchronous return only.
-    return {
-      status = "error",
-      text = nil,
-      format = "markdown",
-      backend = "claude",
-      pages_processed = nil,
-      error = "claude: " .. (b64_err or "base64 encoding failed"),
-    }
+  -- `ai.attachments.from_file` does what this file's own `read_base64` did:
+  -- one blocking `vim.uv` read plus `vim.base64.encode` (Neovim 0.10+),
+  -- never a `base64 -w 0` subprocess -- that flag is GNU-only, so the old
+  -- shell-out failed on macOS and had no binary to call at all on Windows.
+  local attachment, attachment_err = require("ai.attachments").from_file(path)
+  if not attachment then
+    return failure("claude: " .. (attachment_err or "could not read the PDF"))
   end
-
-  local json_body = build_request(b64, prompt, model)
-  local body_file = vim.fn.tempname() .. ".json"
-  local f = io.open(body_file, "w")
-  if not f then
-    return {
-      status = "error",
-      text = nil,
-      format = "markdown",
-      backend = "claude",
-      pages_processed = nil,
-      error = "claude: failed to write temp request file",
-    }
-  end
-  f:write(json_body)
-  f:close()
-
-  -- The API key goes in a curl config file (`-K`), not a `-H "x-api-key: ..."`
-  -- argv element: argv is visible to any other process on the system for
-  -- the lifetime of the curl call (Process Explorer/WMI on Windows, `ps` on
-  -- POSIX unless hidden), so a literal key in argv leaks it to anyone who
-  -- can list processes. `-K` points curl at a file instead - fs_chmod is
-  -- best-effort (Windows has no real POSIX permission bits; this is a
-  -- no-op there, but does restrict the file on POSIX).
-  local key_config_file = vim.fn.tempname() .. ".curlcfg"
-  local kf = io.open(key_config_file, "w")
-  if not kf then
-    vim.fn.delete(body_file)
-    return {
-      status = "error",
-      text = nil,
-      format = "markdown",
-      backend = "claude",
-      pages_processed = nil,
-      error = "claude: failed to write temp curl config file",
-    }
-  end
-  kf:write(('header = "x-api-key: %s"\n'):format(api_key:gsub('"', '\\"')))
-  kf:close()
-  pcall(function()
-    (vim.uv or vim.loop).fs_chmod(key_config_file, 384) -- 0600
-  end)
 
   local timeout_ms = opts.timeout_ms or 60000
-  local argv = {
-    "curl",
-    "-s",
-    "-X",
-    "POST",
-    "https://api.anthropic.com/v1/messages",
-    "-H",
-    "Content-Type: application/json",
-    "-H",
-    "anthropic-version: 2023-06-01",
-    "-K",
-    key_config_file,
-    "-d",
-    "@" .. body_file,
-  }
 
-  spawn_capture(argv, { timeout_ms = timeout_ms }, function(spawn_result)
-    vim.fn.delete(body_file)
-    vim.fn.delete(key_config_file)
-
-    if spawn_result.timed_out then
-      local result = {
-        status = "error",
-        text = nil,
+  ai_mod.ask({
+    prompt = opts.prompt or DEFAULT_PROMPT,
+    provider = "claude",
+    -- pdfport's own default, passed explicitly rather than left to ai.nvim's
+    -- `config.model.claude`: which model reads a PDF well is this plugin's
+    -- business, and a user's global ai.nvim model choice (picked for chat,
+    -- say) must not silently become the extraction model.
+    model = opts.model or "claude-opus-4-5",
+    -- Lets `opts.claude_api_key` keep working without writing it into the
+    -- user's environment for ai.nvim's own env-var lookup to find.
+    api_key = key,
+    attachments = { attachment },
+    timeout_ms = timeout_ms,
+  }, function(ok, res_or_err)
+    local result
+    if ok then
+      result = {
+        status = "ok",
+        ---@diagnostic disable-next-line: undefined-field
+        text = res_or_err.text,
         format = "markdown",
         backend = "claude",
         pages_processed = nil,
-        error = string.format("claude: HTTP request timed out after %d ms", timeout_ms),
+        error = nil,
       }
-      if type(opts.__callback) == "function" then opts.__callback(result) end
-      return
+    else
+      ---@diagnostic disable-next-line: undefined-field
+      result = failure(tostring(res_or_err.message or res_or_err))
     end
-
-    if not spawn_result.ok then
-      local result = {
-        status = "error",
-        text = nil,
-        format = "markdown",
-        backend = "claude",
-        pages_processed = nil,
-        error = string.format("curl exited %d: %s", spawn_result.code, spawn_result.stderr),
-      }
-      if type(opts.__callback) == "function" then opts.__callback(result) end
-      return
-    end
-
-    local raw = spawn_result.stdout
-    local ok_json, decoded = pcall(vim.json.decode, raw)
-    if not ok_json or type(decoded) ~= "table" then
-      local result = {
-        status = "error",
-        text = nil,
-        format = "markdown",
-        backend = "claude",
-        pages_processed = nil,
-        error = "claude: invalid JSON response: " .. raw:sub(1, 200),
-      }
-      if type(opts.__callback) == "function" then opts.__callback(result) end
-      return
-    end
-
-    if decoded.type == "error" then
-      local api_err = (decoded.error and decoded.error.message) or "unknown API error"
-      local result = {
-        status = "error",
-        text = nil,
-        format = "markdown",
-        backend = "claude",
-        pages_processed = nil,
-        error = "claude API error: " .. api_err,
-      }
-      if type(opts.__callback) == "function" then opts.__callback(result) end
-      return
-    end
-
-    local text_parts = {}
-    for _, block in ipairs(decoded.content or {}) do
-      if block.type == "text" and type(block.text) == "string" then
-        text_parts[#text_parts + 1] = block.text
-      end
-    end
-
-    local result = {
-      status = "ok",
-      text = table.concat(text_parts, "\n"),
-      format = "markdown",
-      backend = "claude",
-      pages_processed = nil,
-      error = nil,
-    }
     if type(opts.__callback) == "function" then opts.__callback(result) end
   end)
 

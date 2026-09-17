@@ -112,6 +112,20 @@ local function check_backends()
     return
   end
 
+  -- ai.nvim — the claude and ollama backends' HTTP path since they stopped
+  -- carrying their own curl/provider code. Info, not warn: pdfport's one
+  -- real plugin dependency is still lib.nvim, and the other six extraction
+  -- backends never touch this. Reported once, up here, rather than twice
+  -- further down, so the two backends below can just say "unavailable".
+  if pcall(require, "ai") then
+    h_ok("ai.nvim found (HTTP path for the claude and ollama backends)")
+  else
+    h_info(
+      "ai.nvim not installed (optional) – the claude and ollama backends are "
+        .. "unavailable; every other extraction backend still works"
+    )
+  end
+
   -- pdftotext
   if check_exe("pdftotext", false) then
     h_ok("pdftotext backend: ready")
@@ -198,9 +212,10 @@ local function check_backends()
         { "export ANTHROPIC_API_KEY=sk-ant-..." }
       )
     end
-    -- The claude backend encodes in-process via vim.base64.encode now; the
-    -- external `base64` binary is no longer involved (and never existed on
-    -- Windows, nor supported `-w 0` on macOS).
+    -- The claude backend encodes in-process via vim.base64.encode now (in
+    -- ai.nvim's `ai.attachments`, since the migration); the external
+    -- `base64` binary is no longer involved (and never existed on Windows,
+    -- nor supported `-w 0` on macOS).
     if type(vim.base64) == "table" and type(vim.base64.encode) == "function" then
       h_ok("vim.base64.encode available (used for PDF encoding)")
     else

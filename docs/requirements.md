@@ -15,6 +15,7 @@ Detected at runtime, and each costs exactly the one feature it powers:
 | | |
 | --- | --- |
 | [ui.nvim](https://github.com/StefanBartl/ui.nvim) | `ui.kit` gives the mode picker and the page-range prompt their themed look; falls back to `vim.ui.select`/`vim.ui.input` when absent |
+| [ai.nvim](https://github.com/StefanBartl/ai.nvim) | The HTTP path for the `claude` and `ollama` extraction backends. Without it those two report themselves unavailable; the other six extraction backends, every producer and every renderer are untouched |
 | `pdftotext` (poppler), `pdfplumber`, `marker`, `docling`, `tesseract` | Extraction backends, from fastest to most thorough |
 | Ollama, the Claude API | Extraction to Markdown through a model |
 | `img2pdf`, `magick`, `pandoc`, `weasyprint`, chromium, `soffice` | Creation producers, one per input kind |

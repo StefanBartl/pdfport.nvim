@@ -6,6 +6,11 @@ pdfport.nvim only does anything once one of its commands or its Lua API is invok
 should always be loaded lazily — via `cmd = {...}` (recommended) rather than `lazy = false`
 or `event = "VeryLazy"`.
 
+The examples below list `lib.nvim` alone, which is all pdfport needs. Add
+`"StefanBartl/ai.nvim"` to `dependencies` as well if you want the `claude` or
+`ollama` extraction backends — they route their HTTP requests through it and
+report themselves unavailable without it.
+
 ## lazy.nvim
 
 ```lua
