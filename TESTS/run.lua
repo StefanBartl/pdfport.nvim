@@ -38,6 +38,21 @@ local specs = {
   -- lazy-proxy assertions above must not see.
   "ai_backends_spec.lua",
   "smoke_spec.lua",
+  -- After smoke_spec, for the mirror image of its reason: each of these
+  -- loads producer/backend/renderer modules with their spawn seam replaced,
+  -- which the lazy-proxy assertions in registry_spec/producer_spec above
+  -- must not see. They also rely on setup() having run once already.
+  "producer_argv_spec.lua",
+  "backend_argv_spec.lua",
+  "config_util_spec.lua",
+  "tmpfile_cache_spec.lua",
+  "dispatcher_spec.lua",
+  "picker_batch_spec.lua",
+  "renderers_spec.lua",
+  "bindings_spec.lua",
+  "integrations_spec.lua",
+  "public_api_spec.lua",
+  "health_spec.lua",
   -- Last on purpose: it calls setup() and performs real opens, which
   -- loads producer/backend modules. registry_spec and producer_spec
   -- assert those are NOT yet in package.loaded, so anything that
