@@ -25,10 +25,15 @@ jobs:
       - name: luacheck
         run: luacheck lua plugin TESTS
 
-  # Real gate: the framework-free headless suite. Every backend is faked, so
-  # this needs no pdftotext/python/ollama on the runner — the point is to
+  # Real gate: the framework-free headless suite. Almost every backend is
+  # faked, so this needs no python/ollama on the runner -- the point is to
   # catch load errors and chain-resolution regressions, not to extract PDFs.
   # lib.nvim is checked out as a sibling (notify, usercmd.composer, tables).
+  #
+  # pdftotext is the one real exception: TESTS/ai_backends_spec.lua's ollama
+  # text route shells out to the actual poppler-utils binary (only the AI
+  # HTTP call is faked there), the same as this plugin's own "pdftotext"
+  # backend would for a real user -- so it has to be on PATH here too.
   test:
     runs-on: ubuntu-latest
     steps:
@@ -49,6 +54,9 @@ jobs:
         with:
           neovim: true
           version: stable
+
+      - name: Install poppler-utils (pdftotext)
+        run: sudo apt-get update && sudo apt-get install -y poppler-utils
 
       - name: Run tests
         working-directory: pdfport.nvim
