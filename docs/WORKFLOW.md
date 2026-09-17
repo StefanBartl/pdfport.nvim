@@ -1,7 +1,7 @@
 # Workflow — getting real use out of pdfport.nvim day to day
 
 Every feature here is documented on its own elsewhere (`docs/FEATURES/`).
-This is the different question: once seven backends, nine producers, four
+This is the different question: once eight backends, nine producers, four
 renderers and a resolver/dispatcher/composer core all exist, *how do they
 actually combine* into something worth reaching for regularly, rather than
 a pile of independently-correct pieces you have to re-derive the interplay
@@ -11,7 +11,7 @@ of every time.
 
 `:PdfPort [path]` (no subcommand) is the general-purpose entry point — the
 interactive mode picker offers `buffer`/`float`/`terminal`/`system`, plus
-backend-specific buffer choices (pdftotext, marker, docling, claude,
+backend-specific buffer choices (pdftotext, marker, docling, claude, gemini,
 ollama). Skip the picker once you know what you want:
 
 | Situation | Command | Why |
@@ -36,7 +36,7 @@ want the whole thing, `buffer` skips the prompt entirely.
 ## Backend fallback: what actually happens when your preferred backend is missing
 
 `fallback_chain` (default: `pdftotext, pdfplumber, marker, docling, ollama,
-tesseract, claude`) is not a strict preference order you have to match
+tesseract, claude, gemini`) is not a strict preference order you have to match
 exactly — `core/resolver.lua` builds the real chain per call:
 
 1. An explicit `backend_id` (e.g. `pdfport.open({ backend_id = "claude" })`) goes first.
@@ -61,7 +61,7 @@ the kind's chain, same dedup/fallback logic as `resolver.lua`.
 
 ## Lazy-proxy loading: when a backend module actually gets `require`d
 
-`setup()` registers all seven backends and nine producers as lazy proxies
+`setup()` registers all eight backends and nine producers as lazy proxies
 (`backends/init.lua`'s `make_lazy_backend`, mirrored by
 `producers/init.lua`'s `make_lazy_producer`) — a lightweight stand-in table,
 not the real module. The real `require("pdfport.backends.claude")` (or
@@ -142,7 +142,7 @@ When adding a new backend or producer:
 1. Write it against the shape `registry.lua` asserts on registration — backend: `{ id, available(), extract(path, opts) }`; producer: `{ id, accepts, available(), create(req) }`.
 2. Add a case to `resolver_spec.lua` (or `producer_spec.lua`) using `H.fake_backend`/an equivalent fake producer if the chain-resolution behavior around it needs covering — e.g. "does it get skipped when unavailable and the chain falls through to the next entry."
 3. Run the suite locally before wiring it into `backends/init.lua`'s `BUILTIN_BACKENDS`/`producers/init.lua`'s `BUILTIN_PRODUCERS` — a spec failure there is cheaper to chase down than a `:checkhealth`-reported "unavailable" with no further detail.
-4. Mind spec order: `registry_spec.lua` asserts the seven built-in backend modules are **not yet** in `package.loaded` (the lazy-proxy contract) — it must run before `smoke_spec.lua`, which requires all of them on purpose. A new spec that also touches lazy-loading needs to respect that same ordering constraint in `run.lua`'s `specs` list.
+4. Mind spec order: `registry_spec.lua` asserts the eight built-in backend modules are **not yet** in `package.loaded` (the lazy-proxy contract) — it must run before `smoke_spec.lua`, which requires all of them on purpose. A new spec that also touches lazy-loading needs to respect that same ordering constraint in `run.lua`'s `specs` list.
 5. For CLI-tool-dependent behavior the suite can't cover, verify manually against `:checkhealth pdfport` (reports the live registry state — per-id availability from an actual `setup()` call, not just a static tool-on-PATH check) before trusting the new entry in a real session.
 
 ## Combining renderers with the picker integrations

@@ -20,6 +20,7 @@ local BUILTIN_BACKENDS = {
   { id = "ollama", module = "pdfport.backends.ollama" },
   { id = "tesseract", module = "pdfport.backends.tesseract" },
   { id = "claude", module = "pdfport.backends.claude" },
+  { id = "gemini", module = "pdfport.backends.gemini" },
 }
 
 ---@internal

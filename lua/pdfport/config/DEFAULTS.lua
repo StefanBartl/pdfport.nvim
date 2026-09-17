@@ -16,7 +16,15 @@ return function()
       "docling",
       "ollama",
       "tesseract",
+      -- The two remote model backends come last, and claude before
+      -- gemini only because it was here first -- neither is reached
+      -- unless every local backend above is unavailable. Note that a
+      -- registered backend missing from this list is still reachable
+      -- under "auto": core/resolver.lua appends every registered id
+      -- after the configured chain. This list decides order, not
+      -- membership.
       "claude",
+      "gemini",
     },
     extract_opts = {
       max_pages = nil,
@@ -50,6 +58,7 @@ return function()
     },
     pdf_engine = "auto",
     claude_api_key = nil,
+    gemini_api_key = nil,
     ollama_host = "http://localhost:11434",
     ollama_model = "llava",
     auto_open_on_read = false,

@@ -14,7 +14,7 @@ this PDF?" — and drives whichever tool can answer it.
 | **Rasterization** | `render_page()` writes one page to a caller-owned PNG — the primitive other plugins build a PDF preview on |
 | **The mode picker** | `pick_open()` is public: other plugins ask the "open PDF as…" question with pdfport's list instead of hand-rolling a dialog, and it still works when pdfport is not installed |
 
-Backends like `marker`, `docling`, `ollama` and `claude` extract to Markdown
+Backends like `marker`, `docling`, `ollama`, `claude` and `gemini` extract to Markdown
 rather than plain text, which is what makes
 [mdview.nvim](https://github.com/StefanBartl/mdview.nvim) a good place to send
 the output.
@@ -23,11 +23,11 @@ pdfport.nvim moves content in two directions — PDF → text/Markdown
 (**backends**) and something → PDF (**producers**) — through the same
 lazy-registry/fallback-chain shape on both sides, plus four ways to display
 what comes out the read side (**renderers**). This folder replaces the old
-single `docs/FEATURES.md`: with seven backends, nine producers, four
+single `docs/FEATURES.md`: with eight backends, nine producers, four
 renderers and a resolver/dispatcher/composer core, one flat file had grown
 past the point of being a useful index.
 
-- [BACKENDS.md](BACKENDS.md) — the seven PDF → text/Markdown extraction backends.
+- [BACKENDS.md](BACKENDS.md) — the eight PDF → text/Markdown extraction backends.
 - [PRODUCERS.md](PRODUCERS.md) — the nine something → PDF creation/merge producers.
 - [RENDERING.md](RENDERING.md) — the four output renderers and the page-range picker.
 - [CORE.md](CORE.md) — the resolver/dispatcher/composer architecture, caching, health check, and diagnostics.

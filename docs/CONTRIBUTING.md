@@ -59,7 +59,7 @@ cheapest one to install and the one most specs assume.
 | Path | Contains |
 | --- | --- |
 | `lua/pdfport/core/` | `registry`, `resolver`, `dispatcher`, `composer` (creation and conflict handling), `rasterize` |
-| `lua/pdfport/backends/` | One file per extraction backend: pdftotext, pdfplumber, marker, docling, ollama, claude, tesseract |
+| `lua/pdfport/backends/` | One file per extraction backend: pdftotext, pdfplumber, marker, docling, ollama, claude, gemini, tesseract |
 | `lua/pdfport/producers/` | One file per creation or merge producer: img2pdf, magick, pandoc, weasyprint, chromium, soffice, qpdf, pdftk, ghostscript |
 | `lua/pdfport/renderers/` | Where an extraction ends up: buffer, float, system, terminal |
 | `lua/pdfport/integrations/` | The file-tree adapters (neotree, nvim_tree, netrw, oil) and the fuzzy-finder ones (telescope, fzf) |

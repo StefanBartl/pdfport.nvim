@@ -11,6 +11,7 @@
 ---| "marker"      -- marker-pdf AI-assisted extraction
 ---| "docling"     -- IBM docling structured extraction
 ---| "claude"      -- Anthropic Claude API (remote)
+---| "gemini"      -- Google Gemini API (remote)
 ---| "ollama"      -- Local ollama multimodal model
 ---| "tesseract"   -- Local tesseract OCR fallback
 ---| string        -- Custom/third-party backend identifier
@@ -209,6 +210,7 @@
 ---@field create_chain? table<PdfPort.InputKind, PdfPort.ProducerId[]>  # "pdf" entry is the merge chain, used by pdfport.merge()
 ---@field pdf_engine? string  # pandoc --pdf-engine preference: "auto"|"tectonic"|"typst"|"xelatex"|...
 ---@field claude_api_key? string  # Falls back to $ANTHROPIC_API_KEY. Handed to ai.nvim as a per-request `api_key` override, so setting it here never requires exporting it into the environment.
+---@field gemini_api_key? string  # Falls back to $GEMINI_API_KEY. Same per-request handling as claude_api_key.
 ---@field ollama_host? string  # Handed to ai.nvim as a per-request `host` override, for the same reason -- ai.nvim's own AI_OLLAMA_HOST env var stays untouched.
 ---@field ollama_model? string
 ---@field auto_open_on_read? boolean  # Opt-in BufReadCmd *.pdf that auto-invokes the mode picker on `:e file.pdf` (default false)

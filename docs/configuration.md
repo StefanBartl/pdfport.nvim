@@ -4,7 +4,7 @@
 require("pdfport").setup({
   default_backend = "auto",          -- "auto" | backend id
   fallback_chain  = {                -- order tried when default_backend = "auto"
-    "pdftotext", "pdfplumber", "marker", "docling", "ollama", "tesseract", "claude"
+    "pdftotext", "pdfplumber", "marker", "docling", "ollama", "tesseract", "claude", "gemini"
   },
   extract_opts = {
     max_pages  = nil,                -- nil = all pages
@@ -40,6 +40,7 @@ require("pdfport").setup({
                                      -- "auto"|"tectonic"|"typst"|"xelatex"|"lualatex"|"pdflatex"
   claude_api_key = nil,              -- or set ANTHROPIC_API_KEY env var
                                      -- passed to ai.nvim per request; never exported
+  gemini_api_key = nil,              -- or set GEMINI_API_KEY env var; same handling
   ollama_host    = "http://localhost:11434",
   ollama_model   = "llava",
   auto_open_on_read = false,        -- opt-in BufReadCmd *.pdf: `:e file.pdf` invokes the mode picker
@@ -69,7 +70,7 @@ command that silently did nothing.
 `lib.nvim` is a required dependency of pdfport, so this always works. Two
 details worth knowing:
 
-- **It lives in the dispatcher**, not in the backends — so all seven get it,
+- **It lives in the dispatcher**, not in the backends — so all eight get it,
   and a backend you register yourself does too, for free.
 - **It cannot be cancelled.** Backends spawn through `spawn_capture`, which
   does not expose a killable handle, so `"float"`/`"kit"`'s abort prompt would
@@ -98,6 +99,7 @@ the resolver actually calls `available()`/`extract()` on it.
 | ollama      | ai.nvim, `ollama`, `pdftoppm`, `curl`       | Markdown |
 | tesseract   | `tesseract`, `pdftoppm` (OCR fallback)      | plain    |
 | claude      | ai.nvim, `curl`, `ANTHROPIC_API_KEY`, `vim.base64` (Neovim 0.10+) | Markdown |
+| gemini      | ai.nvim, `curl`, `GEMINI_API_KEY`, `vim.base64` (Neovim 0.10+) | Markdown |
 
 ## Creation producers
 

@@ -40,6 +40,7 @@ local DEFAULT_CHOICES = {
   { label = "Markdown    (docling)", mode = "buffer", backend = "docling" },
   { label = "Markdown    (Claude AI)", mode = "buffer", backend = "claude" },
   { label = "Markdown    (Ollama AI)", mode = "buffer", backend = "ollama" },
+  { label = "Markdown    (Gemini AI)", mode = "buffer", backend = "gemini" },
   { label = "Float window (auto)", mode = "float", backend = nil },
   { label = "Terminal preview", mode = "terminal", backend = nil },
   SYSTEM_CHOICE,

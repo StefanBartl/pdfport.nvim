@@ -84,6 +84,7 @@ Pass a table to |pdfport.setup()|.  All keys are optional.
   pdf_engine         string    pandoc --pdf-engine preference (default: "auto")
                                "auto"|"tectonic"|"typst"|"xelatex"|"lualatex"|"pdflatex"
   claude_api_key     string?   Overrides $ANTHROPIC_API_KEY
+  gemini_api_key     string?   Overrides $GEMINI_API_KEY
   ollama_host        string    Ollama API URL (default: localhost:11434)
   ollama_model       string    Ollama model name (default: "llava")
   auto_open_on_read  boolean   Opt-in BufReadCmd *.pdf: `:e file.pdf` invokes the
@@ -98,7 +99,7 @@ Pass a table to |pdfport.setup()|.  All keys are optional.
                                lib.nvim's `lib.nvim.progress` module.
 
                                Wired in core/dispatcher.lua rather than per
-                               backend, so all seven — and any backend you
+                               backend, so all eight — and any backend you
                                register yourself — report progress for free.
 
                                NOT cancellable: backends spawn via
@@ -279,8 +280,10 @@ require("pdfport").merge({opts})
   ollama      Requires ai.nvim, ollama, pdftoppm, curl. Markdown.
   tesseract   Requires tesseract, pdftoppm. OCR fallback, plain text.
   claude      Requires ai.nvim, curl, ANTHROPIC_API_KEY, Neovim 0.10+
-              (vim.base64).
-              Markdown.
+              (vim.base64). Sends the PDF whole. Markdown.
+  gemini      Requires ai.nvim, curl, GEMINI_API_KEY, Neovim 0.10+
+              (vim.base64). Sends the PDF whole, capped at 20 MB by
+              Google's inline-request limit. Markdown.
 
 The fallback chain is tried in order until one succeeds. Successful extractions are
 cached across restarts (see extract_opts.cache above); |:PdfPort-backends| lists every

@@ -73,6 +73,7 @@ return function(H)
       "ollama",
       "tesseract",
       "claude",
+      "gemini",
     }) do
       H.ok(registry.has_backend(id), ("built-in backend %q is registered"):format(id))
       H.eq(
