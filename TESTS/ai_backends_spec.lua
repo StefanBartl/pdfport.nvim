@@ -1,10 +1,10 @@
--- TESTS/ai_backends_spec.lua — the claude/ollama backends' contract with
--- ai.nvim.
+-- TESTS/ai_backends_spec.lua — the claude/gemini/ollama backends' contract
+-- with ai.nvim.
 --
--- Those two are the only backends that talk to an HTTP API, and since the
--- migration they do it through ai.nvim's `ask()` rather than their own curl
--- path. Two things about that arrangement are worth pinning down, and
--- neither needs a network or an API key:
+-- Those three are the only backends that talk to an HTTP API, and they do it
+-- through ai.nvim's `ask()` rather than their own curl path. Two things about
+-- that arrangement are worth pinning down, and neither needs a network or an
+-- API key:
 --
 --   1. ai.nvim is OPTIONAL. Without it installed, both backends must report
 --      themselves unavailable and — if called anyway — fail with a message
@@ -12,15 +12,19 @@
 --      as its one real plugin dependency, and that has to stay true for
 --      everyone who does not use these two backends.
 --   2. The request pdfport builds is the one the API needs: the PDF as a
---      `document` attachment for claude, the page image as an `image` one
---      for ollama, with pdfport's own model/host/key overrides carried per
---      request rather than through the user's environment.
+--      `document` attachment for claude and gemini, the page image as an
+--      `image` one for ollama, with pdfport's own model/host/key overrides
+--      carried per request rather than through the user's environment.
 --
 -- `ai` and `ai.attachments` are faked through `package.preload`, so this
 -- runs identically on a machine with ai.nvim installed and one without.
 
 return function(H)
-  local BACKENDS = { "pdfport.backends.claude", "pdfport.backends.ollama" }
+  local BACKENDS = {
+    "pdfport.backends.claude",
+    "pdfport.backends.gemini",
+    "pdfport.backends.ollama",
+  }
 
   ---Drop both backends so the next `require` re-runs their module body.
   local function unload_backends()
@@ -109,6 +113,12 @@ return function(H)
     H.eq(result.status, "error", "that result is an error")
     H.match(result.error, "ai%.nvim", "and it names the missing dependency")
 
+    local gemini = require("pdfport.backends.gemini")
+    local gemini_result = gemini.extract("/tmp/x.pdf", {})
+    H.ok(gemini_result, "gemini.extract returns a result synchronously without ai.nvim")
+    H.eq(gemini_result.status, "error", "that result is an error too")
+    H.match(gemini_result.error, "ai%.nvim", "and names the missing dependency")
+
     local ollama = require("pdfport.backends.ollama")
     local ollama_result = ollama.extract("/tmp/x.pdf", {})
     H.ok(ollama_result, "ollama.extract returns a result synchronously without ai.nvim")
@@ -173,6 +183,34 @@ return function(H)
       H.match(got.error, "timed out", "with the error's own message, not its table address")
     end
   )
+
+  local gemini_stub, gemini_requests = fake_ai("# From Gemini")
+  with_ai(gemini_stub, fake_attachments("document", "application/pdf"), function()
+    local gemini = require("pdfport.backends.gemini")
+    gemini._set_config({ gemini_api_key = "from-config" })
+
+    local got
+    gemini.extract("/tmp/report.pdf", {
+      __callback = function(result)
+        got = result
+      end,
+    })
+
+    H.eq(#gemini_requests, 1, "exactly one request was sent")
+    local req = gemini_requests[1]
+    H.eq(req.provider, "gemini", "the request names the gemini provider")
+    H.eq(req.model, "gemini-2.5-flash", "with pdfport's own default model")
+    H.eq(req.api_key, "from-config", "opts.gemini_api_key is carried per request")
+    -- The whole point of this backend existing rather than a rasterizing
+    -- one: gemini is the only provider besides claude that ai.nvim can send
+    -- a document to, so the PDF goes whole and no page is ever rendered.
+    H.eq(#req.attachments, 1, "the PDF travels as one attachment")
+    H.eq(req.attachments[1].kind, "document", "sent whole, as a document")
+
+    H.eq(got.status, "ok", "a successful answer becomes an ok result")
+    H.eq(got.text, "# From Gemini", "carrying the model's text")
+    H.eq(got.backend, "gemini", "attributed to this backend")
+  end)
 
   local ollama_stub, ollama_requests = fake_ai("page text")
   with_ai(ollama_stub, fake_attachments("image", "image/png"), function()

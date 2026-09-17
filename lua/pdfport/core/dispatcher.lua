@@ -24,7 +24,7 @@ local ok_progress, progress_mod = pcall(require, "lib.nvim.progress")
 ---@internal
 ---Starts a progress indicator for an extraction, or nil when lib.nvim isn't
 ---installed. This lives in the dispatcher rather than in each backend because
----the dispatcher is the one place every extraction passes through — all seven
+---the dispatcher is the one place every extraction passes through — all eight
 ---backends get it without knowing about it.
 ---
 ---Deliberately no `on_cancel`: backends spawn through `spawn_capture`, which

@@ -30,7 +30,7 @@ Chain-building priority (`build_chain(requested)`):
 
 1. An explicit `backend_id` passed to `open()`/`extract()` goes first, ahead of everything else.
 2. Otherwise, `cfg.default_backend` (when set and not `"auto"`) goes first.
-3. `cfg.fallback_chain` (default: pdftotext, pdfplumber, marker, docling, ollama, tesseract, claude) fills the rest, in order.
+3. `cfg.fallback_chain` (default: pdftotext, pdfplumber, marker, docling, ollama, tesseract, claude, gemini) fills the rest, in order.
 4. Any registered backend not already in the chain (e.g. a custom one via `register_backend()`) is appended at the end, so a custom backend is always reachable even if the user never added it to `fallback_chain` explicitly.
 5. The final list is deduplicated (`lib.lua.tables.dedup_list`) — the same id is only tried once even if it appears via both an explicit request and the default chain.
 

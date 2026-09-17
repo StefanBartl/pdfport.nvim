@@ -7,9 +7,9 @@ should always be loaded lazily — via `cmd = {...}` (recommended) rather than `
 or `event = "VeryLazy"`.
 
 The examples below list `lib.nvim` alone, which is all pdfport needs. Add
-`"StefanBartl/ai.nvim"` to `dependencies` as well if you want the `claude` or
-`ollama` extraction backends — they route their HTTP requests through it and
-report themselves unavailable without it.
+`"StefanBartl/ai.nvim"` to `dependencies` as well if you want the `claude`,
+`gemini` or `ollama` extraction backends — they route their HTTP requests
+through it and report themselves unavailable without it.
 
 ## lazy.nvim
 
@@ -20,7 +20,7 @@ report themselves unavailable without it.
   cmd = { "PdfPort" },
   opts = {
     default_backend = "auto",
-    fallback_chain  = { "pdftotext", "pdfplumber", "marker", "docling", "ollama", "tesseract", "claude" },
+    fallback_chain  = { "pdftotext", "pdfplumber", "marker", "docling", "ollama", "tesseract", "claude", "gemini" },
   },
 }
 ```

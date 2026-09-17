@@ -2,7 +2,7 @@
 
 The read direction: `pdfport.open()`/`pdfport.extract()` resolve a **backend**
 through the configurable `fallback_chain` and extract PDF content as plain
-text or Markdown. All seven builtins are registered as lazy proxies
+text or Markdown. All eight builtins are registered as lazy proxies
 (`backends/init.lua`'s `make_lazy_backend`) — `setup()` only wires up a
 lightweight stand-in per backend; the real module is `require`d the first
 time the resolver's fallback walk actually calls `available()`/`extract()`
@@ -79,6 +79,32 @@ rather than having to be exported into the environment.
 - **Config:** `opts.claude_api_key` (default `nil`, falls back to `ANTHROPIC_API_KEY` env var)
 - **Requires:** ai.nvim, `curl` on PATH, `ANTHROPIC_API_KEY` (or `claude_api_key`) set, `vim.base64` (Neovim 0.10+ — encoding is in-process, no external `base64` binary)
 
+## Gemini API extraction backend
+
+The same shape as the Claude backend, against Google's Gemini API: the PDF
+goes whole, as a base64 `document` attachment, and the model reads it — no
+rasterization. `model` defaults to `gemini-2.5-flash` rather than `-pro`,
+because extraction is a bulk per-document job that flash handles at a
+fraction of the cost and latency; override it per call for a document that
+needs the stronger model.
+
+Gemini and Anthropic are the only two providers
+[ai.nvim](https://github.com/StefanBartl/ai.nvim) can send a *document* to at
+all (`capabilities.documents`). That is what makes this backend a hundred
+lines instead of a second copy of the ollama backend's page-by-page
+rasterizing loop — and it is also the reason an OpenAI backend is a roadmap
+item rather than a sibling file.
+
+One limit worth knowing: Google caps an inline request at **20 MB** total.
+Past that its Files API is the documented route and ai.nvim does not speak
+it, so a very large scan comes back as a plain API error naming the limit —
+send it through the `ollama` backend instead, which uploads one rasterized
+page at a time.
+
+- **Module:** `lua/pdfport/backends/gemini.lua` (`M.available`, `M.extract`)
+- **Config:** `opts.gemini_api_key` (default `nil`, falls back to `GEMINI_API_KEY` env var)
+- **Requires:** ai.nvim, `curl` on PATH, `GEMINI_API_KEY` (or `gemini_api_key`) set, `vim.base64` (Neovim 0.10+)
+
 ## Tesseract OCR fallback backend
 
 Rasterizes each requested page via `pdftoppm` and OCRs it with `tesseract`.
@@ -90,23 +116,29 @@ PDFs where the text-layer backends return nothing useful.
 - **Module:** `lua/pdfport/backends/tesseract.lua` (`M.available`, `M.extract`)
 - **Requires:** `tesseract`, `pdftoppm` on PATH
 
-## The two AI backends and ai.nvim
+## The three AI backends and ai.nvim
 
-`claude` and `ollama` are the only extraction backends that talk to an HTTP
-API, and since the consolidation they do it through
+`claude`, `gemini` and `ollama` are the only extraction backends that talk to
+an HTTP API, and they do it through
 [ai.nvim](https://github.com/StefanBartl/ai.nvim) rather than each carrying
-its own curl call, JSON body builder and base64 encoder. What stayed here is
+its own curl call, JSON body builder and base64 encoder. What stays here is
 the part that is about PDFs — which model, which prompt, rasterizing pages,
 stitching per-page answers together; what left is the transport.
 
-**ai.nvim is optional.** Both backends' `available()` returns false when it
-is not installed, exactly as it does for a missing API key, so
-[lib.nvim](https://github.com/StefanBartl/lib.nvim) remains pdfport's one
-real plugin dependency for everyone who uses the other six backends.
-`:checkhealth pdfport` reports which of the two it is.
+The split between them is one capability: `claude` and `gemini` send the PDF
+whole because their APIs take a document; `ollama` rasterizes pages because
+its API takes only images. That is a fact about the API, not about the model
+— see ai.nvim's [attachments doc](https://github.com/StefanBartl/ai.nvim/blob/main/docs/attachments.md).
 
-Three differences from the hand-written path this replaced, none of them
-silent:
+**ai.nvim is optional.** All three backends' `available()` returns false when
+it is not installed, exactly as it does for a missing API key, so
+[lib.nvim](https://github.com/StefanBartl/lib.nvim) remains pdfport's one
+real plugin dependency for everyone who uses the other five backends.
+`:checkhealth pdfport` reports which it is.
+
+Three differences between `claude`/`ollama` and the hand-written path they
+replaced, none of them silent (`gemini` is new, so none of this is a change
+for it):
 
 | | Before | Now |
 | --- | --- | --- |
@@ -121,7 +153,7 @@ and `ai.ask()` does not expose one either.
 ## Custom backend registration
 
 Any Lua table shaped like `{ id, available(), extract(path, opts) }` can be
-registered as an eighth (or further) backend, participating in the same
-fallback chain as the seven builtins.
+registered as a ninth (or further) backend, participating in the same
+fallback chain as the eight builtins.
 
 - **Module:** `lua/pdfport/init.lua` (`M.register_backend`), `lua/pdfport/core/registry.lua` (`M.register_backend`)

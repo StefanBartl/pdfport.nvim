@@ -26,6 +26,7 @@ return function(H)
     "pdfport.backends.ollama",
     "pdfport.backends.tesseract",
     "pdfport.backends.claude",
+    "pdfport.backends.gemini",
     "pdfport.producers",
     "pdfport.producers.img2pdf",
     "pdfport.producers.magick",
