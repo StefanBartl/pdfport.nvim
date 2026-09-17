@@ -11,7 +11,7 @@ member *is* installed, so one missing tool is never fatal on its own.
 | Section | Checks |
 |---|---|
 | `pdfport: core` | Core modules load (`pdfport.platform`, `pdfport.core.registry`, and the rest of the module list) |
-| `pdfport: extraction backends` | Each entry in `fallback_chain`, in order: `pdftotext` (poppler-utils), `pdfplumber`/`docling` (needs a python3/python/py interpreter first, then the pip package), `marker` (`marker_single`), `ollama` (binary **and** the daemon actually running on `localhost:11434`), `tesseract` (+ `pdftoppm`), `claude` (`ANTHROPIC_API_KEY` set, and `vim.base64.encode` — Neovim 0.10+) |
+| `pdfport: extraction backends` | First whether [ai.nvim](https://github.com/StefanBartl/ai.nvim) is installed — the HTTP path for `claude` and `ollama`, optional, and reported as info since the other six backends never touch it. Then each entry in `fallback_chain`, in order: `pdftotext` (poppler-utils), `pdfplumber`/`docling` (needs a python3/python/py interpreter first, then the pip package), `marker` (`marker_single`), `ollama` (binary **and** the daemon actually running on `localhost:11434`), `tesseract` (+ `pdftoppm`), `claude` (`ANTHROPIC_API_KEY` set, and `vim.base64.encode` — Neovim 0.10+) |
 | `pdfport: creation producers` | `img2pdf`, `magick`, `pandoc` (found **and** a PDF engine — tectonic/typst/xelatex/lualatex/pdflatex — on PATH), `weasyprint`, `chromium` (any Chromium-family browser), `soffice` |
 | `pdfport: merge producers` | `qpdf`, `pdftk`, `ghostscript` (`gs`/`gswin64c`/`gswin32c`) — `pdfport.merge()`'s own chain, separate from the creation producers above |
 | `pdfport: renderers` | `buffer`/`float` (always `ok`, built in), `system` (the resolved system PDF opener) |

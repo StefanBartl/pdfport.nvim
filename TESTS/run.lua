@@ -30,6 +30,10 @@ local specs = {
   "registry_spec.lua",
   "resolver_spec.lua",
   "producer_spec.lua",
+  -- Before smoke_spec for the same reason registry_spec is: it loads the
+  -- claude/ollama backend modules (and unloads them again), which the
+  -- lazy-proxy assertions above must not see.
+  "ai_backends_spec.lua",
   "smoke_spec.lua",
   -- Last on purpose: it calls setup() and performs real opens, which
   -- loads producer/backend modules. registry_spec and producer_spec

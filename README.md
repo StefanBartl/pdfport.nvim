@@ -48,6 +48,11 @@ a clear message rather than an error when a tool is not there.
 > **[mdview.nvim](https://github.com/StefanBartl/mdview.nvim)** — previews the
 > Markdown the AI and layout backends extract.
 >
+> **[ai.nvim](https://github.com/StefanBartl/ai.nvim)** — carries the HTTP
+> requests for the `claude` and `ollama` extraction backends, so neither has
+> to hand-roll a second curl/provider path. Without it those two report
+> themselves unavailable; the other six extraction backends are untouched.
+>
 > All of the above are soft: without them everything else works unchanged.
 > [lib.nvim](https://github.com/StefanBartl/lib.nvim) is the one real plugin
 > dependency — see [Requirements](docs/requirements.md).

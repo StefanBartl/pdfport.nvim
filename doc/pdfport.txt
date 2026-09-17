@@ -276,9 +276,10 @@ require("pdfport").merge({opts})
   pdfplumber  Requires Python + pdfplumber. Plain text output.
   marker      Requires marker_single (pip install marker-pdf). Markdown.
   docling     Requires Python + docling (pip install docling). Markdown.
-  ollama      Requires ollama, pdftoppm, curl. Markdown.
+  ollama      Requires ai.nvim, ollama, pdftoppm, curl. Markdown.
   tesseract   Requires tesseract, pdftoppm. OCR fallback, plain text.
-  claude      Requires curl, ANTHROPIC_API_KEY, Neovim 0.10+ (vim.base64).
+  claude      Requires ai.nvim, curl, ANTHROPIC_API_KEY, Neovim 0.10+
+              (vim.base64).
               Markdown.
 
 The fallback chain is tried in order until one succeeds. Successful extractions are

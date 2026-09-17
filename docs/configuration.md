@@ -39,6 +39,7 @@ require("pdfport").setup({
   pdf_engine     = "auto",          -- pandoc --pdf-engine preference:
                                      -- "auto"|"tectonic"|"typst"|"xelatex"|"lualatex"|"pdflatex"
   claude_api_key = nil,              -- or set ANTHROPIC_API_KEY env var
+                                     -- passed to ai.nvim per request; never exported
   ollama_host    = "http://localhost:11434",
   ollama_model   = "llava",
   auto_open_on_read = false,        -- opt-in BufReadCmd *.pdf: `:e file.pdf` invokes the mode picker
@@ -94,9 +95,9 @@ the resolver actually calls `available()`/`extract()` on it.
 | pdfplumber  | Python + `pip install pdfplumber`           | plain    |
 | marker      | `pip install marker-pdf`                    | Markdown |
 | docling     | `pip install docling`                       | Markdown |
-| ollama      | `ollama`, `pdftoppm`, `curl`                | Markdown |
+| ollama      | ai.nvim, `ollama`, `pdftoppm`, `curl`       | Markdown |
 | tesseract   | `tesseract`, `pdftoppm` (OCR fallback)      | plain    |
-| claude      | `curl`, `ANTHROPIC_API_KEY`, `vim.base64` (Neovim 0.10+) | Markdown |
+| claude      | ai.nvim, `curl`, `ANTHROPIC_API_KEY`, `vim.base64` (Neovim 0.10+) | Markdown |
 
 ## Creation producers
 
