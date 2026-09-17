@@ -150,6 +150,25 @@ for it):
 Cancellation is unchanged: `extract()` has never returned a process handle,
 and `ai.ask()` does not expose one either.
 
+### Two limits these three share
+
+**A page range does not reach `claude` or `gemini`.** Both send the document
+whole — that is the point of them — so `pages` / `max_pages` are not honoured:
+you get an answer about the entire PDF, and `pages_processed` stays `nil`
+rather than claiming otherwise. Use `ollama`, which rasterizes exactly the
+pages you asked for, when the range matters. (The extraction cache does key
+on the range, so a `pages = {2,3}` request and a whole-document one are still
+separate entries.)
+
+**The extraction cache keys on the prompt and the model, not just the file.**
+It has to: `prompt` and `model` change what these three answer for the very
+same pages. A key without them would hand the answer to "list every table"
+back when the next call asks "summarise in one sentence" — silently, and
+looking freshly computed. Backends that take neither (`pdftotext`,
+`pdfplumber`, `marker`, `docling`, `tesseract`) keep exactly the key they
+always had, so upgrading orphans nothing. Set `extract_opts.cache = false` to
+opt out entirely.
+
 ## Custom backend registration
 
 Any Lua table shaped like `{ id, available(), extract(path, opts) }` can be
