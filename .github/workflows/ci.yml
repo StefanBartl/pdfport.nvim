@@ -36,7 +36,7 @@ jobs:
   # backend would for a real user -- so it has to be on PATH here too.
   test:
     name: test (${{ matrix.os }})
-    runs-on: ${{{{ matrix.os }}}}
+    runs-on: ${{ matrix.os }}
     strategy:
       # One platform failing must not cancel the others: which of the three
       # broke is the whole information content of this job.
