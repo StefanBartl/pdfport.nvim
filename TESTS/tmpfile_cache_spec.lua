@@ -82,8 +82,9 @@ return function(H)
   do
     local uv = vim.uv or vim.loop
 
-    local pdf = vim.fn.tempname() .. "-cache-spec.pdf"
-    vim.fn.writefile({ "%PDF-1.4 fake" }, pdf)
+    -- Canonical, the way `core.dispatcher` canonicalizes before it keys
+    -- anything: this module takes the path it is handed at face value.
+    local pdf = H.tempfile("-cache-spec.pdf", { "%PDF-1.4 fake" })
 
     local store = {}
     local cleared = {}

@@ -85,8 +85,7 @@ return function(H)
       vim.api.nvim_cmd({ cmd = "PdfPort", args = { ... } }, {})
     end
 
-    local pdf = vim.fn.tempname() .. "-bindings-spec.pdf"
-    vim.fn.writefile({ "%PDF-1.4 fake" }, pdf)
+    local pdf = H.tempfile("-bindings-spec.pdf", { "%PDF-1.4 fake" })
 
     -- Bare `:PdfPort [path]` is the verb's root route: it matches with no
     -- literal subcommand at all, and opens the shared mode picker rather
@@ -215,8 +214,12 @@ return function(H)
     H.eq(state.opened[1].opts.path, pdf, "with no argument the path under the cursor is used")
 
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "" })
-    local named = vim.fn.tempname() .. "-named-buffer.pdf"
-    vim.fn.writefile({ "x" }, named)
+    -- Canonical, because that is what comes back: Neovim resolves a buffer
+    -- name through the OS, so on macOS `nvim_buf_get_name()` answers
+    -- `/private/var/...` for the `/var/...` that `tempname()` reported. The
+    -- fallback under test is "the path came from this buffer", not which of
+    -- the two spellings of one directory the runner's kernel prefers.
+    local named = H.tempfile("-named-buffer.pdf")
     vim.api.nvim_buf_set_name(buf, named)
     state = with_verb(function()
       run("text")
@@ -525,8 +528,7 @@ return function(H)
 
     do
       local picked = {}
-      local pdf = vim.fn.tempname() .. "-autocmd-spec.pdf"
-      vim.fn.writefile({ "%PDF-1.4 fake" }, pdf)
+      local pdf = H.tempfile("-autocmd-spec.pdf", { "%PDF-1.4 fake" })
       H.with_modules({
         ["pdfport.util.picker"] = {
           pick_and_open = function(path)

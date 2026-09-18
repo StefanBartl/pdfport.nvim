@@ -46,6 +46,7 @@ return function(H)
     "pdfport.util.cache",
     "pdfport.util.notify",
     "pdfport.util.page_range",
+    "pdfport.util.path",
     "pdfport.util.picker",
     "pdfport.util.tmpfile",
     "pdfport.health",

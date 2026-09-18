@@ -102,12 +102,15 @@ implementation, two different lifetime contracts on top of it.
 
 Successful extractions are cached across Neovim restarts
 (`lib.nvim.cache.disk`), keyed by path + backend id + page-range variant
-and invalidated by the source file's mtime. Opt out per-call or globally
+and invalidated by the source file's mtime. The dispatcher canonicalizes the
+path before it keys anything (`util/path.lua`), so the several spellings one
+file can arrive under — relative, absolute, or resolved through a symlink the
+way a buffer name is — are one cache entry rather than one each. Opt out per-call or globally
 with `extract_opts.cache = false`. Creation (`pdfport.create()`) has no
 cache — an export is a one-off, explicit action with a target path, not a
 repeated read.
 
-- **Module:** `lua/pdfport/util/cache.lua` (`get`, `set`), consulted from `core/dispatcher.lua`
+- **Module:** `lua/pdfport/util/cache.lua` (`get`, `set`), consulted from `core/dispatcher.lua`; `lua/pdfport/util/path.lua` (`canonical`) for the path half of the key
 
 ## Health check
 

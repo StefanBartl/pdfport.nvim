@@ -5,6 +5,10 @@
 --- path + backend id + page-range variant. Invalidated by the source file's
 --- mtime rather than a blanket TTL — a PDF that hasn't changed on disk stays
 --- cached indefinitely; one that has is re-extracted transparently.
+---
+--- `path` is expected to be canonical (`util.path.canonical`): the key is a
+--- string, so two spellings of one file would be two entries. `core.dispatcher`
+--- canonicalizes before it calls in here, and is the only caller.
 
 local disk = require("lib.nvim.cache.disk")
 

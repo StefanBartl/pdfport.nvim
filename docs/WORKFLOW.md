@@ -84,6 +84,7 @@ Read side (`core/dispatcher.lua`):
 
 ```
 opts.path validated (exists, regular file)
+  -> path canonicalized (absolute, ..-free, symlinks resolved)
   -> mode == "system"/"terminal"? render directly, skip everything below
   -> resolver.resolve(opts.backend_id) -> backend
   -> cache check (path + backend id + page-range variant)
@@ -109,7 +110,12 @@ path all apply to a merge exactly like any other creation call.
 
 Extraction results are cached on disk (`lib.nvim.cache.disk`), keyed by
 `path + backend_id + page-range-variant`, invalidated by the source file's
-mtime. This means:
+mtime. The path in that key is the canonical one
+(`util/path.lua`'s `canonical()`, applied by the dispatcher): callers hand in
+whatever spelling they have -- a relative `:PdfPort` argument, a file tree's
+absolute path, a buffer name the OS has already resolved (on macOS
+`/private/var/...` where `tempname()` says `/var/...`) -- and all of them have
+to land on one entry. This means:
 
 - Switching `backend_id` for the same file is a cache **miss**, not a stale hit — each backend gets its own cache entry.
 - Re-running the exact same `:PdfPort text` on an unchanged file is instant on the second call, backend never invoked.
