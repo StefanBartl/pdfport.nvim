@@ -66,7 +66,7 @@ or produces a PDF.
 | `picker_batch_spec.lua` | `util.picker`'s "system application is always an option" guarantee, `system_first`/`system_open`/`on_cancel`, the `vim.ui.select` fallback; `util.page_range.prompt`; `util.batch`'s selection walk, dedup, cursor restore and settled-outcome summary |
 | `renderers_spec.lua` | `buffer` against real buffers and windows (header, CR stripping, filetype, reuse, every split mode, `focus=false`); `float`'s `make_scratch` options; `system`'s delegation and its two error paths; `terminal`'s `:terminal` command line for chafa/kitty/imgcat and every way it declines |
 | `bindings_spec.lua` | every `:PdfPort` route, the argument→`<cfile>`→current-buffer path resolution, `pages=`, the `.pdf`-first completion; the five keymap actions, `resolve()`, `bind()`; the FileType and BufReadCmd autocmds |
-| `integrations_spec.lua` | each tree's path resolver (neo-tree node id, nvim-tree absolute path, netrw's string-built path incl. separators, oil's dir+entry), `open_current`, each `setup()`'s autocmd, neo-tree's commands and its per-mode mappings table, and the telescope/fzf previewer gates |
+| `integrations_spec.lua` | each tree's path resolver (neo-tree node id, nvim-tree absolute path, netrw's string-built path incl. separators, oil's dir+entry), `open_current`, each `setup()`'s autocmd, neo-tree's commands and its per-mode mappings table, `telescope.filetype_hook`, fzf's `preview_fn`, and — via a faked `telescope.previewers` — `telescope.previewer()`'s own `define_preview` (title, path resolution, and its copy of bug 3) |
 | `public_api_spec.lua` | `require("pdfport")` itself: the argument guards, `config()`'s deep copy, `render_page`/`can_render_page_crop`, **the `github_stats.nvim` contract** (`can_create("markdown") == true`, then `create{text,from,output,on_conflict,__callback}`), `merge()`'s pinned `from = "pdf"`, the default notifications, and `setup()`'s wiring |
 | `health_spec.lua` | `:checkhealth pdfport` against a chosen tool set: every section, a fully equipped machine (no errors), a bare one (warnings, not errors), and the in-between cases — pandoc without an engine, the curl gate in front of the API keys, ai.nvim present/absent |
 | `open_done_spec.lua` | `pdfport.open`'s `on_done` signal settles exactly once on every path (runs last — it calls `setup()` and performs real opens) |
@@ -125,10 +125,15 @@ Every module under `lua/` has assertion coverage except the ones listed below.
 * `renderers/terminal`'s image display — the `:terminal` command line it would
   run is asserted with `vim.cmd` intercepted; what chafa/kitty/imgcat then draw
   into a pty is not something a headless spec can look at.
-* `integrations/telescope.previewer()`'s previewer object and `integrations/fzf`'s
-  picker plumbing — both hard-require their picker plugin, neither of which is
-  a CI checkout. Their filetype gate and the extraction request behind it *are*
-  covered; only the construction of the previewer itself is not.
+* **Telescope's and fzf-lua's own internals.** `integrations/telescope.previewer()`
+  hard-requires `telescope.previewers`, which is faked in `package.loaded` so
+  `define_preview` (path resolution, the extraction request, and its own copy
+  of bug 3 below) runs without telescope.nvim installed — what stays out of
+  reach is `new_buffer_previewer`'s own internals (buffer wiring, highlighting
+  inside telescope itself), which only the real plugin could exercise.
+  `integrations/fzf.lua` never hard-requires `fzf-lua` at all — `preview_fn`
+  returns a plain closure for the caller to hand to fzf-lua — so it needed no
+  fake and has full coverage already.
 * The real HTTP request in the `claude`/`gemini`/`ollama` backends — the
   request pdfport builds and every way an answer is turned into a
   `PdfPort.Result` is covered through a faked `ai.nvim`; only the network call
@@ -175,4 +180,6 @@ red the moment it is fixed and the fix stays a deliberate, separate change.
    poppler not installed yet — every later preview of it replays the stale
    error without retrying, and fzf's `_cache` is module-level, so opening a
    fresh picker does not clear it either.
-   Pinned in `integrations_spec.lua`.
+   Pinned in `integrations_spec.lua`, for both copies: fzf.lua's `preview_fn`
+   and, since this round, telescope.lua's `previewer()` (via a faked
+   `telescope.previewers`).

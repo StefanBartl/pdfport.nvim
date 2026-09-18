@@ -519,6 +519,75 @@ return function(H)
       vim.api.nvim_buf_delete(buf, { force = true })
     end)
 
+    -- `M.previewer()` itself: previously untested at all. `telescope.previewers`
+    -- is faked so the previewer object's own `define_preview` -- path
+    -- resolution, the extraction request, and the cache-then-check-status
+    -- bug fzf's `preview_fn` is pinned for below -- runs without the real
+    -- telescope.nvim installed. Only telescope's own `new_buffer_previewer`
+    -- internals (buffer wiring, highlighting inside telescope itself) stay
+    -- out of reach here, same as before.
+    do
+      local previewer_requests = {}
+      local captured_opts
+
+      H.with_modules({
+        ["telescope.previewers"] = {
+          new_buffer_previewer = function(bp_opts)
+            captured_opts = bp_opts
+            return bp_opts
+          end,
+        },
+        ["pdfport"] = {
+          extract = function(opts)
+            previewer_requests[#previewer_requests + 1] = opts
+            opts.__callback({
+              status = "error",
+              text = nil,
+              error = "no backend available",
+              format = "plain",
+              backend = "none",
+            })
+          end,
+        },
+      }, function()
+        local previewer = telescope.previewer({ max_pages = 4 })
+        H.eq(captured_opts.title, "PDF (pdfport)", "the previewer is titled for pdfport")
+        H.ok(type(previewer.define_preview) == "function", "and carries a define_preview closure")
+
+        local buf = vim.api.nvim_create_buf(false, true)
+        local self_stub = { state = { bufnr = buf } }
+
+        previewer.define_preview(self_stub, { path = "/docs/a.txt" }, {})
+        H.eq(#previewer_requests, 0, "a non-PDF entry is ignored, same gate as filetype_hook")
+
+        previewer.define_preview(self_stub, { filename = "/docs/b.pdf" }, {})
+        H.eq(#previewer_requests, 1, "entry.filename is used when .path is absent")
+        H.eq(previewer_requests[1].path, "/docs/b.pdf", "with that resolved path")
+        H.eq(previewer_requests[1].max_pages, 4, "honouring the caller-supplied page cap")
+        H.match(
+          vim.api.nvim_buf_get_lines(buf, 0, -1, false)[1],
+          "no backend available",
+          "a failed extraction is written into the preview buffer"
+        )
+
+        -- BUG: the same one fzf.lua's `_cache` is pinned for above --
+        -- `cache[path] = text` runs before anything looks at `result.status`,
+        -- so this failed preview is memoized exactly like a successful one.
+        -- TESTS/README.md already named this as "duplicated in
+        -- integrations/telescope.lua"; until now nothing here actually
+        -- exercised that copy of it.
+        previewer.define_preview(self_stub, { filename = "/docs/b.pdf" }, {})
+        H.eq(#previewer_requests, 1, "BUG: a failed preview is cached, so it is never retried")
+        H.match(
+          vim.api.nvim_buf_get_lines(buf, 0, -1, false)[1],
+          "no backend available",
+          "BUG: and the stale error is replayed from the memo"
+        )
+
+        vim.api.nvim_buf_delete(buf, { force = true })
+      end)
+    end
+
     local fzf_requests = {}
     H.with_modules({
       ["pdfport"] = {
