@@ -133,6 +133,8 @@ actually calls `available()`/`create()` on it.
 
 Successful extractions are cached across Neovim restarts (`lib.nvim.cache.disk`), keyed by
 path + backend id + page-range and invalidated by the source file's mtime — editing the PDF
-on disk transparently invalidates its cache entry. Disable per `setup()` call with
+on disk transparently invalidates its cache entry. The path is canonicalized first (absolute,
+`..`-free, symlinks resolved), so opening the same file by a relative path, from a file tree
+and from its own buffer all hit the one entry. Disable per `setup()` call with
 `extract_opts.cache = false`, or clear everything with
 `require("pdfport.util.cache").clear()`.

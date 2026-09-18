@@ -2,7 +2,8 @@
 ---@brief Central dispatch logic for pdfport.nvim.
 ---@description
 --- Coordinates callers (integrations, commands) with backend/renderer pairs.
---- Flow: validate path → resolve backend → extract async → render on main thread.
+--- Flow: validate path → canonicalize it → resolve backend → extract async →
+--- render on main thread.
 
 local uv = vim.uv or vim.loop
 local resolver = require("pdfport.core.resolver")
@@ -133,6 +134,26 @@ function M.dispatch(opts, callback)
     end)
     return
   end
+
+  -- From here down there is exactly one spelling of this file. Validation
+  -- runs first on purpose, so "file not found" still names the path the
+  -- caller actually typed.
+  --
+  -- This is the only place it has to happen, because it is the only place
+  -- every extraction passes through -- and `util.cache` keys on the path
+  -- string, so the spelling *is* the identity. Callers do not agree on one:
+  -- a command argument may be relative, a file tree gives an absolute path,
+  -- and `nvim_buf_get_name()` gives a resolved one (on macOS
+  -- `/private/var/...` where `tempname()` says `/var/...`). Keyed raw, the
+  -- same document extracts once per spelling -- and a relative key names a
+  -- different file in every directory, so two documents sharing a relative
+  -- name and an mtime second can answer with each other's text.
+  --
+  -- Written back into `opts` as well, so the renderers -- which read
+  -- `opts.path` after this returns -- name the same file the cache and the
+  -- backend did.
+  path = require("pdfport.util.path").canonical(path)
+  opts.path = path
 
   if opts.mode == "system" then
     ---@cast opts PdfPort.OpenOpts

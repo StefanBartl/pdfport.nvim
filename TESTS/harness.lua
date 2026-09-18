@@ -72,6 +72,28 @@ function H.eq_list(a, b, msg)
   end
 end
 
+--- A temp fixture file, created, in the one spelling the OS will hand back.
+---
+--- `vim.fn.tempname()` reports the *logical* path, and on macOS that is under
+--- the `/var` symlink -- while anything the same file has been through comes
+--- back as `/private/var/...`: a buffer name (Neovim resolves those),
+--- `uv.fs_realpath`, and pdfport's own `util.path.canonical`, which the
+--- dispatcher applies so a cache key is one string per file. Comparing a raw
+--- `tempname()` against any of those is a macOS-only failure that says
+--- nothing about the code under test, so fixtures are canonical from the
+--- start and a spec compares identities rather than spellings.
+---@param suffix string  appended to the temp name, e.g. "-dispatch-spec.pdf"
+---@param lines? string[]  file contents; a single "x" by default
+---@return string path
+function H.tempfile(suffix, lines)
+  local path = vim.fn.tempname() .. (suffix or "")
+  vim.fn.writefile(lines or { "x" }, path)
+  -- `type(real) == "string"`: fs_realpath's async overload answers a request
+  -- handle, so its declared type is `string|uv.uv_fs_t`.
+  local real = (vim.uv or vim.loop).fs_realpath(path)
+  return type(real) == "string" and real or path
+end
+
 --- Sentinel for `H.with_modules`: the key is *removed* from `package.loaded`
 --- rather than replaced, which is how the module under test is forced to
 --- re-run its body against the replacements standing in for its `require`s.

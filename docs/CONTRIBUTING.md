@@ -63,7 +63,7 @@ cheapest one to install and the one most specs assume.
 | `lua/pdfport/producers/` | One file per creation or merge producer: img2pdf, magick, pandoc, weasyprint, chromium, soffice, qpdf, pdftk, ghostscript |
 | `lua/pdfport/renderers/` | Where an extraction ends up: buffer, float, system, terminal |
 | `lua/pdfport/integrations/` | The file-tree adapters (neotree, nvim_tree, netrw, oil) and the fuzzy-finder ones (telescope, fzf) |
-| `lua/pdfport/util/` | The cache, the page-range parser, the picker, batch handling, temp files, spawn environment, notifications |
+| `lua/pdfport/util/` | The cache, path canonicalization, the page-range parser, the picker, batch handling, temp files, spawn environment, notifications |
 | `lua/pdfport/platform/` | Per-OS differences |
 | `lua/pdfport/bindings/`, `config/` | The `:PdfPort` route tree and keymaps; `DEFAULTS.lua` and validation |
 | `doc/`, `docs/` | The vimdoc, and everything the README links to |

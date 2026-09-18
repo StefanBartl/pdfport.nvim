@@ -18,9 +18,11 @@ return function(H)
   local dispatcher = require("pdfport.core.dispatcher")
 
   -- A real file on disk: validate_path stats it, so a fictional path would
-  -- only ever exercise the not-found branch.
-  local pdf = vim.fn.tempname() .. "-dispatch-spec.pdf"
-  vim.fn.writefile({ "%PDF-1.4 fake" }, pdf)
+  -- only ever exercise the not-found branch. Canonical (H.tempfile), because
+  -- the dispatcher canonicalizes what it is given -- on macOS a raw
+  -- `tempname()` is the `/var` spelling of the `/private/var` path it would
+  -- then be compared against.
+  local pdf = H.tempfile("-dispatch-spec.pdf", { "%PDF-1.4 fake" })
 
   ---Run dispatch and wait for the single result it schedules.
   ---@param opts table
@@ -228,6 +230,58 @@ return function(H)
       })
       dispatch({ path = pdf })
       H.eq(#writes, 1, "a failed extraction is never cached")
+    end)
+  end
+
+  -- ----------------------------------------------- one file, one cache key
+
+  do
+    -- The cache keys on the path *string*, and callers do not agree on a
+    -- spelling: a `:PdfPort` argument can be relative, a file tree gives an
+    -- absolute path, and a buffer name is resolved by the OS -- on macOS
+    -- `/private/var/...` for the `/var/...` `tempname()` reports, since
+    -- `/var` is a symlink. Keyed as handed in, one document extracts once
+    -- per spelling; worse, a relative key names a different file in every
+    -- directory, so two documents that share a relative name and an mtime
+    -- second answer with each other's text.
+    --
+    -- A `..` detour stands in for all of those here because it is the one
+    -- non-canonical spelling every platform agrees on.
+    local reads = {}
+    H.with_modules({
+      ["pdfport.util.cache"] = {
+        get = function(path, backend_id, variant)
+          reads[#reads + 1] = { path = path, backend = backend_id, variant = variant }
+          return nil
+        end,
+        set = function() end,
+      },
+    }, function()
+      registry.register_backend({
+        id = "disp_canonical",
+        available = function()
+          return true
+        end,
+        extract = function()
+          return { status = "ok", text = "t", format = "plain", backend = "disp_canonical" }
+        end,
+      })
+      resolver._set_config({ fallback_chain = { "disp_canonical" } })
+      dispatcher._set_config({ extract_opts = { cache = true } })
+
+      local dir = vim.fn.fnamemodify(pdf, ":h")
+      local detour = table.concat({
+        dir,
+        "..",
+        vim.fn.fnamemodify(dir, ":t"),
+        vim.fn.fnamemodify(pdf, ":t"),
+      }, "/")
+
+      local opts = { path = detour }
+      dispatch(opts)
+      H.eq(#reads, 1, "a second spelling of one file still consults the cache once")
+      H.eq(reads[1].path, pdf, "under the same key as the canonical spelling")
+      H.eq(opts.path, pdf, "and the renderers are handed that same one path")
     end)
   end
 

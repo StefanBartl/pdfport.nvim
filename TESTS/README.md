@@ -62,7 +62,7 @@ or produces a PDF.
 | `backend_argv_spec.lua` | the five shelling extraction backends — pdftotext's `-f/-l` span, pdfplumber's and docling's generated Python, marker's output-directory search and its `**/*.md` recovery, tesseract's per-page pdftoppm→tesseract chain — plus `backends.load_custom` |
 | `config_util_spec.lua` | `config/DEFAULTS` (fresh table per call, chain order), `config.setup`'s merge/reset semantics, `util.notify`'s `cfg.debug` gate, `util.spawn_env`'s two shapes, and `platform`'s OS/opener/terminal-tool detection |
 | `tmpfile_cache_spec.lua` | `util.tmpfile`'s extension-per-kind, buffer/text materialization and deferred cleanup; `util.cache`'s key composition, mtime invalidation, refusal to cache failures, and corrupt-store recovery |
-| `dispatcher_spec.lua` | `core.dispatcher.dispatch`: path validation, the two renderer-only short circuits, extract-option merge, cache consult/write/disable, a raising backend, the progress indicator's lifecycle, `open()`'s render wiring — and `core.rasterize.render_page`'s spawn plus its `.png` base handling |
+| `dispatcher_spec.lua` | `core.dispatcher.dispatch`: path validation, path canonicalization (one cache key per file, whatever spelling the caller had), the two renderer-only short circuits, extract-option merge, cache consult/write/disable, a raising backend, the progress indicator's lifecycle, `open()`'s render wiring — and `core.rasterize.render_page`'s spawn plus its `.png` base handling |
 | `picker_batch_spec.lua` | `util.picker`'s "system application is always an option" guarantee, `system_first`/`system_open`/`on_cancel`, the `vim.ui.select` fallback; `util.page_range.prompt`; `util.batch`'s selection walk, dedup, cursor restore and settled-outcome summary |
 | `renderers_spec.lua` | `buffer` against real buffers and windows (header, CR stripping, filetype, reuse, every split mode, `focus=false`); `float`'s `make_scratch` options; `system`'s delegation and its two error paths; `terminal`'s `:terminal` command line for chafa/kitty/imgcat and every way it declines |
 | `bindings_spec.lua` | every `:PdfPort` route, the argument→`<cfile>`→current-buffer path resolution, `pages=`, the `.pdf`-first completion; the five keymap actions, `resolve()`, `bind()`; the FileType and BufReadCmd autocmds |
@@ -104,6 +104,11 @@ For anything that would otherwise touch an external tool:
   modules exist.
 * `H.fake_backend` / `H.fake_producer` — minimal valid registry entries.
 * `H.index_of(list, value)` / `H.last_argv(rec)` — reading an argv back.
+* `H.tempfile(suffix, lines?)` — a temp fixture file in the spelling the OS
+  will hand back. Use it rather than `vim.fn.tempname()` whenever the spec
+  later compares that path against one the plugin produced: on macOS
+  `tempname()` answers `/var/...` while a buffer name, `uv.fs_realpath` and
+  `util.path.canonical` all answer `/private/var/...` for the same file.
 
 ## Coverage
 
