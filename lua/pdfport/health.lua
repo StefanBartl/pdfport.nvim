@@ -176,8 +176,26 @@ local function check_backends()
   -- ollama
   if check_exe("ollama", false) then
     h_ok("ollama binary found")
-    local out =
-      vim.fn.system({ "curl", "-s", "-w", "\n%{http_code}", "http://localhost:11434/api/tags" })
+    -- vim.fn.system() is synchronous, so this blocks the whole editor for
+    -- however long curl takes -- and a firewalled (dropped, not refused)
+    -- port has no timeout of its own to fall back on. --connect-timeout
+    -- bounds the TCP handshake specifically, --max-time the whole request,
+    -- and --max-filesize caps how much of whatever else might answer on
+    -- this port gets read into memory; ollama's own /api/tags response is a
+    -- short JSON list, so 1 MiB is generous, not a real constraint on it.
+    local out = vim.fn.system({
+      "curl",
+      "-s",
+      "-w",
+      "\n%{http_code}",
+      "--connect-timeout",
+      "1",
+      "--max-time",
+      "2",
+      "--max-filesize",
+      "1048576",
+      "http://localhost:11434/api/tags",
+    })
     local code = out and out:match("(%d%d%d)%s*$")
     if code == "200" then
       h_ok("ollama daemon running on localhost:11434")
