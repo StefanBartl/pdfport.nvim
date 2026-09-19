@@ -169,6 +169,41 @@ return function(H)
     H.eq(#state.merged, 0, "merging fewer than two inputs does nothing")
     H.match(state.errors[1], "at least 2 input PDFs", "and says what it needed")
 
+    -- SEC-34: a path argument goes through lib.nvim's expand_path (~/$VAR
+    -- only), not vim.fn.expand() -- which would also run a backtick span as
+    -- a shell command through &shell and treat %/#/<cfile>/<cword> as Vim
+    -- specials, on a path this plugin's own <Tab> completion can insert
+    -- verbatim from a real filename.
+    do
+      local saved_env = vim.env.PDFPORT_SPEC_DIR
+      vim.env.PDFPORT_SPEC_DIR = "/tmp/pdfport-spec"
+
+      state = with_verb(function()
+        run("text", "$PDFPORT_SPEC_DIR/doc.pdf")
+      end)
+      H.eq(
+        state.opened[1].opts.path,
+        "/tmp/pdfport-spec/doc.pdf",
+        "an explicit path argument has $VAR expanded"
+      )
+
+      state = with_verb(function()
+        run("merge", "$PDFPORT_SPEC_DIR/out.pdf", "a.pdf", "b.pdf")
+      end)
+      H.eq(state.merged[1].output, "/tmp/pdfport-spec/out.pdf", "as does the merge output path")
+
+      state = with_verb(function()
+        run("text", "`echo pwned`.pdf")
+      end)
+      H.eq(
+        state.opened[1].opts.path,
+        "`echo pwned`.pdf",
+        "a backtick span is left as a literal filename, not run as a shell command"
+      )
+
+      vim.env.PDFPORT_SPEC_DIR = saved_env
+    end
+
     -- Both diagnostics routes show the same registry dump; they differ only
     -- in the title, since the registry reports backends and producers together.
     state = with_verb(function()
