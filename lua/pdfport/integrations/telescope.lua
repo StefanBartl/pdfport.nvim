@@ -87,7 +87,7 @@ function M.filetype_hook(filepath, bufnr, _)
     max_pages = 5,
     __callback = function(result)
       if not vim.api.nvim_buf_is_valid(bufnr) then return end
-      local text = result.text or ""
+      local text = result.text or ("-- pdfport error: " .. (result.error or "unknown") .. " --")
       local lines = vim.split(text, "\n", { plain = true })
       vim.bo[bufnr].modifiable = true
       vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
