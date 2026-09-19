@@ -157,9 +157,18 @@ function M.extract(opts)
   require("pdfport.core.dispatcher").dispatch(opts, opts.__callback)
 end
 
+---A plugin holds no central key store (SEC-15): `:lua vim.print(require("pdfport").config())`
+---is the ordinary way to inspect a plugin's settings -- and exactly what one
+---pastes into a bug report, or has on screen while sharing -- so an API key
+---set through `setup()` is redacted here rather than handed out in
+---cleartext. Present as `"<redacted>"`, not nil, so a caller can still tell
+---"configured" from "not set" without the value itself.
 ---@return PdfPort.Config
 function M.config()
-  return vim.deepcopy(config.get())
+  local cfg = vim.deepcopy(config.get())
+  if cfg.claude_api_key and cfg.claude_api_key ~= "" then cfg.claude_api_key = "<redacted>" end
+  if cfg.gemini_api_key and cfg.gemini_api_key ~= "" then cfg.gemini_api_key = "<redacted>" end
+  return cfg
 end
 
 ---Rasterize a single PDF page to a PNG file via pdftoppm. Same primitive the

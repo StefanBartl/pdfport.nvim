@@ -204,28 +204,52 @@ local function check_backends()
   -- an error here, a warning three sections down where `docs/install.json`
   -- declares `required: false`. The spec was the half that was right.
   if check_exe("curl", false) then
-    local key = vim.env.ANTHROPIC_API_KEY
-    if key and key ~= "" then
-      h_ok("ANTHROPIC_API_KEY set (" .. #key .. " chars)")
-    else
-      h_warn(
-        "ANTHROPIC_API_KEY not set – claude backend unavailable",
-        { "export ANTHROPIC_API_KEY=sk-ant-..." }
-      )
+    -- backends/claude.lua and backends/gemini.lua both prefer their
+    -- `_config.*_api_key` over the env var (see each backend's own
+    -- `api_key()`) -- a check that only reads the env var contradicts
+    -- itself the moment a user takes the setup() route docs/configuration.md
+    -- offers as equal to it: "not set" here, "available" eleven sections
+    -- down at the live registry. Never the value itself, only its length,
+    -- same as the env-var branch always did.
+    local ok_config, config_mod = pcall(require, "pdfport.config")
+    local cfg = ok_config and config_mod.get() or {}
+
+    ---@param cfg_key string|nil
+    ---@param env_var string|nil
+    ---@param env_name string
+    ---@param config_key string
+    ---@param backend_name string
+    local function report_key(cfg_key, env_var, env_name, config_key, backend_name)
+      if cfg_key and cfg_key ~= "" then
+        h_ok(string.format("%s: key set via setup() (%d chars)", env_name, #cfg_key))
+      elseif env_var and env_var ~= "" then
+        h_ok(string.format("%s set (%d chars)", env_name, #env_var))
+      else
+        h_warn(
+          string.format("%s not set – %s backend unavailable", env_name, backend_name),
+          { string.format("export %s=... or setup({ %s = ... })", env_name, config_key) }
+        )
+      end
     end
+
+    report_key(
+      cfg.claude_api_key,
+      vim.env.ANTHROPIC_API_KEY,
+      "ANTHROPIC_API_KEY",
+      "claude_api_key",
+      "claude"
+    )
     -- gemini
     --
     -- Inside the same `curl` guard as claude, and for the same reason: both
     -- are remote backends whose only external tool is curl.
-    local gemini_key = vim.env.GEMINI_API_KEY
-    if gemini_key and gemini_key ~= "" then
-      h_ok("GEMINI_API_KEY set (" .. #gemini_key .. " chars)")
-    else
-      h_warn(
-        "GEMINI_API_KEY not set – gemini backend unavailable",
-        { "export GEMINI_API_KEY=..." }
-      )
-    end
+    report_key(
+      cfg.gemini_api_key,
+      vim.env.GEMINI_API_KEY,
+      "GEMINI_API_KEY",
+      "gemini_api_key",
+      "gemini"
+    )
 
     -- The claude and gemini backends encode in-process via vim.base64.encode
     -- (in ai.nvim's `ai.attachments`, since the migration); the external
