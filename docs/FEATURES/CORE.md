@@ -84,7 +84,11 @@ pipeline backing `pdfport.open()`/`pdfport.extract()`:
 successful extraction it looks up the renderer for `opts.mode` (default
 `"buffer"`, or `cfg.render_opts.mode`) and calls it with the merged
 `render_opts`; on any error it calls `on_error(msg)` instead (defaults to a
-no-op — callers decide how errors surface).
+no-op — callers decide how errors surface). A `status = "partial"` result
+(a backend extracted text but could not honor everything `opts` asked for,
+e.g. an explicit page list docling/marker can't apply) also calls
+`on_error(result.error)`, but is not treated as a failure: rendering still
+proceeds and `on_done` still settles `true`.
 
 - **Module:** `lua/pdfport/core/dispatcher.lua`
 

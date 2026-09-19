@@ -488,6 +488,49 @@ return function(H)
     H.eq(rendered.opts.path, pdf, "and the path carried through")
     H.eq(rendered.result.backend, "disp_open", "the renderer gets the backend's own result")
 
+    -- A backend that extracted text but could not honor everything `opts`
+    -- asked for (e.g. docling/marker asked for an explicit page list)
+    -- reports `status = "partial"` rather than a bare "ok". That must still
+    -- reach the caller -- through the same `on_error` channel a real error
+    -- would use -- without being treated as a failed open: the renderer
+    -- still gets the (unfiltered) text, and `on_done` still settles `true`.
+    registry.register_backend({
+      id = "disp_open_partial",
+      available = function()
+        return true
+      end,
+      extract = function()
+        return {
+          status = "partial",
+          text = "whole doc",
+          format = "markdown",
+          backend = "disp_open_partial",
+          error = "docling: page selection is not supported; the whole document was converted",
+        }
+      end,
+    })
+    resolver._set_config({ fallback_chain = { "disp_open_partial" } })
+
+    rendered = nil
+    local partial_errs = {}
+    local partial_ok, partial_err
+    dispatcher.open({ path = pdf, mode = "spec_render_mode" }, function(msg)
+      partial_errs[#partial_errs + 1] = msg
+    end, function(o, e)
+      partial_ok, partial_err = o, e
+    end)
+    vim.wait(1000, function()
+      return rendered ~= nil
+    end, 5)
+    H.eq(#partial_errs, 1, "a partial result is reported through on_error")
+    H.match(partial_errs[1], "page selection is not supported", "carrying the backend's reason")
+    H.ok(rendered, "and the renderer still runs -- the open did not fail")
+    H.eq(rendered.result.status, "partial", "with the result's own status intact")
+    H.eq(partial_ok, true, "on_done settles ok = true, not a failure")
+    H.eq(partial_err, nil, "on_done's error slot stays nil -- the message went through on_error")
+
+    resolver._set_config({ fallback_chain = { "disp_open" } })
+
     -- A renderer that raises is a failure of the open, not of Neovim.
     registry.register_renderer("spec_render_boom", function()
       error("renderer exploded")
