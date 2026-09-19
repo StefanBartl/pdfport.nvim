@@ -54,6 +54,16 @@ require("pdfport").setup({
 })
 ```
 
+### Validation
+
+Unknown top-level keys and unknown keys inside `extract_opts`/`render_opts`/
+`create_opts` are rejected before the merge, with a "did you mean…" hint when
+one is a plausible typo of a real option; the corresponding default is kept
+in force. A value that must be a table (`fallback_chain`, `extract_opts`, …)
+but was not is rejected the same way. Both are reported once via
+`vim.notify` and stay visible afterwards under `:checkhealth pdfport`'s
+`pdfport: config` section.
+
 ### Progress indicator
 
 An extraction is not instant: `marker`, `docling`, `ollama` and `tesseract` run

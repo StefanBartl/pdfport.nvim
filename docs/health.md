@@ -4,13 +4,14 @@
 :checkhealth pdfport
 ```
 
-Ten sections. Every backend/producer/renderer is independently `warn` (not
+Eleven sections. Every backend/producer/renderer is independently `warn` (not
 `error`) when its tool is missing — pdfport degrades to whatever chain
 member *is* installed, so one missing tool is never fatal on its own.
 
 | Section | Checks |
 |---|---|
 | `pdfport: core` | Core modules load (`pdfport.platform`, `pdfport.core.registry`, and the rest of the module list) |
+| `pdfport: config` | Unknown keys and mistyped option tables the last `setup()` call had to drop (e.g. a misspelled `extract_opts.max_page`, or `fallback_chain` given as a string instead of a list) — `ok` if `setup()` accepted everything |
 | `pdfport: extraction backends` | First whether [ai.nvim](https://github.com/StefanBartl/ai.nvim) is installed — the HTTP path for `claude`, `gemini` and `ollama`, optional, and reported as info since the other five backends never touch it. Then each entry in `fallback_chain`, in order: `pdftotext` (poppler-utils), `pdfplumber`/`docling` (needs a python3/python/py interpreter first, then the pip package), `marker` (`marker_single`), `ollama` (binary **and** the daemon actually running on `localhost:11434`), `tesseract` (+ `pdftoppm`), `claude` (`ANTHROPIC_API_KEY` set, and `vim.base64.encode` — Neovim 0.10+), `gemini` (`GEMINI_API_KEY` set) |
 | `pdfport: creation producers` | `img2pdf`, `magick`, `pandoc` (found **and** a PDF engine — tectonic/typst/xelatex/lualatex/pdflatex — on PATH), `weasyprint`, `chromium` (any Chromium-family browser), `soffice` |
 | `pdfport: merge producers` | `qpdf`, `pdftk`, `ghostscript` (`gs`/`gswin64c`/`gswin32c`) — `pdfport.merge()`'s own chain, separate from the creation producers above |

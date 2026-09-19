@@ -126,6 +126,7 @@ return function(H)
   -- lines end up filed under the previous heading.
   for _, section in ipairs({
     "pdfport: core",
+    "pdfport: config",
     "pdfport: extraction backends",
     "pdfport: creation producers",
     "pdfport: merge producers",
@@ -262,6 +263,24 @@ return function(H)
   -- ui.nvim, by contrast, is a soft enhancement: without it the picker falls
   -- back to vim.ui.select, so its absence is info.
   H.ok(has(bare, "info", "ui%.kit not found"), "a missing ui.kit is info, not a warning")
+
+  -- The config section surfaces whatever the last setup() call had to
+  -- reject -- exercised against the real pdfport.config module (not
+  -- stubbed here), since that live state is exactly what :checkhealth reads.
+  require("pdfport.config").setup({})
+  local clean_cfg = check({}, {}, nil)
+  H.ok(
+    has(clean_cfg, "ok", "no unknown or mistyped setup"),
+    "a clean setup() reports ok in the config section"
+  )
+
+  require("pdfport.config").setup({ extract_opts = { max_page = 1 } })
+  local bad_cfg = check({}, {}, nil)
+  H.ok(
+    has(bad_cfg, "warn", "extract_opts%.max_page"),
+    "a rejected option surfaces as a warning in the config section"
+  )
+  require("pdfport.config").setup({}) -- leave state clean for whatever runs after this spec
 
   vim.env.ANTHROPIC_API_KEY = saved_anthropic
   vim.env.GEMINI_API_KEY = saved_gemini
