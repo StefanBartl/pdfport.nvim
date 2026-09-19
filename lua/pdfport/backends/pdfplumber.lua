@@ -32,14 +32,34 @@ end
 ---@return PdfPort.Result|nil
 function M.extract(path, opts)
   local max_pages = opts.max_pages or 0
+  local has_pages = opts.pages ~= nil and #opts.pages > 0
+
+  -- `opts.pages` takes priority over `opts.max_pages`, same precedence as
+  -- backends/pdftotext.lua. Page numbers are formatted with `%d` (not
+  -- interpolated as text), so this stays a plain Python integer list literal
+  -- regardless of what the caller passed in.
+  local explicit_pages = "None"
+  if has_pages then
+    local nums = {}
+    for i, p in ipairs(opts.pages) do
+      nums[i] = string.format("%d", p)
+    end
+    explicit_pages = "[" .. table.concat(nums, ",") .. "]"
+  end
 
   local script = string.format(
     [[
 import sys, pdfplumber
-path      = %q
-max_pages = %d
+path           = %q
+max_pages      = %d
+explicit_pages = %s
 with pdfplumber.open(path) as pdf:
-    pages = pdf.pages if max_pages == 0 else pdf.pages[:max_pages]
+    if explicit_pages is not None:
+        pages = [pdf.pages[i - 1] for i in explicit_pages if 1 <= i <= len(pdf.pages)]
+    elif max_pages > 0:
+        pages = pdf.pages[:max_pages]
+    else:
+        pages = pdf.pages
     parts = []
     for page in pages:
         text = page.extract_text()
@@ -48,7 +68,8 @@ with pdfplumber.open(path) as pdf:
     print("\n\n".join(parts))
 ]],
     path,
-    max_pages
+    max_pages,
+    explicit_pages
   )
 
   local script_file = vim.fn.tempname() .. ".py"
@@ -99,7 +120,11 @@ with pdfplumber.open(path) as pdf:
         text = spawn_result.stdout,
         format = "plain",
         backend = "pdfplumber",
-        pages_processed = max_pages > 0 and max_pages or nil,
+        -- Only reports a max_pages count when that is what actually bounded
+        -- the run; an explicit `opts.pages` selection (honored above, in the
+        -- script itself) is not a page *count*, so it stays unreported here
+        -- rather than borrowing max_pages's meaning for something else.
+        pages_processed = (not has_pages and max_pages > 0) and max_pages or nil,
         error = nil,
       }
     else

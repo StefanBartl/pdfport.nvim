@@ -33,6 +33,11 @@ end
 ---@return PdfPort.Result|nil
 function M.extract(path, opts)
   local max_pages = opts.max_pages or 0
+  -- Neither max_pages (see the pages_processed note below) nor an explicit
+  -- page list reaches the script -- converter.convert() always processes
+  -- the whole document, so a pages request is marked "partial" rather than
+  -- silently claiming the whole document is what was asked for.
+  local pages_unsupported = opts.pages ~= nil and #opts.pages > 0
 
   local script = string.format(
     [[
@@ -97,12 +102,18 @@ except Exception as e:
       }
     elseif spawn_result.ok then
       result = {
-        status = "ok",
+        status = pages_unsupported and "partial" or "ok",
         text = spawn_result.stdout,
         format = "markdown",
         backend = "docling",
-        pages_processed = max_pages > 0 and max_pages or nil,
-        error = nil,
+        -- The generated script never applies max_pages (docling converts
+        -- the whole document), so reporting it here would claim planned
+        -- work as performed work. Same convention as claude/gemini: nil
+        -- rather than a number that was never actually processed.
+        pages_processed = nil,
+        error = pages_unsupported
+            and "docling: page selection is not supported; the whole document was converted"
+          or nil,
       }
     else
       result = {

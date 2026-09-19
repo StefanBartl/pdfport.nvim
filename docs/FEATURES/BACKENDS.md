@@ -23,7 +23,10 @@ layer to read).
 ## pdfplumber extraction backend
 
 A Python-based extractor (`pip install pdfplumber`) for plain-text output,
-tried after pdftotext in the default chain.
+tried after pdftotext in the default chain. Honors `opts.pages` (an explicit
+page list, taking priority over `opts.max_pages` when both are given) by
+selecting exactly those pages before extracting, the same precedence
+`pdftotext` uses.
 
 - **Module:** `lua/pdfport/backends/pdfplumber.lua`
 - **Requires:** a Python interpreter (`python3`/`python`/`py`) with `pdfplumber` installed
@@ -34,6 +37,13 @@ Runs `marker_single` (`pip install marker-pdf`) to produce Markdown output,
 including tables — the first Markdown-producing backend in the default
 chain, ahead of docling/ollama/claude.
 
+**`opts.pages` is not honored** — `marker_single` has no flag for an
+explicit page list, only a page-*count* truncation (`--max_pages`, which
+this backend does forward). A request that sets `opts.pages` still extracts
+the whole document, but the result comes back as `status = "partial"` with
+`error` explaining why, rather than a bare `"ok"` that gives no sign the
+page selection was dropped.
+
 - **Module:** `lua/pdfport/backends/marker.lua`
 - **Requires:** `marker_single` on PATH (`pip install marker-pdf`)
 
@@ -41,6 +51,12 @@ chain, ahead of docling/ollama/claude.
 
 A second Markdown-producing extractor (`pip install docling`), tried after
 marker in the default chain.
+
+**Neither `opts.pages` nor `opts.max_pages` is honored** — `convert()`
+always processes the whole document, so `pages_processed` stays `nil` (same
+convention as claude/gemini below) and, when `opts.pages` was explicitly
+requested, `status` comes back `"partial"` with `error` explaining why
+instead of a plain `"ok"`.
 
 - **Module:** `lua/pdfport/backends/docling.lua`
 - **Requires:** a Python interpreter with the `docling` module installed

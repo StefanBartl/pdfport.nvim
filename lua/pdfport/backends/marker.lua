@@ -52,6 +52,12 @@ function M.extract(path, opts)
     if type(real) == "string" then tmp_dir = real end
   end
 
+  -- marker_single has no flag for an explicit page list, only a page-count
+  -- truncation (`--max_pages`) -- a request for opts.pages is accepted here
+  -- but cannot reach the CLI, so the result below is marked "partial"
+  -- instead of silently claiming the whole document is what was asked for.
+  local pages_unsupported = opts.pages ~= nil and #opts.pages > 0
+
   local args = { path, tmp_dir, "--output_format", "markdown" }
   if opts.max_pages then
     args[#args + 1] = "--max_pages"
@@ -130,12 +136,14 @@ function M.extract(path, opts)
     vim.fn.delete(tmp_dir, "rf")
 
     local result = {
-      status = "ok",
+      status = pages_unsupported and "partial" or "ok",
       text = text,
       format = "markdown",
       backend = "marker",
       pages_processed = opts.max_pages,
-      error = nil,
+      error = pages_unsupported
+          and "marker: explicit page selection is not supported by marker_single; the whole document was extracted"
+        or nil,
     }
     if type(opts.__callback) == "function" then opts.__callback(result) end
   end)
