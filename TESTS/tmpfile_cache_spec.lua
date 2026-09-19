@@ -262,4 +262,94 @@ return function(H)
 
     pcall(vim.fn.delete, pdf)
   end
+
+  -- ------------------------------------------------- ERR-11: disk.load errors
+  --
+  -- The fake `disk` above never returns a second value, so it cannot tell
+  -- "no cache file yet" apart from "the file exists but disk.load could not
+  -- read or decode it" -- exactly the two cases `M.set`'s own fallback to an
+  -- empty store must not collapse, since collapsing them means the very
+  -- next save silently replaces a store disk.load already flagged as
+  -- broken. This block's `disk.load` returns that second value instead, so
+  -- `M.set` is exercised on the real signature.
+
+  do
+    local pdf = H.tempfile("-cache-corrupt-spec.pdf", { "%PDF-1.4 fake" })
+    local load_err = "invalid json: original kept at pdfport_extract.json.corrupt"
+
+    local store = {}
+    local disk = {
+      -- Corrupt/unreadable only until this module's own `M.set` writes a
+      -- fresh, valid store back -- the same as the real `disk.load`, which
+      -- would decode the just-written JSON successfully on the next call.
+      load = function(namespace)
+        local data = store[namespace]
+        if data ~= nil then return data, nil end
+        return nil, load_err
+      end,
+      save = function(namespace, data)
+        store[namespace] = data
+      end,
+      clear = function(namespace)
+        store[namespace] = nil
+        return true
+      end,
+    }
+
+    local warnings = {}
+    H.with_modules({
+      ["lib.nvim.cache.disk"] = disk,
+      ["lib.nvim.notify"] = {
+        create = function(prefix)
+          return {
+            info = function() end,
+            warn = function(msg)
+              warnings[#warnings + 1] = { prefix = prefix, msg = msg }
+            end,
+            error = function() end,
+            debug = function() end,
+          }
+        end,
+      },
+      ["pdfport.util.notify"] = H.UNLOAD,
+      ["pdfport.util.cache"] = H.UNLOAD,
+    }, function()
+      local cache = require("pdfport.util.cache")
+
+      H.eq(
+        cache.get(pdf, "pdftotext", "all"),
+        nil,
+        "a disk.load error still reads as a miss, not a crash"
+      )
+      H.eq(#warnings, 0, "a miss from M.get alone does not warn -- every dispatch would spam it")
+
+      cache.set(pdf, "pdftotext", "all", {
+        status = "ok",
+        text = "fresh after corruption",
+        format = "plain",
+        backend = "pdftotext",
+      })
+
+      H.eq(#warnings, 1, "M.set surfaces the disk.load error via vim.notify")
+      H.eq(warnings[1].prefix, "[pdfport.cache]", "under this module's own notify prefix")
+      H.match(warnings[1].msg, "unreadable", "naming what happened")
+      H.match(warnings[1].msg, "invalid json", "including disk.load's own reason")
+
+      H.eq(
+        cache.get(pdf, "pdftotext", "all").text,
+        "fresh after corruption",
+        "the write still goes through -- a warning, not a permanent refusal to cache"
+      )
+
+      cache.set(pdf, "pdftotext", "second", {
+        status = "ok",
+        text = "again",
+        format = "plain",
+        backend = "pdftotext",
+      })
+      H.eq(#warnings, 1, "a second disk.load error in the same session does not warn again")
+    end)
+
+    pcall(vim.fn.delete, pdf)
+  end
 end

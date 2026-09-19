@@ -14,14 +14,29 @@
 --- never shrinks the store. A loaded entry's fields are re-validated by type
 --- before being trusted (it is a JSON file on disk, not something only this
 --- module ever writes) and dropped on the first mismatch.
+---
+--- `disk.load`'s second return value is what tells "no cache file yet" (a
+--- harmless miss) apart from "the file exists but failed to read or decode"
+--- (ERR-11: both would otherwise collapse to the same empty store, and the
+--- very next `M.set` would then silently replace up to MAX_ENTRIES-1 other
+--- cached extractions -- some backed by a paid API call -- with a single
+--- fresh entry). `M.set` surfaces the latter once per session via
+--- `vim.notify` rather than refusing to cache from then on; `disk.load`
+--- itself already backs up the corrupt bytes to `<file>.corrupt` before
+--- this module ever gets a chance to overwrite them.
 
 local disk = require("lib.nvim.cache.disk")
+local notify = require("pdfport.util.notify").create("[pdfport.cache]")
 
 local uv = vim.uv or vim.loop
 
 local M = {}
 
 local NAMESPACE = "pdfport_extract"
+
+-- Set the first time `M.set` sees a `disk.load` error, so a corrupt or
+-- unreadable store warns once per session instead of once per extraction.
+local warned_corrupt = false
 
 -- mtime invalidation makes a *stale* entry unreadable but never removes it,
 -- so without a cap the store grows forever: one entry per (path, backend,
@@ -122,8 +137,23 @@ function M.set(path, backend_id, variant, result)
   local file_mtime = mtime(path)
   if not file_mtime then return end
 
-  local store = disk.load(NAMESPACE)
-  if type(store) ~= "table" then store = {} end
+  local store, load_err = disk.load(NAMESPACE)
+  if type(store) ~= "table" then
+    -- `load_err` is nil for the one harmless case this falls back to `{}`
+    -- for anyway: no cache file yet. Any other value means the file exists
+    -- but could not be read or decoded -- proceeding silently here is
+    -- exactly the bug this cache's own field-validation above guards
+    -- against one level down: the corrupt store would be gone the moment
+    -- `disk.save` below writes the single entry being set now. Warned once
+    -- rather than refused, so a corrupt store does not block caching (and
+    -- therefore every extraction, forever) until someone notices and clears
+    -- it by hand.
+    if load_err and not warned_corrupt then
+      warned_corrupt = true
+      notify.warn("extraction cache is unreadable, resetting it: " .. load_err)
+    end
+    store = {}
+  end
 
   store[cache_key(path, backend_id, variant)] = {
     text = result.text,
