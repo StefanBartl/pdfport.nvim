@@ -11,6 +11,40 @@ local platform = require("pdfport.platform")
 local rasterize_page = require("pdfport.core.rasterize").render_page
 local notify = require("pdfport.util.notify").create("[pdfport.terminal]")
 
+---Documented default for `terminal_size_ratio` (mirrors
+---`config/DEFAULTS.lua`'s `render_opts.terminal_size_ratio`).
+local DEFAULT_SIZE_RATIO = { width = 0.9, height = 0.8 }
+
+---@internal
+---Same range check as `config/init.lua`'s `is_unit_fraction`, replicated
+---here rather than required: `render()` below is reached directly with the
+---caller's raw, un-merged `opts` for `mode="terminal"`
+---(`core/dispatcher.lua` never runs it through `config.setup()`'s
+---validation for this mode -- see TESTS/dispatcher_spec.lua), so a bad
+---`terminal_size_ratio.width`/`.height` reaches `display_png()`'s
+---arithmetic unchecked regardless of whether it came from `setup()` or a
+---direct per-call option (ERR-22).
+---@param value any
+---@return boolean
+local function is_unit_fraction(value)
+  return type(value) == "number" and value > 0 and value <= 1
+end
+
+---@internal
+---Validate a caller-supplied `terminal_size_ratio`, falling back to the
+---documented default for whichever of `width`/`height` is missing or out
+---of range, instead of letting bad input reach `display_png()`'s
+---`vim.o.columns * size_ratio.width` arithmetic (ERR-22).
+---@param size_ratio table?
+---@return { width: number, height: number }
+local function sanitize_size_ratio(size_ratio)
+  if type(size_ratio) ~= "table" then return DEFAULT_SIZE_RATIO end
+  return {
+    width = is_unit_fraction(size_ratio.width) and size_ratio.width or DEFAULT_SIZE_RATIO.width,
+    height = is_unit_fraction(size_ratio.height) and size_ratio.height or DEFAULT_SIZE_RATIO.height,
+  }
+end
+
 ---@internal
 ---@param path string
 ---@param interval_ms integer
@@ -42,9 +76,10 @@ local function display_png(png_path, tool, size_ratio)
       return
     end
 
+    local ratio = sanitize_size_ratio(size_ratio)
     local escaped = vim.fn.shellescape(png_path)
-    local width = math.floor(vim.o.columns * size_ratio.width)
-    local height = math.floor(vim.o.lines * size_ratio.height)
+    local width = math.floor(vim.o.columns * ratio.width)
+    local height = math.floor(vim.o.lines * ratio.height)
 
     if tool == "chafa" then
       if not platform.has("chafa") then
