@@ -13,11 +13,24 @@ local M = {}
 ---@type table<string, string>
 local _cache = {}
 
+---A different `preview_fn({ backend_id = ..., max_pages = ... })` call is a
+---different extraction of the same file — the key has to carry both, or one
+---picker's config silently serves another's cached result. Same shape as
+---`util/cache.lua`'s `path::backend::variant`.
+---@param filepath string
+---@param backend_id string|nil
+---@param max_pages integer
+---@return string
+local function cache_key(filepath, backend_id, max_pages)
+  return string.format("%s::%s::%s", filepath, backend_id or "auto", max_pages)
+end
+
 ---@param opts? { backend_id?: string, max_pages?: integer }
 ---@return fun(filepath: string, bufnr: integer, opts: table): nil
 function M.preview_fn(opts)
   opts = opts or {}
   local pdfport = require("pdfport")
+  local max_pages = opts.max_pages or 5
 
   return function(filepath, bufnr, _)
     if not filepath or not filepath:lower():match("%.pdf$") then return end
@@ -31,8 +44,9 @@ function M.preview_fn(opts)
       vim.bo[bufnr].modifiable = false
     end
 
-    if _cache[filepath] then
-      write(_cache[filepath], "markdown")
+    local key = cache_key(filepath, opts.backend_id, max_pages)
+    if _cache[key] then
+      write(_cache[key], "markdown")
       return
     end
 
@@ -41,11 +55,11 @@ function M.preview_fn(opts)
     pdfport.extract({
       path = filepath,
       backend_id = opts.backend_id,
-      max_pages = opts.max_pages or 5,
+      max_pages = max_pages,
       __callback = function(result)
         if not vim.api.nvim_buf_is_valid(bufnr) then return end
         local text = result.text or ("error: " .. (result.error or ""))
-        _cache[filepath] = text
+        _cache[key] = text
         write(text, result.format == "markdown" and "markdown" or "text")
       end,
     })
