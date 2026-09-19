@@ -12,6 +12,7 @@
 local composer = require("lib.nvim.bindings.usercmd.composer")
 local notify = require("pdfport.util.notify").create("[pdfport.usrcmds]")
 local page_range = require("pdfport.util.page_range")
+local expand_path = require("lib.nvim.cross.fs.expand_path")
 
 local M = {}
 
@@ -53,7 +54,12 @@ composer.register_type("PDF_PATH", {
 ---@param explicit string|nil  Already-extracted positional arg, if any
 ---@return string|nil
 local function resolve_path(explicit)
-  if explicit and explicit ~= "" then return vim.fn.expand(explicit) end
+  -- vim.fn.expand() is Vim's filename expansion: a backtick span in `explicit`
+  -- is a command substitution through &shell, and %/#/<cfile>/<cword> are
+  -- specials -- all live risks on a path this plugin's own <Tab> completion
+  -- (complete_pdf_path, above) can insert verbatim from a real filename.
+  -- Only `~` and environment variables are wanted here.
+  if explicit and explicit ~= "" then return expand_path(explicit) end
   local cfile = vim.fn.expand("<cfile>")
   if cfile and cfile ~= "" then
     local abs = vim.fn.fnamemodify(cfile, ":p")
@@ -263,7 +269,7 @@ function M.register(pdfport)
             notify.error("PdfPort merge: need at least 2 input PDFs, got " .. #inputs)
             return
           end
-          pdfport.merge({ inputs = inputs, output = vim.fn.expand(output) })
+          pdfport.merge({ inputs = inputs, output = expand_path(output) })
         end,
       },
     },
