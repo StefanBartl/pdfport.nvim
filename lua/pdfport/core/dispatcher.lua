@@ -301,7 +301,10 @@ end
 ---       so the caller (the UI/binding layer) decides how to surface the
 ---       failure. Defaults to a no-op: callers that don't pass one get silent
 ---       failure, which matches this module's job of staying decoupled from
----       any particular UI.
+---       any particular UI. Also called (still followed by a render, and by
+---       `on_done(true, ...)`) when the result is `status = "partial"`: the
+---       open itself succeeded, but the backend could not honor everything
+---       `opts` asked for.
 ---@param on_done? fun(ok: boolean, err: string|nil)  settles exactly once, on
 ---       every path -- the only way a caller can know an open finished, since
 ---       dispatch is asynchronous throughout and success is otherwise silent
@@ -331,6 +334,16 @@ function M.open(opts, on_error, on_done)
       settle(false, err)
       return
     end
+
+    -- A backend still extracted text (docling/marker's Result contract: the
+    -- whole document, in this case) but could not honor a page selection the
+    -- caller asked for, and marks that on the Result itself rather than a
+    -- bare "ok" -- but no renderer inspects `result.status` or `result.error`
+    -- when `result.text` is already populated, so without this the flag
+    -- never reaches anyone. Surfaced through the same channel a real error
+    -- would use, without treating the open as failed: the renderer below
+    -- still gets a real, usable (if unfiltered) document.
+    if result.status == "partial" and result.error then on_error(result.error) end
 
     local renderer = registry.get_renderer(mode)
     if not renderer then
