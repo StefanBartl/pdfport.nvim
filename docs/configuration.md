@@ -148,3 +148,9 @@ on disk transparently invalidates its cache entry. The path is canonicalized fir
 and from its own buffer all hit the one entry. Disable per `setup()` call with
 `extract_opts.cache = false`, or clear everything with
 `require("pdfport.util.cache").clear()`.
+
+mtime invalidation makes a *stale* entry unreadable but does not remove it, so the store is
+capped at 500 entries, evicted oldest-cached-first once exceeded — deleted, renamed and
+superseded (path, backend, variant) combinations do not accumulate forever. A loaded entry's
+fields are re-validated by type before being trusted; a corrupt one (a hand-edited store, for
+instance) is treated as a miss and dropped.
