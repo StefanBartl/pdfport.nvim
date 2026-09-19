@@ -366,5 +366,36 @@ return function(H)
         "and its height the same fraction of the editor's lines"
       )
     end)
+
+    -- ERR-22 regression (a191978 only fixed this at config.setup() -- the
+    -- dispatcher hands mode="terminal" the caller's raw, un-merged opts, so
+    -- a bad terminal_size_ratio reaching render() directly must still be
+    -- caught here rather than crashing display_png()'s arithmetic).
+    with_terminal({ chafa = true }, serve("/tmp/page.png"), function(terminal, state)
+      terminal.render({}, {
+        path = "/docs/a.pdf",
+        terminal_size_ratio = { width = "bad", height = 0.8 },
+      })
+      H.eq(#state.errors, 0, "a non-numeric width does not crash the renderer")
+      local w = state.commands[1]:match("%-%-size=(%d+)x")
+      H.eq(
+        tonumber(w),
+        math.floor(vim.o.columns * 0.9),
+        "an invalid width falls back to the documented default (0.9)"
+      )
+    end)
+
+    with_terminal({ chafa = true }, serve("/tmp/page.png"), function(terminal, state)
+      terminal.render({}, {
+        path = "/docs/a.pdf",
+        terminal_size_ratio = { width = 0.5, height = -1 },
+      })
+      local _, h = state.commands[1]:match("%-%-size=(%d+)x(%d+)")
+      H.eq(
+        tonumber(h),
+        math.floor(vim.o.lines * 0.8),
+        "an out-of-range height (<= 0) falls back to the documented default (0.8)"
+      )
+    end)
   end
 end
