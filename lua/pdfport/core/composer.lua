@@ -70,26 +70,45 @@ local function err_result(msg, producer_id)
 end
 
 ---@internal Applies `on_conflict` to a candidate output path.
+---
+---"suffix" claims its candidate with `O_CREAT|O_EXCL` rather than
+---stat-then-return: the gap between finding a free name here and the
+---producer (soffice, pandoc+LaTeX, headless Chromium) actually writing to it
+---is seconds to minutes, not microseconds, so a plain `fs_stat` check leaves
+---a real window for something else to create the same name and have the
+---producer overwrite it. `EEXIST` on the claim means another writer won it;
+---try the next suffix. A claimed candidate is left as an empty file, which
+---every producer here overwrites unconditionally via its own output flag.
 ---@param path string
 ---@param on_conflict "overwrite"|"suffix"|"error"
 ---@return string|nil path
 ---@return string|nil error_msg
+---@return boolean claimed  true if `path` is a freshly claimed empty placeholder
 local function resolve_conflict(path, on_conflict)
   local exists = uv.fs_stat(path) ~= nil
-  if not exists or on_conflict == "overwrite" then return path, nil end
+  if not exists or on_conflict == "overwrite" then return path, nil, false end
   if on_conflict == "error" then
-    return nil, string.format("pdfport: output already exists: %s", path)
+    return nil, string.format("pdfport: output already exists: %s", path), false
   end
 
-  -- "suffix": insert -1, -2, ... before the extension until a free path is found.
+  -- "suffix": insert -1, -2, ... before the extension until a free path is claimed.
   local stem, ext = path:match("^(.*)(%.[^./\\]+)$")
   stem = stem or path
   ext = ext or ""
   for i = 1, 9999 do
     local candidate = string.format("%s-%d%s", stem, i, ext)
-    if not uv.fs_stat(candidate) then return candidate, nil end
+    local fd, open_err = uv.fs_open(candidate, "wx", 420) -- O_CREAT|O_EXCL, mode 0644
+    if fd then
+      uv.fs_close(fd)
+      return candidate, nil, true
+    end
+    if type(open_err) ~= "string" or not open_err:match("^EEXIST") then
+      return nil,
+        string.format("pdfport: could not claim output path %s: %s", candidate, tostring(open_err)),
+        false
+    end
   end
-  return nil, "pdfport: could not find a free suffixed output path"
+  return nil, "pdfport: could not find a free suffixed output path", false
 end
 
 ---@internal
@@ -230,13 +249,27 @@ function M.create(opts, callback)
     return
   end
 
-  local output, conflict_err =
+  local output, conflict_err, claimed =
     resolve_conflict(default_output(inputs, opts.output), opts.on_conflict or "overwrite")
   if not output then
     vim.schedule(function()
       callback(err_result(conflict_err or "pdfport: output path conflict", producer.id))
     end)
     return
+  end
+
+  -- The claimed placeholder is meant to be overwritten by the producer; if
+  -- the producer never gets that far, remove the empty file rather than
+  -- leaving it behind to clutter future "suffix" resolutions.
+  if claimed then
+    local inner_callback = callback
+    callback = function(result)
+      if not result or result.status ~= "ok" then
+        local st = uv.fs_stat(output)
+        if st and st.size == 0 then uv.fs_unlink(output) end
+      end
+      inner_callback(result)
+    end
   end
 
   local cfg_create = (_config and _config.create_opts) or {}

@@ -267,4 +267,89 @@ return function(H)
       "pdfport.merge: missing opts.output is rejected"
     )
   end
+
+  -- --------------------------------------------------- on_conflict = "suffix"
+  -- The candidate name is claimed with O_CREAT|O_EXCL before the producer
+  -- runs (ERR-31): a pre-existing file at the default name must not be
+  -- clobbered, and the name picked instead must actually exist once resolved.
+
+  registry.register_producer(H.fake_producer("spec_p_suffix", true))
+  composer._set_config({ create_chain = { image = { "spec_p_suffix" } } })
+
+  do
+    local tmp_dir = vim.fn.stdpath("cache") .. "/pdfport_spec"
+    vim.fn.mkdir(tmp_dir, "p")
+    local input = tmp_dir .. "/conflict.png"
+    vim.fn.writefile({ "x" }, input)
+    local output = tmp_dir .. "/conflict.pdf"
+    local suffixed = tmp_dir .. "/conflict-1.pdf"
+    pcall(vim.fn.delete, output)
+    pcall(vim.fn.delete, suffixed)
+    vim.fn.writefile({ "existing" }, output)
+
+    local got
+    composer.create({ inputs = { input }, from = "image", on_conflict = "suffix" }, function(result)
+      got = result
+    end)
+    vim.wait(200, function()
+      return got ~= nil
+    end)
+
+    H.ok(got, "create() with a conflicting output still invokes the callback")
+    H.eq(got.status, "ok", "the suffix branch still creates successfully")
+    H.eq(got.path, suffixed, "the output gets a -1 suffix rather than clobbering the existing file")
+    H.eq(vim.fn.filereadable(output), 1, "the pre-existing file at the default name is untouched")
+
+    pcall(vim.fn.delete, output)
+    pcall(vim.fn.delete, suffixed)
+  end
+
+  -- A producer that ultimately fails must not leave the claimed placeholder
+  -- behind -- it was only ever meant to reserve the name.
+  do
+    registry.register_producer({
+      id = "spec_p_fails",
+      accepts = { "image" },
+      available = function()
+        return true
+      end,
+      create = function(req)
+        return {
+          status = "error",
+          path = nil,
+          producer = "spec_p_fails",
+          pages = nil,
+          error = "boom",
+        }
+      end,
+    })
+    composer._set_config({ create_chain = { image = { "spec_p_fails" } } })
+
+    local tmp_dir = vim.fn.stdpath("cache") .. "/pdfport_spec"
+    local input = tmp_dir .. "/conflict2.png"
+    vim.fn.writefile({ "x" }, input)
+    local output = tmp_dir .. "/conflict2.pdf"
+    local suffixed = tmp_dir .. "/conflict2-1.pdf"
+    pcall(vim.fn.delete, output)
+    pcall(vim.fn.delete, suffixed)
+    vim.fn.writefile({ "existing" }, output)
+
+    local got
+    composer.create({ inputs = { input }, from = "image", on_conflict = "suffix" }, function(result)
+      got = result
+    end)
+    vim.wait(200, function()
+      return got ~= nil
+    end)
+
+    H.eq(got and got.status, "error", "a failing producer still reports the error")
+    H.eq(
+      vim.fn.filereadable(suffixed),
+      0,
+      "the claimed placeholder is removed once the producer failed"
+    )
+
+    pcall(vim.fn.delete, output)
+    pcall(vim.fn.delete, suffixed)
+  end
 end
