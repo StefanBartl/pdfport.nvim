@@ -187,9 +187,77 @@ return function(H)
       -- A corrupted or foreign cache file must degrade to a miss, not raise.
       store.pdfport_extract = "not a table"
       H.eq(cache.get(pdf, "pdftotext", "all"), nil, "a non-table store reads as empty")
-      cache.set(pdf, "pdftotext", "all", { status = "ok", text = "fresh", format = "plain" })
+      cache.set(
+        pdf,
+        "pdftotext",
+        "all",
+        { status = "ok", text = "fresh", format = "plain", backend = "pdftotext" }
+      )
       H.eq(type(store.pdfport_extract), "table", "and is replaced wholesale on the next write")
       H.eq(cache.get(pdf, "pdftotext", "all").text, "fresh", "with the new entry readable")
+
+      -- SEC-33: a persisted entry is untrusted input. A non-string `text` --
+      -- a hand-edited store, a JSON null decoding to vim.NIL -- must not
+      -- reach a caller (it flows straight into a renderer's vim.split()),
+      -- and the corrupt entry is dropped so it does not keep poisoning
+      -- every future read of this PDF.
+      cache.set(pdf, "pdftotext", "corrupt-test", {
+        status = "ok",
+        text = "valid",
+        format = "plain",
+        backend = "pdftotext",
+      })
+      H.ok(cache.get(pdf, "pdftotext", "corrupt-test"), "sanity: readable before corruption")
+
+      local corrupt_key
+      for key, entry in pairs(store.pdfport_extract) do
+        if entry.text == "valid" then corrupt_key = key end
+      end
+      H.ok(corrupt_key, "the entry just written was found in the fake store")
+      store.pdfport_extract[corrupt_key].text = 12345
+
+      H.eq(
+        cache.get(pdf, "pdftotext", "corrupt-test"),
+        nil,
+        "a non-string text is treated as a miss"
+      )
+      H.eq(
+        store.pdfport_extract[corrupt_key],
+        nil,
+        "and the corrupt entry is dropped, not left behind"
+      )
+
+      -- PERF-42: mtime invalidation makes a stale entry unreadable but never
+      -- removes it, so the store needs its own defined removal point --
+      -- eviction, oldest-cached-first, once the entry count is exceeded.
+      store.pdfport_extract = {}
+      for i = 1, 500 do
+        store.pdfport_extract["fake::backend::" .. i] =
+          { text = "t", format = "plain", backend = "x", mtime = 1, cached_at = i }
+      end
+
+      cache.set(pdf, "pdftotext", "evict-test", {
+        status = "ok",
+        text = "newest",
+        format = "plain",
+        backend = "pdftotext",
+      })
+
+      H.eq(
+        vim.tbl_count(store.pdfport_extract),
+        500,
+        "adding one more past the cap evicts one to stay at it"
+      )
+      H.eq(
+        store.pdfport_extract["fake::backend::1"],
+        nil,
+        "the single oldest entry (lowest cached_at) was the one evicted"
+      )
+      H.ok(store.pdfport_extract["fake::backend::2"], "while the next-oldest survives")
+      H.ok(
+        cache.get(pdf, "pdftotext", "evict-test"),
+        "and the entry that triggered eviction is kept"
+      )
     end)
 
     pcall(vim.fn.delete, pdf)
