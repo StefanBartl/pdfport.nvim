@@ -103,7 +103,7 @@ function M.render_page(path, page, opts, callback)
   -- luv's meta declares every uv.spawn option required (cwd, env, uid, gid,
   -- verbatim, detached, hide), which no real caller passes.
   ---@diagnostic disable-next-line: missing-fields
-  uv.spawn("pdftoppm", {
+  local handle, spawn_err = uv.spawn("pdftoppm", {
     args = args,
     stdio = { nil, nil, stderr },
   }, function(code, _)
@@ -117,6 +117,15 @@ function M.render_page(path, page, opts, callback)
       callback(png, nil)
     end)
   end)
+
+  -- uv.spawn returns nil instead of raising when it cannot start the child
+  -- (ENOENT, EACCES, fd exhaustion); without this check the exit callback
+  -- above never runs and the caller's callback is never settled.
+  if not handle then
+    if not stderr:is_closing() then stderr:close() end
+    callback(nil, string.format("failed to spawn pdftoppm: %s", spawn_err or "unknown error"))
+    return
+  end
 
   stderr:read_start(function(_, data)
     if data then stderr_chunks[#stderr_chunks + 1] = data end
