@@ -135,6 +135,73 @@ return function(H)
 
     config.setup({ default_backend = "marker" })
     H.eq(#config.issues(), 0, "a clean setup() reports no issues")
+
+    -- ERR-50: the unknown-key check recurses to whatever depth KNOWN
+    -- declares, not just one level -- a typo two levels down must be
+    -- caught with its full dotted path, exactly like a top-level one.
+    config.setup({ render_opts = { terminal_size_ratio = { wdith = 0.4, height = 0.5 } } })
+    local nested_issues = config.issues()
+    H.eq(#nested_issues, 1, "one issue for the misspelled nested-of-nested key")
+    H.ok(
+      H.index_of(
+        nested_issues,
+        "unknown option 'render_opts.terminal_size_ratio.wdith' "
+          .. "(did you mean 'render_opts.terminal_size_ratio.width'?)"
+      ) ~= nil,
+      "the dotted path names exactly where the typo is, two levels deep"
+    )
+    H.eq(
+      config.get().render_opts.terminal_size_ratio.width,
+      0.9,
+      "the rejected leaf falls back to its default"
+    )
+    H.eq(
+      config.get().render_opts.terminal_size_ratio.height,
+      0.5,
+      "its valid sibling two levels down is still applied"
+    )
+
+    -- ERR-22: a value of the right type but out of range degrades to the
+    -- default rather than reaching renderers/terminal.lua, where it would
+    -- otherwise crash `vim.o.columns * size_ratio.width` asynchronously,
+    -- outside any pcall.
+    config.setup({
+      render_opts = {
+        terminal_dpi = -5,
+        terminal_size_ratio = { width = "bad", height = 0.8 },
+      },
+    })
+    local value_issues = config.issues()
+    H.eq(#value_issues, 2, "one issue per invalid value")
+    H.ok(
+      H.index_of(
+        value_issues,
+        "option 'render_opts.terminal_dpi' must be a positive number -- using the default"
+      ) ~= nil,
+      "a negative terminal_dpi is rejected, not just a wrong type"
+    )
+    H.ok(
+      H.index_of(
+        value_issues,
+        "option 'render_opts.terminal_size_ratio.width' must be a number in (0, 1] "
+          .. "-- using the default"
+      ) ~= nil,
+      "a wrong-typed terminal_size_ratio.width is rejected"
+    )
+    H.eq(config.get().render_opts.terminal_dpi, 216, "terminal_dpi falls back to its default")
+    H.eq(
+      config.get().render_opts.terminal_size_ratio.width,
+      0.9,
+      "terminal_size_ratio.width falls back to its default"
+    )
+    H.eq(
+      config.get().render_opts.terminal_size_ratio.height,
+      0.8,
+      "its valid sibling is still applied"
+    )
+
+    config.setup({ default_backend = "marker" })
+    H.eq(#config.issues(), 0, "a clean setup() reports no issues again")
   end
 
   -- --------------------------------------------------------------- notify

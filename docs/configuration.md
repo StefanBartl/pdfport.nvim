@@ -57,12 +57,17 @@ require("pdfport").setup({
 ### Validation
 
 Unknown top-level keys and unknown keys inside `extract_opts`/`render_opts`/
-`create_opts` are rejected before the merge, with a "did you mean…" hint when
-one is a plausible typo of a real option; the corresponding default is kept
-in force. A value that must be a table (`fallback_chain`, `extract_opts`, …)
-but was not is rejected the same way. Both are reported once via
-`vim.notify` and stay visible afterwards under `:checkhealth pdfport`'s
-`pdfport: config` section.
+`create_opts` (to any nesting depth those tables declare, e.g.
+`render_opts.terminal_size_ratio.width`) are rejected before the merge, with
+a "did you mean…" hint when one is a plausible typo of a real option; the
+corresponding default is kept in force. A value that must be a table
+(`fallback_chain`, `extract_opts`, …) but was not is rejected the same way.
+So is a value of the right type but out of range -- currently
+`render_opts.terminal_dpi` (must be a positive number) and
+`render_opts.terminal_size_ratio.width`/`.height` (must be a number in
+`(0, 1]`, since they scale `vim.o.columns`/`vim.o.lines`). Every rejection
+is reported once via `vim.notify` and stays visible afterwards under
+`:checkhealth pdfport`'s `pdfport: config` section.
 
 ### Progress indicator
 
