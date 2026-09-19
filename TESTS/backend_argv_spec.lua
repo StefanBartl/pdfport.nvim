@@ -146,7 +146,7 @@ return function(H)
       H.eq(readable_while_running, 1, "the generated script exists while it runs")
       H.match(source, "import sys, pdfplumber", "the script imports pdfplumber")
       H.match(source, "/docs/a%.pdf", "with the PDF path interpolated in")
-      H.match(source, "max_pages = 3", "and the page cap as a literal")
+      H.match(source, "max_pages%s*= 3", "and the page cap as a literal")
       -- %q, not plain interpolation: a path with a quote or a backslash in it
       -- would otherwise be a syntax error in the generated Python.
       H.match(source, 'path%s*=%s*"', "the path is emitted quoted, not bare")
@@ -159,7 +159,22 @@ return function(H)
 
       local uncapped = extract(backend, "/docs/a.pdf", {})
       H.eq(uncapped.pages_processed, nil, "without max_pages no page count is claimed")
-      H.match(source, "max_pages = 0", "no cap is passed to the script as 0, its 'all pages' value")
+      H.match(
+        source,
+        "max_pages%s*= 0",
+        "no cap is passed to the script as 0, its 'all pages' value"
+      )
+
+      -- LLS-31: opts.pages must actually reach the script, not just
+      -- opts.max_pages, and it takes priority when both are given.
+      local explicit = extract(backend, "/docs/a.pdf", { pages = { 2, 5 }, max_pages = 1 })
+      H.match(source, "explicit_pages = %[2,5%]", "the explicit page list is interpolated in")
+      H.eq(
+        explicit.pages_processed,
+        nil,
+        "an explicit page selection is not reported as a page count"
+      )
+      H.eq(explicit.status, "ok", "and pdfplumber honours it, so the result is a plain ok")
     end
   )
 
@@ -202,12 +217,32 @@ return function(H)
       -- a single page, so the shared 30 s default would time out every run.
       H.eq(rec.calls[1].opts.timeout_ms, 120000, "with a 120 s default timeout, not 30 s")
 
+      -- LLS-31: the generated script never applies max_pages (converter.convert()
+      -- always reads the whole document), so pages_processed must not report
+      -- the planned cap as if it were the work actually performed.
+      local capped = extract(backend, "/docs/a.pdf", { max_pages = 5 })
+      H.eq(
+        capped.pages_processed,
+        nil,
+        "max_pages is not silently claimed as applied -- docling has no page-limiting hook"
+      )
+
       rec.on_call = nil
       rec.result = H.spawn_result({ ok = false, code = 1, stderr = "docling error: no such file" })
       local failed = extract(backend, "/docs/a.pdf", {})
       H.eq(failed.status, "error", "a non-zero exit is an error result")
       H.eq(failed.format, "markdown", "still declared markdown, so a caller can render it")
       H.match(failed.error, "docling error", "carrying the script's own stderr")
+
+      -- LLS-31: docling's script honours neither pages nor max_pages, so an
+      -- explicit page request must not come back as a plain "ok" -- that
+      -- would claim the selection was applied when the whole document was
+      -- converted instead.
+      rec.result = H.spawn_result({ stdout = "# Title\n\nbody" })
+      local partial = extract(backend, "/docs/a.pdf", { pages = { 2, 3 } })
+      H.eq(partial.status, "partial", "an explicit page request is reported as partial")
+      H.eq(partial.text, "# Title\n\nbody", "the whole-document text still comes back")
+      H.match(partial.error, "not supported", "with the reason attached")
     end
   )
 
@@ -244,6 +279,24 @@ return function(H)
     H.eq(got.format, "markdown", "declared as markdown")
     H.eq(got.pages_processed, 4, "reporting the page cap")
     H.eq(vim.fn.isdirectory(seen_dir), 0, "and the scratch directory is removed again")
+  end)
+
+  with_backend("pdfport.backends.marker", { marker_single = true }, nil, function(backend, rec)
+    -- LLS-31: marker_single has no flag for an explicit page list -- only
+    -- --max_pages reaches it -- so opts.pages must not come back as a plain
+    -- "ok" once the whole document was extracted instead of the selection.
+    rec.on_call = function(argv)
+      vim.fn.mkdir(argv[3] .. "/report", "p")
+      vim.fn.writefile({ "whole doc" }, argv[3] .. "/report/report.md")
+    end
+    local got = extract(backend, "/docs/report.pdf", { pages = { 2, 3 } })
+    H.falsy(
+      H.index_of(H.last_argv(rec), "--max_pages"),
+      "opts.pages alone still does not produce a --max_pages flag"
+    )
+    H.eq(got.status, "partial", "an explicit page request is reported as partial")
+    H.eq(got.text, "whole doc", "the whole-document text still comes back")
+    H.match(got.error, "not supported", "with the reason attached")
   end)
 
   with_backend("pdfport.backends.marker", { marker_single = true }, nil, function(backend, rec)
