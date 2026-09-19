@@ -454,6 +454,32 @@ local function check_registry_state()
 end
 
 ---@internal
+---Reports config keys the last `setup()` call had to ignore (unknown keys,
+---option tables of the wrong type) -- the only surface where a typo'd
+---nested option (e.g. `extract_opts.max_page`) is ever visible, since
+---`config.setup()` degrades it to the default rather than erroring.
+---@return nil
+local function check_config()
+  h_start("pdfport: config")
+
+  local ok_config, config = pcall(require, "pdfport.config")
+  if not ok_config then
+    h_err("pdfport.config failed to load: " .. tostring(config))
+    return
+  end
+
+  local issues = config.issues()
+  if #issues == 0 then
+    h_ok("no unknown or mistyped setup() options")
+    return
+  end
+
+  for _, issue in ipairs(issues) do
+    h_warn(issue)
+  end
+end
+
+---@internal
 ---Points to `:Lib deps show pdfport.nvim` for each tool's declared `why`
 ---and install command. Not a per-tool report: check_backends() and
 ---check_producers() above already cover every tool in docs/install.json by
@@ -470,12 +496,13 @@ local function check_deps()
   deps_health.pointer_for("pdfport.nvim")
 end
 
----Runs all :checkhealth pdfport sections: core, backends, producers,
+---Runs all :checkhealth pdfport sections: core, config, backends, producers,
 ---renderers, integrations, declared-tools (lib.nvim.deps), and the live
 ---registry state.
 ---@return nil
 function M.check()
   check_core()
+  check_config()
   check_backends()
   check_producers()
   check_renderers()

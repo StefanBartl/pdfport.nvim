@@ -89,6 +89,52 @@ return function(H)
     config.setup(nil)
     H.eq(config.get().default_backend, "auto", "setup(nil) is the defaults")
     H.eq(#config.get().fallback_chain, 8, "with the full built-in chain back")
+
+    -- ERR-50: validation runs before the merge, not after -- a typo must not
+    -- silently vanish into the default with no trace anywhere.
+    config.setup({ defalt_backend = "marker", extract_opts = { max_page = 3, timeout_ms = 5 } })
+    local issues = config.issues()
+    H.eq(#issues, 2, "one issue per rejected key")
+    H.ok(
+      H.index_of(issues, "unknown option 'defalt_backend' (did you mean 'default_backend'?)") ~= nil,
+      "an unknown top-level key names the nearby real one"
+    )
+    H.ok(
+      H.index_of(
+        issues,
+        "unknown option 'extract_opts.max_page' (did you mean 'extract_opts.max_pages'?)"
+      ) ~= nil,
+      "an unknown nested key is reported with its dotted path"
+    )
+    H.eq(
+      config.get().default_backend,
+      "auto",
+      "the rejected top-level key falls back to the default"
+    )
+    H.eq(
+      config.get().extract_opts.max_pages,
+      nil,
+      "the rejected nested key falls back to its default"
+    )
+    H.eq(
+      config.get().extract_opts.timeout_ms,
+      5,
+      "its valid sibling in the same table is still applied"
+    )
+
+    -- A value that must be a table but is not degrades to the default too,
+    -- rather than being merged in and corrupting every reader of it.
+    config.setup({ fallback_chain = "pdftotext" })
+    H.eq(#config.issues(), 1, "a wrong-typed table option is one issue")
+    H.match(config.issues()[1], "must be a table", "naming what was expected")
+    H.eq_list(
+      config.get().fallback_chain,
+      require("pdfport.config.DEFAULTS")().fallback_chain,
+      "and the default chain is kept rather than the string"
+    )
+
+    config.setup({ default_backend = "marker" })
+    H.eq(#config.issues(), 0, "a clean setup() reports no issues")
   end
 
   -- --------------------------------------------------------------- notify
