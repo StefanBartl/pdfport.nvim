@@ -15,11 +15,44 @@ local _cfg = nil
 ---@type string[]
 local _issues = {}
 
+---@internal
+---@param value any
+---@return boolean ok
+---@return string? reason
+local function is_positive_number(value)
+  if type(value) ~= "number" or value <= 0 then return false, "must be a positive number" end
+  return true
+end
+
+---@internal
+---`terminal_size_ratio.width`/`.height` are a fraction of `vim.o.columns`/
+---`vim.o.lines` (see `@types/init.lua`'s `PdfPort.TerminalSizeRatio`) --
+---anything outside (0, 1] is either meaningless or, for a non-number,
+---crashes `renderers/terminal.lua`'s `vim.o.columns * size_ratio.width`
+---(ERR-22: that arithmetic runs inside an async callback with nothing
+---above it to catch the error).
+---@param value any
+---@return boolean ok
+---@return string? reason
+local function is_unit_fraction(value)
+  if type(value) ~= "number" or value <= 0 or value > 1 then
+    return false, "must be a number in (0, 1]"
+  end
+  return true
+end
+
 ---Keys `setup()` accepts and, for the option tables among them, their own
 ---keys -- mirrors `@types/init.lua`'s `PdfPort.ExtractOpts`/`RenderOpts`/
----`CreateOpts`. `true` means any value goes (arrays and opaque nested maps
----like `create_chain`); a nested table validates that one level of sub-keys.
----@type table<string, true|table<string, true>>
+---`CreateOpts`. A spec is one of three shapes: `true` accepts any value
+---unchanged (arrays and opaque nested maps like `create_chain`, where no
+---fixed set of sub-keys exists to check against); a nested table recurses
+---into that field's own known sub-keys -- to whatever depth this table
+---declares, not just one level, so `render_opts.terminal_size_ratio.width`
+---is checked exactly like a top-level key; a function validates the leaf
+---value itself (`ok, reason = fn(value)`), for a field whose type is right
+---but whose range is not (ERR-22).
+---@alias PdfPort.Config.KnownSpec true|table<string, PdfPort.Config.KnownSpec>|fun(value: any): boolean, string?
+---@type table<string, PdfPort.Config.KnownSpec>
 local KNOWN = {
   default_backend = true,
   fallback_chain = true,
@@ -39,8 +72,11 @@ local KNOWN = {
     split = true,
     float_opts = true,
     terminal_tool = true,
-    terminal_dpi = true,
-    terminal_size_ratio = true,
+    terminal_dpi = is_positive_number,
+    terminal_size_ratio = {
+      width = is_unit_fraction,
+      height = is_unit_fraction,
+    },
     focus = true,
     pages = true,
   },
@@ -97,46 +133,84 @@ local function describe_unknown(key, known, prefix)
 end
 
 ---@internal
----Drop what cannot be merged, and say so. A misspelled key would otherwise
----land in `_cfg` as a dead field with the default still in force --
----silently, since `vim.tbl_deep_extend("force", ...)` accepts anything.
+---Drop what cannot be merged, and say so, at whatever depth `known`
+---declares -- not just one or two levels. A misspelled or out-of-range leaf
+---would otherwise land in `_cfg` as a dead or dangerous field with the
+---default silently still in force: `vim.tbl_deep_extend("force", ...)`
+---accepts anything, and a downstream consumer trusting an unchecked value
+---is the other half of ERR-22 (an invalid VALUE, not just an invalid key).
+---
+---`spec_defaults` mirrors `known` one field at a time and is only consulted
+---for a `true` spec (any value goes): when the default at this path is
+---itself a table (`fallback_chain`, `create_chain`, ...) a non-table value
+---is still rejected, the same as a field with its own known sub-keys --
+---`true` means "do not check what is inside", never "any type at all".
 ---@param opts table
+---@param known table<string, PdfPort.Config.KnownSpec>
+---@param spec_defaults table  the default value at this same path, for the `true`-spec table check
+---@param prefix string  dotted path so far (e.g. `"render_opts."`, or `""` at the top)
 ---@return table clean  the accepted subset, nested option tables copied
 ---@return string[] issues
-local function sanitize(opts)
-  local DEFAULTS = defaults()
+local function sanitize(opts, known, spec_defaults, prefix)
   local clean, issues = {}, {}
   for key, value in pairs(opts) do
-    local known = KNOWN[key]
-    if known == nil then
-      issues[#issues + 1] = describe_unknown(key, KNOWN, "")
-    elseif type(DEFAULTS[key]) == "table" and type(value) ~= "table" then
-      issues[#issues + 1] =
-        string.format("option '%s' must be a table, got %s -- using the default", key, type(value))
-    elseif type(known) == "table" then
-      local nested = {}
-      for sub_key, sub_value in pairs(value) do
-        if known[sub_key] then
-          nested[sub_key] = sub_value
-        else
-          issues[#issues + 1] = describe_unknown(sub_key, known, key .. ".")
+    local spec = known[key]
+    local default_value = type(spec_defaults) == "table" and spec_defaults[key] or nil
+    if spec == nil then
+      issues[#issues + 1] = describe_unknown(key, known, prefix)
+    elseif type(default_value) == "table" and type(value) ~= "table" then
+      issues[#issues + 1] = string.format(
+        "option '%s%s' must be a table, got %s -- using the default",
+        prefix,
+        key,
+        type(value)
+      )
+    elseif type(spec) == "function" then
+      local ok, reason = spec(value)
+      if ok then
+        clean[key] = value
+      else
+        issues[#issues + 1] = string.format(
+          "option '%s%s' %s -- using the default",
+          prefix,
+          key,
+          reason or "is invalid"
+        )
+      end
+    elseif type(spec) == "table" then
+      -- `value` is a table here: either default_value was a table too (just
+      -- checked above) or this path has no default of its own (e.g. a
+      -- render_opts sub-key absent from DEFAULTS.render_opts) and the
+      -- check above never fired -- guard it again for that case.
+      if type(value) ~= "table" then
+        issues[#issues + 1] = string.format(
+          "option '%s%s' must be a table, got %s -- using the default",
+          prefix,
+          key,
+          type(value)
+        )
+      else
+        local nested, nested_issues = sanitize(value, spec, default_value, prefix .. key .. ".")
+        clean[key] = nested
+        for _, issue in ipairs(nested_issues) do
+          issues[#issues + 1] = issue
         end
       end
-      clean[key] = nested
     else
       clean[key] = value
     end
   end
-  table.sort(issues)
   return clean, issues
 end
 
----Unknown keys and mistyped option tables are reported once here and again
----by `:checkhealth pdfport` (see `M.issues()`); they never reach the merge.
+---Unknown keys, mistyped option tables, and out-of-range values are
+---reported once here and again by `:checkhealth pdfport` (see `M.issues()`);
+---none of them reach the merge.
 ---@param opts? PdfPort.Config
 ---@return nil
 function M.setup(opts)
-  local clean, issues = sanitize(type(opts) == "table" and opts or {})
+  local clean, issues = sanitize(type(opts) == "table" and opts or {}, KNOWN, defaults(), "")
+  table.sort(issues)
   _issues = issues
   if #issues > 0 then notify.warn("ignored config: " .. table.concat(issues, "; ")) end
 
