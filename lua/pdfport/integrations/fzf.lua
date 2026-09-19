@@ -8,6 +8,8 @@
 ---     preview = pdfport_fzf.preview_fn({ max_pages = 3 }),
 ---   })
 
+local path = require("pdfport.util.path")
+
 local M = {}
 
 ---@type table<string, string>
@@ -17,12 +19,22 @@ local _cache = {}
 ---different extraction of the same file — the key has to carry both, or one
 ---picker's config silently serves another's cached result. Same shape as
 ---`util/cache.lua`'s `path::backend::variant`.
+---
+---`filepath` is canonicalized first: this module's `_cache` is its own,
+---separate from `util/cache.lua`'s disk cache, and fzf-lua hands the
+---previewer whatever spelling its own file listing produced -- not
+---necessarily the canonical one `core.dispatcher` keys the disk cache on.
+---Without this, the same document could extract twice under two spellings
+---(wasteful) or, worse, two different documents sharing a relative name in
+---different cwds could serve each other's cached text -- the exact
+---path-spelling hazard `util/cache.lua`'s own fix (fea0623) closed for the
+---disk cache, left open here for this module's in-memory one.
 ---@param filepath string
 ---@param backend_id string|nil
 ---@param max_pages integer
 ---@return string
 local function cache_key(filepath, backend_id, max_pages)
-  return string.format("%s::%s::%s", filepath, backend_id or "auto", max_pages)
+  return string.format("%s::%s::%s", path.canonical(filepath), backend_id or "auto", max_pages)
 end
 
 ---@param opts? { backend_id?: string, max_pages?: integer }
