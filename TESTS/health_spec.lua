@@ -228,6 +228,22 @@ return function(H)
   H.falsy(has(bare, "error", "curl"), "curl is never reported as a required tool")
   H.ok(has(bare, "info", "curl NOT found on PATH %(optional%)"), "only as an optional one")
 
+  -- SEC-15: backends/claude.lua and backends/gemini.lua both prefer a key
+  -- set through setup() over the env var (see each backend's own
+  -- api_key()), so the health check must read the same live config -- not
+  -- just the env var -- or it contradicts the "registered backends"
+  -- section further down for a user who took the setup() route.
+  require("pdfport.config").setup({ claude_api_key = "sk-ant-cfg", gemini_api_key = "gem-cfg" })
+  local with_cfg_keys = check({ curl = true }, {}, nil)
+  H.ok(
+    has(with_cfg_keys, "ok", "ANTHROPIC_API_KEY: key set via setup"),
+    "a key set through setup() is reported ok, not 'not set'"
+  )
+  H.ok(has(with_cfg_keys, "ok", "GEMINI_API_KEY: key set via setup"), "same for gemini")
+  H.falsy(has(with_cfg_keys, "ok", "sk%-ant%-cfg"), "without printing the key itself")
+  H.falsy(has(with_cfg_keys, "warn", "ANTHROPIC_API_KEY not set"), "so it is no longer a warning")
+  require("pdfport.config").setup({}) -- leave state clean for whatever runs after this spec
+
   -- -------------------------------------------------- the in-between cases
 
   -- pandoc present but no engine: the one case where "the tool is installed"

@@ -88,6 +88,23 @@ return function(H)
       30000,
       "including its nested tables, which a shallow copy would have shared"
     )
+
+    -- SEC-15: `:lua vim.print(require("pdfport").config())` is the ordinary
+    -- way to inspect a plugin's settings, and must not print an API key set
+    -- through setup() in cleartext.
+    pdfport.setup({ claude_api_key = "sk-ant-secret", gemini_api_key = "gem-secret" })
+    local with_keys = pdfport.config()
+    H.falsy(with_keys.claude_api_key == "sk-ant-secret", "claude_api_key is not returned verbatim")
+    H.falsy(with_keys.gemini_api_key == "gem-secret", "neither is gemini_api_key")
+    H.ok(with_keys.claude_api_key, "but a set key is still reported present")
+    H.ok(with_keys.gemini_api_key, "same for gemini")
+
+    pdfport.setup({})
+    H.eq(
+      pdfport.config().claude_api_key,
+      nil,
+      "an unset key stays nil, not a redaction placeholder"
+    )
   end
 
   -- ----------------------------------------------- the render_page contract
