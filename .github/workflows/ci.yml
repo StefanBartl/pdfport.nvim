@@ -70,14 +70,19 @@ jobs:
       - name: Install poppler (pdftotext)
         run: |
           # pdftotext is a real dependency of the extraction specs. Each runner
-          # image needs its own package manager for it; `pdftotext -v` after is
-          # the gate, so a silent no-op fails here rather than inside a spec.
+          # image needs its own package manager for it, so the install is the
+          # one step that differs; everything after it is identical.
           case "${{ runner.os }}" in
             Linux)   sudo apt-get update && sudo apt-get install -y poppler-utils ;;
             macOS)   brew install poppler || true ;;
             Windows) choco install poppler -y --no-progress ;;
           esac
-          pdftotext -v
+          # The gate is "is it on PATH", NOT the exit code of `pdftotext -v`:
+          # chocolatey ships the xpdf build, whose `-v` prints the version and
+          # then exits 99. Gating on that exit code failed the Windows leg on a
+          # perfectly good install -- the tool was there the whole time.
+          command -v pdftotext >/dev/null || { echo "pdftotext not on PATH after install"; exit 1; }
+          pdftotext -v 2>&1 | head -1 || true
 
       - name: Run tests
         working-directory: pdfport.nvim
