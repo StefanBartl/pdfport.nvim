@@ -48,12 +48,25 @@ end
 ---@param callback fun(pages: integer[]|nil): nil  called with nil if the prompt was cancelled or left blank
 ---@return nil
 function M.prompt(callback)
-  require("ui.kit").input({
-    title = "pdfport pages (e.g. 1-3,5 — blank = default): ",
-    on_submit = function(input)
-      callback(M.parse(input))
-    end,
-  })
+  local title = "pdfport pages (e.g. 1-3,5 — blank = default): "
+
+  -- ui.nvim is a soft dependency (see docs/requirements.md and
+  -- util/picker.lua's own pcall around the same module) — a bare require
+  -- here would make it hard for exactly this one prompt.
+  local kit_ok, kit = pcall(require, "ui.kit")
+  if kit_ok and type(kit.input) == "function" then
+    kit.input({
+      title = title,
+      on_submit = function(input)
+        callback(M.parse(input))
+      end,
+    })
+    return
+  end
+
+  vim.ui.input({ prompt = title }, function(input)
+    callback(M.parse(input))
+  end)
 end
 
 return M

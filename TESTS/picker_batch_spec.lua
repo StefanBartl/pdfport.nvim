@@ -254,6 +254,38 @@ return function(H)
     end)
   end
 
+  -- Without ui.nvim, prompt() still works through vim.ui.input -- the
+  -- fallback docs/requirements.md promises for this prompt too.
+  do
+    local saved_input = vim.ui.input
+    local saved_preload = package.preload["ui.kit"]
+    package.preload["ui.kit"] = function()
+      error("module 'ui.kit' not found")
+    end
+
+    local seen_prompt
+    vim.ui.input = function(input_opts, on_confirm)
+      seen_prompt = input_opts.prompt
+      on_confirm("1-3,5")
+    end
+
+    H.with_modules({
+      ["ui.kit"] = H.UNLOAD,
+      ["pdfport.util.page_range"] = H.UNLOAD,
+    }, function()
+      local page_range = require("pdfport.util.page_range")
+      local got
+      page_range.prompt(function(pages)
+        got = pages
+      end)
+      H.eq_list(got, { 1, 2, 3, 5 }, "vim.ui.input is used when ui.kit is absent")
+      H.match(seen_prompt, "pdfport pages", "with the same prompt text")
+    end)
+
+    package.preload["ui.kit"] = saved_preload
+    vim.ui.input = saved_input
+  end
+
   -- ----------------------------------------------------------------- batch
 
   do
