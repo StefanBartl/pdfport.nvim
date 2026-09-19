@@ -8,7 +8,25 @@
 -- prints a per-spec result, and exits non-zero if any spec fails.
 
 local dir = debug.getinfo(1, "S").source:sub(2):match("(.*[/\\])") or "./"
-local H = dofile(dir .. "harness.lua")
+
+--- Straight to stdout rather than through `print`: a spec that opens a window
+--- forces a redraw that swallows `print`'s pending newline, running two spec
+--- results together on one line.
+---@param s string
+local function say(s)
+  io.stdout:write(s, "\n")
+end
+
+-- Must stay inside the pcall for the same reason the per-spec dofile below
+-- does: a broken harness.lua must fail the run loudly, not just abort before
+-- the ok/fail sentinel is ever printed (which a headless nvim would still
+-- exit 0 for).
+local harness_ok, H_or_err = pcall(dofile, dir .. "harness.lua")
+if not harness_ok then
+  say(("FAIL  harness.lua\n      %s"):format(tostring(H_or_err)))
+  os.exit(1)
+end
+local H = H_or_err
 
 -- The repo itself has to be on the runtimepath when invoked via `-l`, which
 -- (unlike `-c "set rtp+=."`) does not add the cwd.
@@ -60,23 +78,22 @@ local specs = {
   "open_done_spec.lua",
 }
 
---- Straight to stdout rather than through `print`: a spec that opens a window
---- forces a redraw that swallows `print`'s pending newline, running two spec
---- results together on one line.
----@param s string
-local function say(s)
-  io.stdout:write(s, "\n")
-end
-
 local failed = 0
 for _, name in ipairs(specs) do
-  local run = dofile(dir .. name)
-  local ok, err = pcall(run, H)
+  -- dofile itself must stay inside the pcall: a syntax error or a failing
+  -- top-level require while *loading* a spec would otherwise abort this
+  -- loop before os.exit(1) below runs, and nvim's headless "luafile an
+  -- erroring file" still exits 0 -- turning a broken spec into a silent
+  -- pass instead of a reported failure.
+  local ok, run_or_err = pcall(dofile, dir .. name)
+  if ok then
+    ok, run_or_err = pcall(run_or_err, H)
+  end
   if ok then
     say(("ok    %s"):format(name))
   else
     failed = failed + 1
-    say(("FAIL  %s\n      %s"):format(name, tostring(err)))
+    say(("FAIL  %s\n      %s"):format(name, tostring(run_or_err)))
   end
 end
 
