@@ -65,20 +65,20 @@ a clear message rather than an error when a tool is not there.
 Start at [docs/README.md](docs/README.md), which says what is where and which
 question each page answers.
 
-**The Basics**
+### The Basics
 
 - [Requirements](docs/requirements.md) — this plugin's job is to drive external tools, so this is the interesting part.
 - [Installation](docs/installation.md) — a spec per plugin manager.
 - [Quickstart](docs/quickstart.md) — the first thing to run after installing.
 
-**Configuration**
+### Configuration
 
 - [What you get with the defaults](docs/what-you-get.md) — the full command/API surface at a glance.
 - [All options](docs/configuration.md) — every `setup()` option, and the extraction backend table.
 - [Command reference](docs/commands.md) — every command, its arguments, and the Lua API.
 - [Bindings cheatsheet](docs/BINDINGS.md) — every keymap, user command and autocommand this plugin registers.
 
-**The Rest**
+### The Rest
 
 - [Features](docs/FEATURES/README.md) — one page per area: [the core](docs/FEATURES/CORE.md), [rendering](docs/FEATURES/RENDERING.md), [the backends it reads with](docs/FEATURES/BACKENDS.md), [the producers it writes with](docs/FEATURES/PRODUCERS.md), [the integrations](docs/FEATURES/INTEGRATIONS.md).
 - [Integrations](docs/integrations.md) — which other plugins reach this one and how, starting with the file trees.

@@ -114,7 +114,7 @@ For anything that would otherwise touch an external tool:
 
 Every module under `lua/` has assertion coverage except the ones listed below.
 
-**Deliberately omitted, with reasons:**
+### Deliberately omitted, with reasons
 
 * `lua/pdfport/@types/init.lua` — pure `---@meta` annotations, no runtime code.
 * `plugin/pdfport.lua` — a three-line `vim.g.loaded_pdfport` guard with no
