@@ -95,7 +95,7 @@ end
 ---@param path string
 ---@param opts? PdfPort.PickerOpts
 ---@return nil
-function M.pick_and_open(path, opts)
+function M.open_via_picker(path, opts)
   opts = opts or {}
   local pdfport = require("pdfport")
   local page_range = require("pdfport.util.page_range")

@@ -53,7 +53,7 @@ return function(H)
     H.eq(#picker.choices({ choices = {} }), 1, "even an empty list still offers the system entry")
   end
 
-  -- ------------------------------------------------------- pick_and_open()
+  -- ------------------------------------------------------- open_via_picker()
 
   do
     ---Drive the picker with `ui.kit` and `pdfport` replaced.
@@ -94,7 +94,7 @@ return function(H)
     local state = pick(nil, function()
       return 1
     end, function(s)
-      picker.pick_and_open("/docs/a.pdf", { title = "spec" })
+      picker.open_via_picker("/docs/a.pdf", { title = "spec" })
       H.eq(s.select_opts.title, "spec", "the caller's title is used")
     end)
     H.eq(#state.opened, 1, "choosing an entry opens the PDF once")
@@ -111,7 +111,7 @@ return function(H)
       end
       return nil
     end, function()
-      picker.pick_and_open("/docs/a.pdf")
+      picker.open_via_picker("/docs/a.pdf")
     end)
     H.eq(#float_state.inputs, 1, "float mode prompts for a page range")
     H.match(float_state.inputs[1].title, "pdfport pages", "with a prompt that says what it wants")
@@ -123,7 +123,7 @@ return function(H)
     local first_state = pick(nil, function()
       return 1
     end, function()
-      picker.pick_and_open("/docs/a.pdf", { system_first = true })
+      picker.open_via_picker("/docs/a.pdf", { system_first = true })
     end)
     H.match(first_state.select_opts.items[1], "System", "system_first puts the system entry first")
     H.eq(first_state.opened[1].mode, "system", "so entry 1 is now the system one")
@@ -135,7 +135,7 @@ return function(H)
     local routed_state = pick(nil, function()
       return 1
     end, function()
-      picker.pick_and_open("/docs/a.pdf", {
+      picker.open_via_picker("/docs/a.pdf", {
         system_first = true,
         system_open = function(path)
           routed[#routed + 1] = path
@@ -150,7 +150,7 @@ return function(H)
     local cancel_state = pick(nil, function()
       return nil
     end, function()
-      picker.pick_and_open("/docs/a.pdf", {
+      picker.open_via_picker("/docs/a.pdf", {
         on_cancel = function()
           cancelled = cancelled + 1
         end,
@@ -184,7 +184,7 @@ return function(H)
         end,
       },
     }, function()
-      picker.pick_and_open("/docs/a.pdf", { title = "Fallback" })
+      picker.open_via_picker("/docs/a.pdf", { title = "Fallback" })
     end)
 
     H.ok(seen_items, "vim.ui.select is used when ui.kit is absent")
@@ -205,7 +205,7 @@ return function(H)
         end,
       },
     }, function()
-      picker.pick_and_open("/docs/a.pdf", {
+      picker.open_via_picker("/docs/a.pdf", {
         on_cancel = function()
           cancels = cancels + 1
         end,

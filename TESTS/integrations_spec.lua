@@ -389,7 +389,7 @@ return function(H)
       },
       ["pdfport.util.notify"] = H.UNLOAD,
       ["pdfport.util.picker"] = {
-        pick_and_open = function(path)
+        open_via_picker = function(path)
           picked[#picked + 1] = path
         end,
       },

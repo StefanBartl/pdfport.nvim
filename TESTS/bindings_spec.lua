@@ -363,7 +363,7 @@ return function(H)
           end,
         },
         ["pdfport.util.picker"] = {
-          pick_and_open = function(p)
+          open_via_picker = function(p)
             picked[#picked + 1] = p
           end,
         },
@@ -566,7 +566,7 @@ return function(H)
       local pdf = H.tempfile("-autocmd-spec.pdf", { "%PDF-1.4 fake" })
       H.with_modules({
         ["pdfport.util.picker"] = {
-          pick_and_open = function(path)
+          open_via_picker = function(path)
             picked[#picked + 1] = path
           end,
         },
