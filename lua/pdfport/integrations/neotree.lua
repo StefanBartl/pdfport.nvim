@@ -49,7 +49,7 @@ function M.commands()
         notify.warn("not a PDF file")
         return
       end
-      picker.pick_and_open(path)
+      picker.open_via_picker(path)
     end,
 
     pdfport_text = function(state)

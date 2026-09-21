@@ -142,7 +142,7 @@ function M.pick_open(path, opts)
     "pdfport.pick_open: path must be a non-empty string"
   )
 
-  require("pdfport.util.picker").pick_and_open(path, opts)
+  require("pdfport.util.picker").open_via_picker(path, opts)
 end
 
 ---@param opts PdfPort.InternalExtractOpts

@@ -36,7 +36,7 @@ function M.register_bufreadcmd()
     vim.bo[ev.buf].bufhidden = "wipe"
     vim.bo[ev.buf].swapfile = false
     vim.schedule(function()
-      require("pdfport.util.picker").pick_and_open(path)
+      require("pdfport.util.picker").open_via_picker(path)
     end)
   end, {
     pattern = "*.pdf",

@@ -100,7 +100,7 @@ function M.actions(get_path, notify)
           notify.warn("not a PDF file")
           return
         end
-        require("pdfport.util.picker").pick_and_open(path)
+        require("pdfport.util.picker").open_via_picker(path)
       end,
     },
     open_text = {
