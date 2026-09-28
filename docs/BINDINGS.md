@@ -14,7 +14,7 @@ All keymaps, user commands, and autocmds registered by pdfport.nvim.
 
 Registered per file-tree integration once its `setup()` (or `.keymaps()` for neo-tree) is
 called. Every action can be overridden or disabled (`false`) via the integration's `opts`
-table — see [README.md](../README.md#file-tree-integrations) for setup snippets.
+table — see [integrations.md](integrations.md#file-tree-integrations) for setup snippets.
 
 | Default      | Mode | Action        | Description                       |
 |--------------|------|---------------|------------------------------------|
