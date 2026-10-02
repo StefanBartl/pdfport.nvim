@@ -32,42 +32,20 @@ local M = {
 }
 
 ---@internal
---- This plugin's own `chrome` tool declaration from `docs/install.json` --
---- the single source of truth `M.available()`/`M.create()` and
---- `pdfport.health`'s browser check all resolve through, rather than each
---- keeping its own copy of the name/location list. Resolved once; a spec
---- that cannot be found or parsed still gets a PATH-only search (via a bare
---- `{ bin = "chrome" }`) rather than none at all.
----@type Lib.Deps.Tool|nil
-local _chrome_tool = nil
-
----@internal
----@return Lib.Deps.Tool
-local function chrome_tool()
-  if _chrome_tool ~= nil then return _chrome_tool end
-
-  local spec = require("lib.nvim.deps.spec")
-  local path = spec.find("pdfport.nvim")
-  local result = path and spec.load(path)
-  if result then
-    for _, tool in ipairs(result.tools) do
-      if tool.bin == "chrome" then
-        _chrome_tool = tool
-        return tool
-      end
-    end
-  end
-
-  _chrome_tool = { bin = "chrome" }
-  return _chrome_tool
-end
-
----@internal
+--- The browser, resolved through `lib.nvim.deps.require_tool`: this plugin's
+--- own `chrome` declaration in `docs/install.json` -- the single source of
+--- truth `M.available()`/`M.create()` and `pdfport.health`'s browser check all
+--- resolve through -- is read and memoized there, with a PATH-only search for
+--- a bare `chrome` when no spec can be found. `silent`: a miss is reported by
+--- the callers (the result's `error`, `:checkhealth pdfport`). (Until
+--- 2026-10-02 this module kept its own copy of the read-and-memoize step, as
+--- did hover.nvim and casedesk.nvim.)
 ---@return string|nil
 local function resolve_browser()
-  return require("lib.nvim.deps.detect").found_as(chrome_tool())
+  local ok, deps = pcall(require, "lib.nvim.deps")
+  if not ok then return nil end
+  return deps.require_tool("pdfport.nvim", "chrome", { silent = true })
 end
-
 --- The browser `M.create()` would run, or nil -- same probe, not a second
 --- copy of it. Public so `pdfport.health`'s `:checkhealth pdfport` line can
 --- report on and name the exact binary this producer would actually use.
