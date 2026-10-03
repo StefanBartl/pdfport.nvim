@@ -7,8 +7,8 @@ require("pdfport").setup({
     "pdftotext", "pdfplumber", "marker", "docling", "ollama", "tesseract", "claude", "gemini"
   },
   extract_opts = {
-    max_pages  = nil,                -- nil = all pages
-    timeout_ms = 30000,
+    max_pages  = nil,                -- nil = all pages (ollama/tesseract: page 1 only, see BACKENDS.md)
+    timeout_ms = nil,                -- nil = each backend's own default (30 s / 60 s / 120 s)
     cache      = true,               -- cache successful extractions across sessions (mtime-invalidated)
   },
   render_opts = {
@@ -73,7 +73,9 @@ is reported once via `vim.notify` and stays visible afterwards under
 
 An extraction is not instant: `marker`, `docling`, `ollama` and `tesseract` run
 an OCR/AI pipeline that can take minutes on a large PDF, and the default
-`timeout_ms` is 30s (backends raise it to 120s). Because extraction is
+`timeout_ms` is unset by default, so each backend applies its own ceiling (30 s for
+`pdftotext`/`pdfplumber`, 60 s for `tesseract`/`ollama`/`claude`/`gemini`, 120 s for
+`marker`/`docling`); set it to override all of them. Because extraction is
 asynchronous, nothing was on screen while it ran — indistinguishable from a
 command that silently did nothing.
 

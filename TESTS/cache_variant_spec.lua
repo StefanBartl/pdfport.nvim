@@ -41,6 +41,29 @@ return function(H)
     "the same prompt is stable across calls -- otherwise nothing ever hits the cache"
   )
 
+  -- ------------------------------------- the configured ollama model counts
+
+  -- `ollama_model` from setup() is what the backend uses when the call names no
+  -- model, so two configurations must not share a cache entry; every other
+  -- backend keeps its plain key.
+  do
+    dispatcher._set_config({ ollama_model = "qwen2.5-coder:7b" })
+    local text_model = variant({}, "ollama")
+    dispatcher._set_config({ ollama_model = "llava" })
+    local vision_model = variant({}, "ollama")
+    H.ok(
+      text_model ~= vision_model,
+      "switching ollama_model must not serve the old model's cache entry"
+    )
+    H.eq(variant({}, "pdftotext"), "all", "other backends keep their plain key")
+    H.eq(
+      variant({ model = "x" }, "ollama"),
+      variant({ model = "x" }, "ollama"),
+      "a per-call model is stable"
+    )
+    dispatcher._set_config(nil)
+  end
+
   -- ------------------------------------------------- model discriminates
 
   local flash = variant({ model = "gemini-2.5-flash" })

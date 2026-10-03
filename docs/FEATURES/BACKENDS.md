@@ -17,7 +17,7 @@ Produces plain text only; does nothing for scanned/image-only PDFs (no text
 layer to read).
 
 - **Module:** `lua/pdfport/backends/pdftotext.lua` (`M.available`, `M.extract`)
-- **Config:** `opts.fallback_chain` (default includes `"pdftotext"` first), `opts.extract_opts.timeout_ms` (default `30000`)
+- **Config:** `opts.fallback_chain` (default includes `"pdftotext"` first), `opts.extract_opts.timeout_ms` (unset by default; pdftotext applies its own `30000`)
 - **Requires:** `pdftotext` on PATH (poppler-utils)
 
 ## pdfplumber extraction backend
@@ -69,6 +69,11 @@ the model's response — scanned PDFs extracted without sending anything to a
 cloud API. Falls back to a non-vision text-prompt path (raw `pdftotext`
 output fed to the model as a prompt) when `ollama_model` doesn't match a
 known vision-model name pattern (`llava`/`bakllava`/`moondream`/`vision`).
+
+Without `pages` / `max_pages` only **page 1** is processed (one slow model
+request per page is not a safe "all"). When `pdfinfo` reports more pages, the
+result is `status = "partial"` with a message saying so, and it is not cached.
+`tesseract` behaves the same way.
 
 The HTTP call goes through [ai.nvim](https://github.com/StefanBartl/ai.nvim)'s
 `ask()` — the page image travels as an `Ai.Attachment`, and `ollama_host`

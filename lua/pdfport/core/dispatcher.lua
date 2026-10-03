@@ -99,9 +99,16 @@ end
 ---valid. The prompt is hashed rather than embedded: it is arbitrary
 ---user text of arbitrary length, and this is a lookup key, not a record of
 ---what was asked.
+---
+---The ollama model can also come from `setup()` (`ollama_model`): the backend
+---falls back to it (then to "llava") when the call names none, and the model
+---decides what comes back, so it has to discriminate the key too. Without it,
+---switching `ollama_model` kept serving the previous model's cached text until
+---the PDF itself was touched. Other backends have no config-level model.
 ---@param extract_opts PdfPort.InternalExtractOpts
+---@param backend_id? string
 ---@return string
-function M._cache_variant(extract_opts)
+function M._cache_variant(extract_opts, backend_id)
   local variant = (extract_opts.pages and #extract_opts.pages > 0)
       and table.concat(extract_opts.pages, ",")
     or tostring(extract_opts.max_pages or "all")
@@ -113,6 +120,10 @@ function M._cache_variant(extract_opts)
       vim.fn.sha256(extract_opts.prompt or ""):sub(1, 16),
       extract_opts.model or ""
     )
+  end
+
+  if backend_id == "ollama" and not extract_opts.model then
+    variant = variant .. "::m=" .. ((_config and _config.ollama_model) or "llava")
   end
 
   return variant
@@ -223,7 +234,7 @@ function M.dispatch(opts, callback)
   local backend_id = backend.id
   local cache_enabled = extract_opts.cache ~= false
 
-  local variant = M._cache_variant(extract_opts)
+  local variant = M._cache_variant(extract_opts, backend_id)
 
   if cache_enabled then
     local cached = require("pdfport.util.cache").get(path, backend_id, variant)

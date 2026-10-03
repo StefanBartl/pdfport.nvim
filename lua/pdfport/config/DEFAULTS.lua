@@ -28,7 +28,10 @@ return function()
     },
     extract_opts = {
       max_pages = nil,
-      timeout_ms = 30000,
+      -- nil on purpose: every backend applies its own ceiling (30 s for
+      -- pdftotext/pdfplumber, 60 s for tesseract/ollama/claude/gemini, 120 s for
+      -- marker/docling). A value here would reach ALL of them unchanged.
+      timeout_ms = nil,
       cache = true,
     },
     render_opts = {
