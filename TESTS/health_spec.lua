@@ -72,9 +72,22 @@ return function(H)
       replacements[k] = v
     end
 
+    -- "ui.kit absent" must not depend on the machine: a real ui.nvim on the
+    -- runtimepath is found by `require` even with `package.loaded` cleared, so
+    -- a preload that errors is what simulates "not installed" (a spec that
+    -- wants it present passes its own `ui.kit` in `extra`).
+    local saved_preload = package.preload["ui.kit"]
+    if extra["ui.kit"] == nil then
+      replacements["ui.kit"] = H.UNLOAD
+      package.preload["ui.kit"] = function()
+        error("module 'ui.kit' not found")
+      end
+    end
+
     local ok, err = pcall(H.with_modules, replacements, function()
       require("pdfport.health").check()
     end)
+    package.preload["ui.kit"] = saved_preload
     vim.health = saved_health
     if not ok then error(err, 0) end
     return report
