@@ -17,12 +17,22 @@ local expand_path = require("lib.nvim.cross.fs.expand_path")
 local M = {}
 
 ---@internal
+---The file name under the cursor, or "". `expand("<cfile>")` raises E446 on
+---newer Neovim (0.12) when nothing is under the cursor (an empty line, say),
+---where it used to answer "", so the call is guarded.
+---@return string
+local function cursor_file()
+  local ok, cfile = pcall(vim.fn.expand, "<cfile>")
+  return ok and cfile or ""
+end
+
+---@internal
 ---@param arg_lead string
 ---@return string[]
 local function complete_pdf_path(arg_lead)
   if arg_lead == "" then
-    local cfile = vim.fn.expand("<cfile>")
-    if cfile and cfile ~= "" and vim.fn.filereadable(cfile) == 1 then return { cfile } end
+    local cfile = cursor_file()
+    if cfile ~= "" and vim.fn.filereadable(cfile) == 1 then return { cfile } end
     return {}
   end
   local completions = vim.fn.glob(arg_lead .. "*", false, true)
@@ -60,8 +70,8 @@ local function resolve_path(explicit)
   -- (complete_pdf_path, above) can insert verbatim from a real filename.
   -- Only `~` and environment variables are wanted here.
   if explicit and explicit ~= "" then return expand_path(explicit) end
-  local cfile = vim.fn.expand("<cfile>")
-  if cfile and cfile ~= "" then
+  local cfile = cursor_file()
+  if cfile ~= "" then
     local abs = vim.fn.fnamemodify(cfile, ":p")
     if vim.fn.filereadable(abs) == 1 then return abs end
     if vim.fn.filereadable(cfile) == 1 then return cfile end
