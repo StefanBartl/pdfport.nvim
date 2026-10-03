@@ -45,10 +45,13 @@ function M.extract(path, opts)
   -- narrowing a *field* does not carry into the assignment that follows it.
   ---@type integer[]
   local pages = { 1 }
+  local implicit_first_page = false
   local requested = opts.pages
   if requested and #requested > 0 then
     pages = requested
-  elseif opts.max_pages then
+  elseif not opts.max_pages then
+    implicit_first_page = true
+  else
     pages = {}
     for i = 1, opts.max_pages do
       pages[i] = i
@@ -83,7 +86,12 @@ function M.extract(path, opts)
         error = nil,
       }
       local cb = opts.__callback
-      if type(cb) == "function" then cb(result) end
+      if type(cb) ~= "function" then return end
+      if implicit_first_page then
+        require("pdfport.util.page_count").annotate(result, path, "tesseract", cb)
+      else
+        cb(result)
+      end
       return
     end
 

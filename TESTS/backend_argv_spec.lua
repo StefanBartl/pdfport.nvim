@@ -413,8 +413,33 @@ return function(H)
         if argv[1] == "pdftoppm" then vim.fn.writefile({ "png" }, argv[#argv] .. ".png") end
       end
       rec.result = H.spawn_result({ stdout = "one page" })
+
+      -- The page count (pdfinfo) is a seam of its own; answer it synchronously so
+      -- this spec spawns nothing and keeps its synchronous flow.
+      local page_count = require("pdfport.util.page_count")
+      local real_count = page_count.count
+      local reported = nil
+      page_count.count = function(_, cb)
+        cb(reported)
+      end
+
       local got = extract(backend, "/docs/scan.pdf", {})
       H.eq(got.pages_processed, 1, "with no selection tesseract does page 1 only")
+      H.eq(got.status, "ok", "and an unknown page count leaves the result ok")
+
+      reported = 4
+      local truncated = extract(backend, "/docs/scan.pdf", {})
+      H.eq(
+        truncated.status,
+        "partial",
+        "a longer document makes the implicit page 1 a partial result"
+      )
+      H.match(truncated.error, "only page 1 of 4", "which says how much was left out")
+
+      reported = 4
+      local chosen = extract(backend, "/docs/scan.pdf", { pages = { 1 } })
+      H.eq(chosen.status, "ok", "an explicit page list is what was asked for: never partial")
+      page_count.count = real_count
 
       local counted = extract(backend, "/docs/scan.pdf", { max_pages = 3 })
       H.eq(counted.pages_processed, 3, "max_pages expands to pages 1..N")

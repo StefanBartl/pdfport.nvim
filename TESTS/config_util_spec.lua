@@ -36,7 +36,11 @@ return function(H)
       H.index_of(d.fallback_chain, "claude") < H.index_of(d.fallback_chain, "gemini"),
       "claude before gemini"
     )
-    H.eq(d.extract_opts.timeout_ms, 30000, "extraction gets 30 s by default")
+    H.eq(
+      d.extract_opts.timeout_ms,
+      nil,
+      "no global extraction timeout: each backend applies its own"
+    )
     H.ok(d.extract_opts.cache, "and is cached by default")
     H.eq(d.render_opts.mode, "buffer", "opening renders into a buffer by default")
     H.eq(d.create_opts.timeout_ms, 60000, "creation gets 60 s by default")
@@ -67,7 +71,7 @@ return function(H)
     config.setup({ extract_opts = { max_pages = 7 } })
     local cfg = config.get()
     H.eq(cfg.extract_opts.max_pages, 7, "a user value is applied")
-    H.eq(cfg.extract_opts.timeout_ms, 30000, "and its siblings survive the deep merge")
+    H.eq(cfg.extract_opts.cache, true, "and its siblings survive the deep merge")
     H.eq(cfg.default_backend, "auto", "as do untouched top-level keys")
 
     -- setup() rebuilds from the defaults rather than accumulating: a second

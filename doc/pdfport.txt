@@ -57,8 +57,11 @@ Pass a table to |pdfport.setup()|.  All keys are optional.
   default_backend    string    "auto" or a backend id (default: "auto")
   fallback_chain     string[]  Backend ids tried in order for "auto"
   extract_opts       table
-    max_pages        integer?  Pages to extract (nil = all)
-    timeout_ms       integer   Per-backend timeout in ms (default: 30000)
+    max_pages        integer?  Pages to extract (nil = all; ollama and tesseract
+                               process page 1 only when neither pages nor
+                               max_pages is given)
+    timeout_ms       integer?  Per-backend timeout in ms (default: unset, each
+                               backend applies its own: 30 s / 60 s / 120 s)
     cache            boolean   Cache successful extractions across sessions,
                                invalidated by the source file's mtime (default: true)
   render_opts        table

@@ -245,5 +245,32 @@ return function(H)
     H.match(req.prompt, "Page 1 content:", "the page's text is folded into the prompt")
     H.eq(got.status, "ok", "and the answer becomes an ok result")
     H.eq(got.pages_processed, 1, "with the page count filled in")
+
+    -- No pages and no max_pages: page 1 only, announced as partial when the
+    -- document is longer (and never cached as the whole thing).
+    local page_count = require("pdfport.util.page_count")
+    local real_count = page_count.count
+    page_count.count = function(_, cb)
+      vim.schedule(function()
+        cb(3)
+      end)
+    end
+    local implicit
+    ollama.extract("/tmp/missing.pdf", {
+      model = "llama3.2",
+      __callback = function(result)
+        implicit = result
+      end,
+    })
+    vim.wait(3000, function()
+      return implicit ~= nil
+    end, 20)
+    page_count.count = real_count
+
+    H.ok(implicit, "the implicit first-page run completed")
+    H.eq(#ollama_requests, 2, "still one request: only page 1 goes to the model")
+    H.eq(implicit.status, "partial", "a 3-page document is a partial result")
+    H.match(implicit.error, "only page 1 of 3", "that says what was left out")
+    H.eq(implicit.pages_processed, 1, "and reports the one page it did")
   end)
 end

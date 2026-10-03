@@ -80,12 +80,12 @@ return function(H)
     -- A deep copy, not the module's own table: a consumer inspecting the
     -- config must not be able to reconfigure the plugin by mutating it.
     cfg.default_backend = "mutated"
-    cfg.extract_opts.timeout_ms = 1
+    cfg.extract_opts.cache = false
     local fresh = pdfport.config()
     H.eq(fresh.default_backend, "auto", "mutating the returned table changes nothing")
     H.eq(
-      fresh.extract_opts.timeout_ms,
-      30000,
+      fresh.extract_opts.cache,
+      true,
       "including its nested tables, which a shallow copy would have shared"
     )
 
