@@ -1,15 +1,13 @@
--- DEBUG-TEMP
-vim.api.nvim_create_autocmd({ "BufAdd", "BufWipeout", "BufDelete", "BufUnload", "BufEnter" }, {
-  callback = function(ev)
-    if ev.buf <= 3 then
-      io.stderr:write(("DBG %s buf=%d name=[%s] cur=%d%s%s"):format(ev.event, ev.buf, vim.api.nvim_buf_get_name(ev.buf), vim.api.nvim_get_current_buf(), debug.traceback("", 2):sub(1, 700), string.char(10)))
-    end
-  end,
-})
 -- .testing.lua -- configuration of testing.nvim for this project.
 -- Written by `testing migrate`; edit freely (it is never overwritten). Every key is optional; the
 -- keys are documented in testing.nvim's docs/CONFIG.md. Loading this file executes it (same trust
 -- as running the specs).
+-- lib.nvim opens a one-time "missing tools" welcome float (deps.first_run) from setup() on a machine
+-- without its seen-marker, i.e. on every fresh CI runner. It runs from a scheduled callback and would
+-- take over the current window during a later spec (picker_batch_spec: "Invalid buffer id"). The
+-- specs do not test it, so it is switched off for the run.
+vim.g.lib_nvim_deps_disable_first_run = true
+
 return {
   -- Lua module root of the project.
   plugin = "pdfport",
