@@ -127,11 +127,11 @@ backend that isn't yet deterministic (see next section).
 ## Developing/debugging a new backend or producer with `TESTS/`
 
 `TESTS/` is a framework-free headless suite (no plenary, no busted) —
-`run.lua` loads each `*_spec.lua`, hands it `harness.lua`, exits non-zero on
-first failure:
+[testing.nvim](https://github.com/StefanBartl/testing.nvim) runs each `*_spec.lua`
+on `harness.lua` (see `.testing.lua`) and exits non-zero on failure:
 
 ```bash
-nvim --headless -u NONE -c "set rtp+=." -c "set rtp+=../lib.nvim" -c "luafile TESTS/run.lua" -c "qa!"
+bash scripts/test.sh
 ```
 
 Every backend in the suite is `H.fake_backend` — a stub with a hard-coded
@@ -148,7 +148,7 @@ When adding a new backend or producer:
 1. Write it against the shape `registry.lua` asserts on registration — backend: `{ id, available(), extract(path, opts) }`; producer: `{ id, accepts, available(), create(req) }`.
 2. Add a case to `resolver_spec.lua` (or `producer_spec.lua`) using `H.fake_backend`/an equivalent fake producer if the chain-resolution behavior around it needs covering — e.g. "does it get skipped when unavailable and the chain falls through to the next entry."
 3. Run the suite locally before wiring it into `backends/init.lua`'s `BUILTIN_BACKENDS`/`producers/init.lua`'s `BUILTIN_PRODUCERS` — a spec failure there is cheaper to chase down than a `:checkhealth`-reported "unavailable" with no further detail.
-4. Mind spec order: `registry_spec.lua` asserts the eight built-in backend modules are **not yet** in `package.loaded` (the lazy-proxy contract) — it must run before `smoke_spec.lua`, which requires all of them on purpose. A new spec that also touches lazy-loading needs to respect that same ordering constraint in `run.lua`'s `specs` list.
+4. Mind spec order: `registry_spec.lua` asserts the eight built-in backend modules are **not yet** in `package.loaded` (the lazy-proxy contract) — it must run before `smoke_spec.lua`, which requires all of them on purpose. A new spec that also touches lazy-loading needs to respect that same ordering constraint in `run.lua`'s `specs` list (testing.nvim takes the run order from it).
 5. For CLI-tool-dependent behavior the suite can't cover, verify manually against `:checkhealth pdfport` (reports the live registry state — per-id availability from an actual `setup()` call, not just a static tool-on-PATH check) before trusting the new entry in a real session.
 
 ## Combining renderers with the picker integrations
