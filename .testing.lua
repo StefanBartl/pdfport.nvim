@@ -20,6 +20,33 @@ return {
   -- "none" = all specs in one nvim, "file" = one nvim per spec file
   -- (nothing leaks from one file into the next).
   isolated = "none",
+  -- Guards (docs/GUARDS.md of testing.nvim).
+  guards = {
+    -- warn: a real bug is still open. renderers_spec deletes the hard-coded "/tmp/page.png", which
+    -- resolves to E:/tmp/page.png on Windows, i.e. outside the temp dir (a spec/plugin should use a
+    -- path below tempname()). Switch to "error" once the path is fixed.
+    fs = "warn",
+    -- warn: real leftovers of specs that share one editor (isolated = "none"): producer_spec and
+    -- smoke_spec leave :PdfPort, renderers_spec leaves its pdfport:// buffers, bindings_spec leaves a
+    -- lib.nvim which_key VimEnter autocmd and a buffer, integrations_spec leaves package.preload stubs
+    -- of neo-tree/nvim-tree/oil. isolated = "file" would hide them, but then health_spec.lua turns
+    -- red (its "registered backends/producers" sections are missing in a clean editor), so the run
+    -- mode stays "none".
+    state = "warn",
+    scheduled_error = "error",
+    prompt = "error",
+    deprecation = "error",
+    -- The specs probe external tools on purpose (see guard_allow.spawn).
+    process_net = "error",
+  },
+  guard_allow = {
+    spawn = {
+      -- registry_spec probes the optional python packages (pdfplumber, docling) via `python3 -c import`.
+      "python3",
+      -- ai_backends_spec checks the argv of the pdftotext backend against a missing file.
+      "pdftotext",
+    },
+  },
   -- Environment variables the specs read; a child editor inherits an allowlist only (never secrets).
   env_allow = { "MAGICK_*" },
 }
