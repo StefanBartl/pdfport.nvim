@@ -1,20 +1,29 @@
 # pdfport.nvim — test suite
 
-Framework-free headless specs. No plenary, no busted: `run.lua` loads each
-spec, hands it the shared `harness.lua`, and exits non-zero on the first
-failure — the same shape used across the sibling plugins.
+Framework-free headless specs. No plenary, no busted: the specs run on the
+shared `harness.lua` (dialect `h` of [testing.nvim](https://github.com/StefanBartl/testing.nvim),
+configured in `.testing.lua`) — the same shape used across the sibling plugins.
 
 ## Running
 
-From the repo root, with `lib.nvim` checked out as a sibling directory:
+From the repo root, with `testing.nvim` and `lib.nvim` checked out as sibling
+directories (or in `.deps/`, or at `$TESTING_NVIM_DIR` / `$LIB_NVIM_DIR`):
 
 ```bash
-nvim --headless -u NONE -c "set rtp+=." -c "set rtp+=../lib.nvim" -c "luafile TESTS/run.lua" -c "qa!"
+bash scripts/test.sh                 # every spec
+bash scripts/test.sh --file health   # only spec files whose name contains "health"
+bash scripts/test.sh --json ir.json  # also write the machine-readable result
 ```
 
-A successful run ends with `PDFPORT_TESTS_OK`. CI runs exactly this command.
+A missing dependency is a loud error naming all four places that were searched.
+A successful run ends with `PDFPORT_TESTS_OK` (never printed for a filtered run).
+CI runs `scripts/test.sh` on Linux, Windows and macOS.
 
-`lib.nvim` is the only checkout the suite needs. `ui.nvim`, `ai.nvim`,
+`run.lua` is no longer the runner. testing.nvim reads it only as the **order
+hint** (the spec list, see "Ordering") and for the sentinel name; do not delete
+it. A new spec still has to be listed there.
+
+`testing.nvim` (the runner) and `lib.nvim` are the only checkouts the suite needs. `ui.nvim`, `ai.nvim`,
 telescope, fzf-lua, neo-tree, nvim-tree and oil are all replaced in
 `package.loaded` wherever they are reached, so the result is the same with or
 without them installed.
@@ -88,7 +97,7 @@ its way out, so the next spec starts from the defaults.
 ## Adding a spec
 
 Create `TESTS/<name>_spec.lua` returning `function(H) ... end`, then add its
-filename to the `specs` list in `run.lua`. Use `H.eq`/`H.ok`/`H.falsy`/
+filename to the `specs` list in `run.lua` (testing.nvim runs unlisted specs last). Use `H.eq`/`H.ok`/`H.falsy`/
 `H.match`/`H.eq_list` for assertions.
 
 For anything that would otherwise touch an external tool:

@@ -1,11 +1,10 @@
--- TESTS/run.lua — headless test runner for pdfport.nvim.
+-- TESTS/run.lua — legacy headless runner for pdfport.nvim.
 --
--- Run from the repo root (lib.nvim must be reachable as a sibling):
---   nvim -n -i NONE --headless -u NONE -c "set rtp+=." -c "set rtp+=../lib.nvim" \
---        -c "luafile TESTS/run.lua" -c "qa!"
---
--- Loads every *_spec.lua listed below, runs it against the shared harness,
--- prints a per-spec result, and exits non-zero if any spec fails.
+-- The suite is run by testing.nvim now (`bash scripts/test.sh`, see .testing.lua).
+-- testing.nvim reads this file for two things only: the spec ORDER below (it is
+-- load-bearing, see the comments on the list) and the sentinel name printed at the end.
+-- Keep the list complete. It still works standalone from the repo root:
+--   nvim -n -i NONE --headless -u NONE -c "set rtp+=." -c "set rtp+=../lib.nvim" --        -c "luafile TESTS/run.lua" -c "qa!"
 
 local dir = debug.getinfo(1, "S").source:sub(2):match("(.*[/\\])") or "./"
 

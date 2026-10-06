@@ -111,11 +111,11 @@ Only for third-party trees — filetree.nvim needs none, because it calls
 registry and the page-range parser — nothing in it runs an external tool.
 
 ```
-nvim --headless -u NONE -c "set rtp+=." -c "set rtp+=../lib.nvim" \
-  -c "luafile TESTS/run.lua" -c "qa!"
+bash scripts/test.sh
 ```
 
-Exit 0 is a pass; lib.nvim is expected as a sibling checkout.
+Exit 0 is a pass; testing.nvim and lib.nvim are expected as sibling checkouts
+(or in `.deps/`, see [`TESTS/README.md`](../TESTS/README.md)).
 [GitHub Actions](../.github/workflows/ci.yml) runs it plus stylua and luacheck
 on every push and pull request to `main`.
 
