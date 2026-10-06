@@ -1,3 +1,11 @@
+-- DEBUG-TEMP
+vim.api.nvim_create_autocmd({ "BufAdd", "BufWipeout", "BufDelete", "BufUnload", "BufEnter" }, {
+  callback = function(ev)
+    if ev.buf <= 3 then
+      io.stderr:write(("DBG %s buf=%d name=[%s] cur=%d%s%s"):format(ev.event, ev.buf, vim.api.nvim_buf_get_name(ev.buf), vim.api.nvim_get_current_buf(), debug.traceback("", 2):sub(1, 700), string.char(10)))
+    end
+  end,
+})
 -- .testing.lua -- configuration of testing.nvim for this project.
 -- Written by `testing migrate`; edit freely (it is never overwritten). Every key is optional; the
 -- keys are documented in testing.nvim's docs/CONFIG.md. Loading this file executes it (same trust
