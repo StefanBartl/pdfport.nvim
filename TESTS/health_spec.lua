@@ -133,7 +133,18 @@ return function(H)
     python3 = true,
     ["pymod:pdfplumber"] = true,
     ["pymod:docling"] = true,
-  }, {}, "python3")
+  }, {
+    -- The spec supplies the registry contents it asserts on instead of relying
+    -- on an earlier spec file (or setup()) having filled the real registry.
+    ["pdfport.core.registry"] = {
+      all_backends = function()
+        return { H.fake_backend("pdftotext", true) }
+      end,
+      all_producers = function()
+        return { H.fake_producer("img2pdf", true) }
+      end,
+    },
+  }, "python3")
 
   -- Every section the report promises has to actually be started, or its
   -- lines end up filed under the previous heading.
@@ -187,8 +198,7 @@ return function(H)
   H.ok(has(full, "ok", "netrw: built%-in"), "netrw is always available")
   H.ok(has(full, "info", "deps pointer for pdfport%.nvim"), "the declared-tools pointer is emitted")
 
-  -- The live registry: setup() has run by now, so every built-in must be
-  -- listed with its availability.
+  -- The registry section lists every registered entry with its availability.
   H.ok(
     has(full, "ok", "pdftotext%s+available") or has(full, "warn", "pdftotext%s+unavailable"),
     "each registered backend is listed with its live availability"
