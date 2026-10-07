@@ -271,13 +271,17 @@ return function(H)
       if not ok then error(err, 0) end
     end
 
-    local function serve(png)
+    -- The terminal renderer owns the rasterized page and deletes it after
+    -- display, so every call is served a fresh temp file of this spec's own;
+    -- a fixed /tmp/page.png would delete a file in the user's real file
+    -- system (E:/tmp/page.png on Windows).
+    local function serve()
       return function(_, _, _, cb)
-        cb(png, nil)
+        cb(H.tempfile("-page.png"), nil)
       end
     end
 
-    with_terminal({ chafa = true }, serve("/tmp/page.png"), function(terminal, state)
+    with_terminal({ chafa = true }, serve(), function(terminal, state)
       terminal.render({}, { path = "/docs/a.pdf", pages = { 2 } })
       H.eq(#state.commands, 1, "one terminal is opened per page")
       H.match(state.commands[1], "^split | terminal ", "in a split running a terminal")
@@ -288,31 +292,31 @@ return function(H)
       H.eq(#state.errors, 0, "and nothing is reported as an error")
     end)
 
-    with_terminal({ kitten = true, chafa = true }, serve("/tmp/page.png"), function(terminal, state)
+    with_terminal({ kitten = true, chafa = true }, serve(), function(terminal, state)
       terminal.render({}, { path = "/docs/a.pdf", terminal_tool = "kitty" })
       H.match(state.commands[1], "kitten icat ", "the kitty tool uses `kitten icat` when available")
     end)
 
-    with_terminal({}, serve("/tmp/page.png"), function(terminal, state)
+    with_terminal({}, serve(), function(terminal, state)
       terminal.render({}, { path = "/docs/a.pdf", terminal_tool = "kitty" })
       H.match(state.commands[1], "kitty icat ", "falling back to the `kitty` binary itself")
     end)
 
-    with_terminal({}, serve("/tmp/page.png"), function(terminal, state)
+    with_terminal({}, serve(), function(terminal, state)
       terminal.render({}, { path = "/docs/a.pdf", terminal_tool = "imgcat" })
       H.match(state.commands[1], "^split | terminal imgcat ", "and imgcat is invoked bare")
     end)
 
     -- chafa named explicitly but not installed: warn rather than opening a
     -- terminal that immediately prints "command not found".
-    with_terminal({}, serve("/tmp/page.png"), function(terminal, state)
+    with_terminal({}, serve(), function(terminal, state)
       terminal.render({}, { path = "/docs/a.pdf", terminal_tool = "chafa" })
       H.eq(#state.commands, 0, "a missing chafa opens no terminal")
       H.eq(#state.warnings, 1, "but warns")
       H.match(state.warnings[1], "chafa not installed", "naming it")
     end)
 
-    with_terminal({}, serve("/tmp/page.png"), function(terminal, state)
+    with_terminal({}, serve(), function(terminal, state)
       terminal.render({}, { path = "/docs/a.pdf" })
       H.eq(#state.commands, 0, "with no image tool at all, nothing is opened")
       H.eq(#state.errors, 1, "and the failure is reported")
@@ -334,7 +338,7 @@ return function(H)
       H.match(state.errors[1], "rasterizer returned no PNG", "a silent nil PNG is still an error")
     end)
 
-    with_terminal({ chafa = true }, serve("/tmp/page.png"), function(terminal, state)
+    with_terminal({ chafa = true }, serve(), function(terminal, state)
       terminal.render({}, {})
       H.eq(#state.commands, 0, "no path renders nothing")
       H.match(state.errors[1], "no path provided", "and says so")
@@ -345,7 +349,7 @@ return function(H)
     local seen_dpi, seen_page
     with_terminal({ chafa = true }, function(_, page, opts, cb)
       seen_dpi, seen_page = opts.dpi, page
-      cb("/tmp/page.png", nil)
+      cb(H.tempfile("-page.png"), nil)
     end, function(terminal, state)
       terminal.render({}, {
         path = "/docs/a.pdf",
@@ -371,7 +375,7 @@ return function(H)
     -- dispatcher hands mode="terminal" the caller's raw, un-merged opts, so
     -- a bad terminal_size_ratio reaching render() directly must still be
     -- caught here rather than crashing display_png()'s arithmetic).
-    with_terminal({ chafa = true }, serve("/tmp/page.png"), function(terminal, state)
+    with_terminal({ chafa = true }, serve(), function(terminal, state)
       terminal.render({}, {
         path = "/docs/a.pdf",
         terminal_size_ratio = { width = "bad", height = 0.8 },
@@ -385,7 +389,7 @@ return function(H)
       )
     end)
 
-    with_terminal({ chafa = true }, serve("/tmp/page.png"), function(terminal, state)
+    with_terminal({ chafa = true }, serve(), function(terminal, state)
       terminal.render({}, {
         path = "/docs/a.pdf",
         terminal_size_ratio = { width = 0.5, height = -1 },

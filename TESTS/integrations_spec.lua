@@ -172,8 +172,9 @@ return function(H)
     -- Each tree's plugin missing entirely must miss, not raise: the
     -- integration module is loadable with none of them installed.
     do
+      local mods = { "neo-tree.sources.manager", "nvim-tree.api", "oil" }
       local saved = {}
-      for _, mod in ipairs({ "neo-tree.sources.manager", "nvim-tree.api", "oil" }) do
+      for _, mod in ipairs(mods) do
         saved[mod] = package.preload[mod]
         package.preload[mod] = function()
           error("module '" .. mod .. "' not found")
@@ -192,8 +193,10 @@ return function(H)
           )
         end)
       end
-      for mod, value in pairs(saved) do
-        package.preload[mod] = value
+      -- Iterate the module list, not pairs(saved): a nil original has no
+      -- entry in `saved`, so the error stub would otherwise stay behind.
+      for _, mod in ipairs(mods) do
+        package.preload[mod] = saved[mod]
       end
     end
 
