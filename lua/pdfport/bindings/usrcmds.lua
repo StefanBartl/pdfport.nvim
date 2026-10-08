@@ -262,7 +262,7 @@ function M.register(pdfport)
             desc = "File to convert: image, markdown, html, text or office document",
           },
         },
-        desc = "Create a PDF from an image (path arg, cfile, or current buffer)",
+        desc = "Create a PDF from a source file (path arg, cfile, or current buffer)",
         run = function(ctx)
           local path = require_path(ctx, "PdfPort create")
           if not path then return end
@@ -287,7 +287,7 @@ function M.register(pdfport)
             desc = "Merged PDF to write, followed by the PDFs to merge (two or more)",
           },
         },
-        desc = "Merge two or more PDFs: :PdfPort merge <output.pdf> <a.pdf> <b.pdf> ...",
+        desc = "Merge two or more PDFs  :PdfPort merge <output.pdf> <a.pdf> <b.pdf> [...]",
         run = function(ctx)
           local output = ctx.args.output
           local inputs = ctx.rest or {}
