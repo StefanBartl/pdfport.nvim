@@ -18,9 +18,10 @@ return function(H)
   ---@param present table<string, boolean>  what platform.has reports installed
   ---@param extra table  further package.loaded replacements
   ---@param python string|nil
-  ---@return table report  { ok = string[], warn = …, error = …, info = …, start = … }
+  ---@return table report  { ok = string[], warn = …, error = …, info = …, start = …, composer = string[] }
   local function check(present, extra, python)
-    local report = { ok = {}, warn = {}, error = {}, info = {}, start = {} }
+    -- `composer` lists the verb names the report handed to the composer's route check.
+    local report = { ok = {}, warn = {}, error = {}, info = {}, start = {}, composer = {} }
     -- `vim.health.warn(msg, advice)` -- the advice list is where the install
     -- command lives, and "how do I fix it" is half of what a report is for,
     -- so both halves are recorded as one line.
@@ -64,6 +65,16 @@ return function(H)
       ["pdfport.producers.chromium"] = {
         resolved_browser = function()
           return present.chromium and "chromium" or nil
+        end,
+      },
+      -- The last line of `check()` hands the :PdfPort verb to lib.nvim's composer route check, which
+      -- reads the process-wide verb registry (filled only once bindings.usrcmds.register() ran, e.g.
+      -- by an earlier spec file or setup()) and binds `vim.health` when its module loads, i.e. past
+      -- the recorder above. Standing in for that module (never for the composer itself, which
+      -- bindings.usrcmds requires at load) keeps the spec independent of any other file's state.
+      ["lib.nvim.bindings.usercmd.composer.check"] = {
+        checkhealth = function(name)
+          report.composer[#report.composer + 1] = name
         end,
       },
       ["pdfport.health"] = H.UNLOAD,
@@ -164,6 +175,12 @@ return function(H)
   end
 
   H.eq(#full.error, 0, "a fully equipped machine reports no errors at all")
+  -- The report ends by handing the verb to the composer's route check, once and by its registered name.
+  H.eq_list(
+    full.composer,
+    { "PdfPort" },
+    "the route check of the :PdfPort verb is part of the report"
+  )
   H.ok(has(full, "ok", "pdfport%.platform loads"), "the core modules are reported as loading")
   H.ok(has(full, "ok", "pdfport%.core%.registry loads"), "including the registry")
   H.ok(has(full, "ok", "pdfport%.core%.dispatcher loads"), "and the dispatcher")
