@@ -300,20 +300,53 @@ return function(H)
 
     -- ---------------------------------------------------- option float
 
-    -- Every key=value pair has a line in lib.nvim's option float; the text is
-    -- the `desc` of the KvSpec in bindings/usrcmds.lua. A lib.nvim older than
-    -- `help.undocumented` cannot answer the question, which is a missing
-    -- feature of the dependency rather than a defect here.
+    -- Every key=value pair and positional argument has a line in lib.nvim's
+    -- option float; the text is the `desc` of the KvSpec/ArgSpec in
+    -- bindings/usrcmds.lua, or the `desc` of the PDF_PATH type (written once).
+    -- A lib.nvim older than `help.undocumented` cannot answer the question,
+    -- which is a missing feature of the dependency rather than a defect here.
     do
       local composer = require("lib.nvim.bindings.usercmd.composer")
       if type(composer.help.undocumented) == "function" then
         with_verb(function()
           H.ok(composer.registry().PdfPort ~= nil, ":PdfPort is registered through the composer")
           local missing = {}
-          for _, m in ipairs(composer.help.undocumented("PdfPort")) do
+          for _, m in ipairs(composer.help.undocumented("PdfPort", { args = true })) do
             missing[#missing + 1] = ("%s %s"):format(m.route, m.name)
           end
-          H.eq(#missing, 0, ":PdfPort options without a help text: " .. table.concat(missing, ", "))
+          H.eq(
+            #missing,
+            0,
+            ":PdfPort options and arguments without a help text: " .. table.concat(missing, ", ")
+          )
+
+          -- The texts keep the shape the float expects: one short line, no
+          -- trailing full stop. Every text an argument can bring: its own
+          -- `desc`, the `desc` of its type, its `enum_desc` values.
+          local argtypes = require("lib.nvim.bindings.usercmd.composer.argtypes")
+          local seen = 0
+          local function check(text, what)
+            seen = seen + 1
+            H.ok(type(text) == "string" and text ~= "", what .. " shows a text")
+            H.falsy(text:find("\n", 1, true), what .. " is one line")
+            H.ok(#text <= 80, what .. " stays short")
+            H.falsy(text:find("%.$"), what .. " has no trailing full stop")
+          end
+          for _, route in ipairs(composer.registry().PdfPort:spec().routes or {}) do
+            for _, arg in ipairs(route.args or {}) do
+              local what = ("argument %s of :PdfPort %s"):format(
+                arg.name,
+                table.concat(route.path, " ")
+              )
+              if arg.desc then check(arg.desc, what) end
+              local def = arg.type and argtypes.get(arg.type)
+              if def and def.desc then check(def.desc, ("type %s of %s"):format(arg.type, what)) end
+              for value, text in pairs(arg.enum_desc or {}) do
+                check(text, ("value %s of %s"):format(value, what))
+              end
+            end
+          end
+          H.ok(seen > 0, "the routes' arguments were actually walked")
         end)
       end
     end

@@ -52,6 +52,7 @@ end
 -- composer's built-in PATH type (plain vim.fn.getcompletion), so it's its
 -- own registered type rather than a fallback to the built-in.
 composer.register_type("PDF_PATH", {
+  desc = "PDF file (default: file under the cursor, else current buffer)",
   validate = function(raw)
     return true, raw, nil
   end,
@@ -253,7 +254,14 @@ function M.register(pdfport)
 
       {
         path = { "create" },
-        args = path_arg,
+        args = {
+          {
+            name = "path",
+            type = "PDF_PATH",
+            optional = true,
+            desc = "File to convert: image, markdown, html, text or office document",
+          },
+        },
         desc = "Create a PDF from an image (path arg, cfile, or current buffer)",
         run = function(ctx)
           local path = require_path(ctx, "PdfPort create")
@@ -272,7 +280,13 @@ function M.register(pdfport)
 
       {
         path = { "merge" },
-        args = { { name = "output", type = "PDF_PATH" } },
+        args = {
+          {
+            name = "output",
+            type = "PDF_PATH",
+            desc = "Merged PDF to write, followed by the PDFs to merge (two or more)",
+          },
+        },
         desc = "Merge two or more PDFs: :PdfPort merge <output.pdf> <a.pdf> <b.pdf> ...",
         run = function(ctx)
           local output = ctx.args.output
