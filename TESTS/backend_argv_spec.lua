@@ -77,7 +77,8 @@ return function(H)
     extract(backend, "/docs/a.pdf", { pages = { 3, 4, 7 } })
     local argv = H.last_argv(rec)
     -- pdftotext has no "these pages" flag, only a span -- so a disjoint
-    -- request becomes first..last, which is the closest the tool can do.
+    -- request is asked for as first..last (the text is cut down to the
+    -- exact set afterwards, see the next block).
     H.eq(
       argv[H.index_of(argv, "-f") + 1],
       "3",
@@ -92,6 +93,67 @@ return function(H)
 
     extract(backend, "/docs/a.pdf", { pages = {} })
     H.falsy(H.index_of(H.last_argv(rec), "-f"), "an empty page list selects no span at all")
+  end)
+
+  -- The span is only what pdftotext can be asked for; the text that comes back
+  -- must be exactly the requested pages. pdftotext ends every page with a form
+  -- feed, so "1-3,5" arrives as five pages and page 4 has to be cut again.
+  with_backend("pdfport.backends.pdftotext", { pdftotext = true }, nil, function(backend, rec)
+    local FF = string.char(12)
+    local function pages_text(first, last)
+      local out = {}
+      for p = first, last do
+        out[#out + 1] = "page " .. p .. "\n" .. FF
+      end
+      return table.concat(out)
+    end
+
+    rec.result = H.spawn_result({ stdout = pages_text(1, 5) })
+    local got = extract(backend, "/docs/a.pdf", { pages = { 1, 2, 3, 5 } })
+    H.eq(
+      got.text,
+      "page 1\n" .. FF .. "page 2\n" .. FF .. "page 3\n" .. FF .. "page 5\n" .. FF,
+      "a disjoint request drops the pages the span dragged in (page 4)"
+    )
+    H.eq(got.pages_processed, nil, "an explicit selection is not reported as a page count")
+
+    rec.result = H.spawn_result({ stdout = pages_text(2, 3) })
+    H.eq(
+      extract(backend, "/docs/a.pdf", { pages = { 2, 3 } }).text,
+      pages_text(2, 3),
+      "a contiguous request is passed through untouched"
+    )
+
+    rec.result = H.spawn_result({ stdout = pages_text(2, 5) })
+    local unsorted = extract(backend, "/docs/a.pdf", { pages = { 5, 2 } })
+    local argv = H.last_argv(rec)
+    H.eq(
+      argv[H.index_of(argv, "-f") + 1],
+      "2",
+      "an unsorted list still starts the span at its lowest"
+    )
+    H.eq(argv[H.index_of(argv, "-l") + 1], "5", "and ends it at its highest")
+    H.eq(
+      unsorted.text,
+      "page 2\n" .. FF .. "page 5\n" .. FF,
+      "and the pages in between are cut from the text"
+    )
+
+    -- A request past the end of the document: poppler clamps -l, so fewer
+    -- pages come back than were asked for, and the offsets must still line up.
+    rec.result = H.spawn_result({ stdout = pages_text(2, 4) })
+    H.eq(
+      extract(backend, "/docs/a.pdf", { pages = { 2, 9 } }).text,
+      "page 2\n" .. FF,
+      "a page beyond the end of the document is simply absent"
+    )
+
+    rec.result = H.spawn_result({ stdout = "no page breaks at all" })
+    H.eq(
+      extract(backend, "/docs/a.pdf", { pages = { 1, 3 } }).text,
+      "no page breaks at all",
+      "a text without form feeds cannot be split and is returned whole"
+    )
   end)
 
   with_backend("pdfport.backends.pdftotext", { pdftotext = true }, nil, function(backend, rec)

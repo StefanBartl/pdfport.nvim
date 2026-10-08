@@ -41,6 +41,12 @@ rather than silently falling back to the prompt or to the whole document:
 the caller asked for a specific range, and quietly doing something else is
 what goes unnoticed in a script.
 
+`float` shows exactly the listed pages (`1-3,5` does not show page 4) when
+the backend that reads the PDF is `pdftotext`, `pdfplumber`, `tesseract` or
+`ollama`. `marker` and `docling` cannot select pages: they read the whole
+document and report the result as partial. `claude` and `gemini` do not take
+a page selection either.
+
 See [docs/BINDINGS.md](BINDINGS.md) for the full keymap/command/autocmd cheatsheet.
 
 ## Lua API
