@@ -77,12 +77,19 @@ or produces a PDF.
 | `bindings_spec.lua` | every `:PdfPort` route, the argument→`<cfile>`→current-buffer path resolution, `pages=`, the `.pdf`-first completion; the five keymap actions, `resolve()`, `bind()`; the FileType and BufReadCmd autocmds |
 | `integrations_spec.lua` | each tree's path resolver (neo-tree node id, nvim-tree absolute path, netrw's string-built path incl. separators, oil's dir+entry), `open_current`, each `setup()`'s autocmd, neo-tree's commands and its per-mode mappings table, `telescope.filetype_hook`, fzf's `preview_fn`, and — via a faked `telescope.previewers` — `telescope.previewer()`'s own `define_preview` (title, path resolution, and its copy of bug 3) |
 | `public_api_spec.lua` | `require("pdfport")` itself: the argument guards, `config()`'s deep copy, `render_page`/`can_render_page_crop`, **the `github_stats.nvim` contract** (`can_create("markdown") == true`, then `create{text,from,output,on_conflict,__callback}`), `merge()`'s pinned `from = "pdf"`, the default notifications, and `setup()`'s wiring |
-| `health_spec.lua` | `:checkhealth pdfport` against a chosen tool set: every section, a fully equipped machine (no errors), a bare one (warnings, not errors), and the in-between cases — pandoc without an engine, the curl gate in front of the API keys, ai.nvim present/absent |
+| `health_spec.lua` | `:checkhealth pdfport` against a chosen tool set: every section, a fully equipped machine (no errors), a bare one (warnings, not errors), and the in-between cases — pandoc without an engine, the curl gate in front of the API keys, ai.nvim present/absent, and that the report ends by handing the `PdfPort` verb to the composer's route check (stubbed, so the file needs no registered verb) |
 | `open_done_spec.lua` | `pdfport.open`'s `on_done` signal settles exactly once on every path (runs last — it calls `setup()` and performs real opens) |
 
 ## Ordering
 
-`run.lua`'s spec order is deliberate, in two halves.
+`run.lua`'s spec order is deliberate, in two halves. It only matters when the
+files share one editor (`scripts/test.sh --isolated none`, where the state
+guard then flags what several specs leave behind, or the legacy `run.lua`):
+`.testing.lua` sets `isolated = "file"`, where every spec file runs
+in an editor of its own, and every spec builds the state it asserts on (e.g.
+`health_spec` stubs both the registry and the composer's route check instead of
+relying on an earlier file having called `setup()`), so a single file can be
+run alone with `--file`.
 
 `registry_spec` and `producer_spec` assert that the built-in backend/producer
 modules are **not** yet in `package.loaded` (that is the lazy-proxy contract),

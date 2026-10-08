@@ -19,20 +19,15 @@ return {
   deps = { "lib.nvim" },
   -- "none" = all specs in one nvim, "file" = one nvim per spec file
   -- (nothing leaks from one file into the next).
-  isolated = "none",
-  -- Guards (docs/GUARDS.md of testing.nvim).
+  -- "file": setup() registers :PdfPort and several specs leave pdfport:// buffers or a lib.nvim
+  -- which_key autocmd behind; one editor per file keeps all of that from reaching the next spec.
+  -- Every spec builds its own fixtures (health_spec stubs the registry and the composer route
+  -- check), so a single file also runs alone (`--file`, `--shard`, `--watch`).
+  isolated = "file",
+  -- Guards (docs/GUARDS.md of testing.nvim). The suite is clean on all of them.
   guards = {
-    -- warn: a real bug is still open. renderers_spec deletes the hard-coded "/tmp/page.png", which
-    -- resolves to E:/tmp/page.png on Windows, i.e. outside the temp dir (a spec/plugin should use a
-    -- path below tempname()). Switch to "error" once the path is fixed.
-    fs = "warn",
-    -- warn: real leftovers of specs that share one editor (isolated = "none"): producer_spec and
-    -- smoke_spec leave :PdfPort, renderers_spec leaves its pdfport:// buffers, bindings_spec leaves a
-    -- lib.nvim which_key VimEnter autocmd and a buffer, integrations_spec leaves package.preload stubs
-    -- of neo-tree/nvim-tree/oil. isolated = "file" would hide them, but then health_spec.lua turns
-    -- red (its "registered backends/producers" sections are missing in a clean editor), so the run
-    -- mode stays "none".
-    state = "warn",
+    fs = "error",
+    state = "error",
     scheduled_error = "error",
     prompt = "error",
     deprecation = "error",
