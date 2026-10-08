@@ -117,7 +117,13 @@ function M.register(pdfport)
   -- a script, a mapping, or another plugin -- there is no way to answer it
   -- non-interactively. Supplying the key skips the prompt entirely; omitting
   -- it keeps the old behaviour exactly.
-  local pages_kv = { { key = "pages", type = "STRING" } }
+  local pages_kv = {
+    {
+      key = "pages",
+      type = "STRING",
+      desc = "Pages to include, e.g. 1-3,5; skips the page prompt",
+    },
+  }
 
   ---Resolve the page range for a route that accepts `pages=`.
   ---
