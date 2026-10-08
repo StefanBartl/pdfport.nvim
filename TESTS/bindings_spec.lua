@@ -332,7 +332,13 @@ return function(H)
             H.ok(#text <= 80, what .. " stays short")
             H.falsy(text:find("%.$"), what .. " has no trailing full stop")
           end
+          local create_text
           for _, route in ipairs(composer.registry().PdfPort:spec().routes or {}) do
+            local route_name = table.concat(route.path, " ")
+            -- The line of the route itself (shown one level up, in the list
+            -- of subcommands) follows the same style as its arguments.
+            if route.desc then check(route.desc, ("route :PdfPort %s"):format(route_name)) end
+            if route_name == "create" then create_text = route.desc end
             for _, arg in ipairs(route.args or {}) do
               local what = ("argument %s of :PdfPort %s"):format(
                 arg.name,
@@ -347,6 +353,15 @@ return function(H)
             end
           end
           H.ok(seen > 0, "the routes' arguments were actually walked")
+
+          -- `create` accepts markdown, html, text and office files as well
+          -- (its argument line says so one level deeper), so the route line
+          -- must not narrow it down to images again.
+          H.ok(type(create_text) == "string", ":PdfPort create has a route text")
+          H.falsy(
+            create_text:lower():find("an image", 1, true),
+            "the create route text does not claim it only converts an image"
+          )
         end)
       end
     end
