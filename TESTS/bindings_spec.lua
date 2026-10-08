@@ -298,6 +298,26 @@ return function(H)
       pcall(vim.fn.delete, dir, "rf")
     end
 
+    -- ---------------------------------------------------- option float
+
+    -- Every key=value pair has a line in lib.nvim's option float; the text is
+    -- the `desc` of the KvSpec in bindings/usrcmds.lua. A lib.nvim older than
+    -- `help.undocumented` cannot answer the question, which is a missing
+    -- feature of the dependency rather than a defect here.
+    do
+      local composer = require("lib.nvim.bindings.usercmd.composer")
+      if type(composer.help.undocumented) == "function" then
+        with_verb(function()
+          H.ok(composer.registry().PdfPort ~= nil, ":PdfPort is registered through the composer")
+          local missing = {}
+          for _, m in ipairs(composer.help.undocumented("PdfPort")) do
+            missing[#missing + 1] = ("%s %s"):format(m.route, m.name)
+          end
+          H.eq(#missing, 0, ":PdfPort options without a help text: " .. table.concat(missing, ", "))
+        end)
+      end
+    end
+
     pcall(vim.fn.delete, pdf)
     pcall(vim.fn.delete, named)
   end
