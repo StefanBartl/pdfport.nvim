@@ -28,17 +28,65 @@ function M.available()
   return platform.has("pdftotext")
 end
 
+--- pdftotext has no "these pages" flag, only the span `-f first -l last`.
+--- Work out that span and whether it is exactly the requested set.
+---@param pages integer[]  non-empty; need not be sorted or free of duplicates
+---@return integer first
+---@return integer last
+---@return table<integer, true> wanted
+---@return boolean exact  true when every page of the span was requested
+local function plan_span(pages)
+  local first, last, distinct = math.huge, -math.huge, 0
+  local wanted = {}
+  for _, p in ipairs(pages) do
+    if not wanted[p] then
+      wanted[p] = true
+      distinct = distinct + 1
+    end
+    if p < first then first = p end
+    if p > last then last = p end
+  end
+  return first, last, wanted, distinct == last - first + 1
+end
+
+--- Cut the text of a `first..last` run down to the pages in `wanted`.
+---
+--- pdftotext ends every page with a form feed, also the last one, so the n-th
+--- segment is page `first + n - 1`. Each kept page keeps its own terminator,
+--- which leaves the output in the same shape pdftotext itself prints. A text
+--- without any form feed cannot be split, so it is returned whole.
+---@param text string
+---@param first integer
+---@param wanted table<integer, true>
+---@return string
+local function keep_pages(text, first, wanted)
+  local kept, pos, page = {}, 1, first
+  while true do
+    local ff = text:find("\f", pos, true)
+    if not ff then break end
+    if wanted[page] then kept[#kept + 1] = text:sub(pos, ff) end
+    pos, page = ff + 1, page + 1
+  end
+  if page == first then return text end
+  if pos <= #text and wanted[page] then kept[#kept + 1] = text:sub(pos) end
+  return table.concat(kept)
+end
+
 ---@param path string
 ---@param opts PdfPort.InternalExtractOpts
 ---@return PdfPort.Result|nil
 function M.extract(path, opts)
   local args = { "-layout", "-enc", "UTF-8" }
 
-  if opts.pages and #opts.pages > 0 then
+  local has_pages = opts.pages ~= nil and #opts.pages > 0
+  local first, wanted, exact
+  if has_pages then
+    local last
+    first, last, wanted, exact = plan_span(opts.pages)
     args[#args + 1] = "-f"
-    args[#args + 1] = tostring(opts.pages[1])
+    args[#args + 1] = tostring(first)
     args[#args + 1] = "-l"
-    args[#args + 1] = tostring(opts.pages[#opts.pages])
+    args[#args + 1] = tostring(last)
   elseif opts.max_pages then
     args[#args + 1] = "-l"
     args[#args + 1] = tostring(opts.max_pages)
@@ -65,12 +113,19 @@ function M.extract(path, opts)
         error = string.format("pdftotext: timed out after %d ms", timeout_ms),
       }
     elseif spawn_result.ok then
+      local text = spawn_result.stdout
+      -- A disjoint request ("1-3,5") has to come out as exactly those pages:
+      -- the span would otherwise drag in page 4 as well.
+      if has_pages and not exact and type(text) == "string" then
+        text = keep_pages(text, first, wanted)
+      end
       result = {
         status = "ok",
-        text = spawn_result.stdout,
+        text = text,
         format = "plain",
         backend = "pdftotext",
-        pages_processed = opts.max_pages,
+        -- An explicit selection is not a page count (same as pdfplumber).
+        pages_processed = (not has_pages) and opts.max_pages or nil,
         error = nil,
       }
     else
