@@ -243,6 +243,7 @@ return function(H)
       -- the job is recorded, never run; a spec fires `on_exit` itself
       vim.fn.jobstart = function(argv, opts)
         state.jobs[#state.jobs + 1] = { argv = argv, opts = opts }
+        if state.job_error then error(state.job_error, 0) end
         return state.job_id
       end
       local ok, err = pcall(function()
@@ -331,6 +332,16 @@ return function(H)
     end)
 
     -- a job that cannot start must not leak the page
+    -- jobstart() raises for a program that is not executable (kitty/imgcat
+    -- are not pre-checked); that must not leak the page or escape as an error
+    with_terminal({ chafa = true }, serve(), function(terminal, state)
+      state.job_error = "E475: not executable"
+      H.ok(pcall(terminal.render, {}, { path = "/docs/a.pdf" }), "a raising jobstart is contained")
+      H.eq(#state.errors, 1, "and reported")
+      H.match(state.errors[1], "E475", "with the reason")
+      H.eq(vim.fn.filereadable(state.jobs[1].argv[3]), 0, "and the page is deleted")
+    end)
+
     with_terminal({ chafa = true }, serve(), function(terminal, state)
       state.job_id = 0
       terminal.render({}, { path = "/docs/a.pdf" })
