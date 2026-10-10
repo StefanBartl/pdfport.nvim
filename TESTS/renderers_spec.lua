@@ -235,10 +235,15 @@ return function(H)
     ---@param rasterize fun(path: string, page: integer, opts: table, cb: fun(png: string|nil, err: string|nil))
     ---@param fn fun(terminal: table, state: table)
     local function with_terminal(present, rasterize, fn)
-      local state = { commands = {}, errors = {}, warnings = {} }
-      local saved_cmd = vim.cmd
+      local state = { commands = {}, errors = {}, warnings = {}, jobs = {}, job_id = 7 }
+      local saved_cmd, saved_jobstart = vim.cmd, vim.fn.jobstart
       vim.cmd = function(command)
         state.commands[#state.commands + 1] = command
+      end
+      -- the job is recorded, never run; a spec fires `on_exit` itself
+      vim.fn.jobstart = function(argv, opts)
+        state.jobs[#state.jobs + 1] = { argv = argv, opts = opts }
+        return state.job_id
       end
       local ok, err = pcall(function()
         H.with_modules({
@@ -268,6 +273,7 @@ return function(H)
         end)
       end)
       vim.cmd = saved_cmd
+      vim.fn.jobstart = saved_jobstart
       if not ok then error(err, 0) end
     end
 
@@ -283,42 +289,67 @@ return function(H)
 
     with_terminal({ chafa = true }, serve(), function(terminal, state)
       terminal.render({}, { path = "/docs/a.pdf", pages = { 2 } })
-      H.eq(#state.commands, 1, "one terminal is opened per page")
-      H.match(state.commands[1], "^split | terminal ", "in a split running a terminal")
-      H.match(state.commands[1], "chafa %-%-size=%d+x%d+ ", "driving chafa at a computed size")
-      -- shellescape, because this goes through a shell command line rather
-      -- than an argv: a path with a space in it would otherwise split.
-      H.match(state.commands[1], "page%.png", "with the rasterized page as its argument")
-      H.eq(#state.errors, 0, "and nothing is reported as an error")
+      H.eq(#state.jobs, 1, "one terminal job is started per page")
+      H.eq_list(state.commands, { "new" }, "in a fresh split with an empty buffer")
+      local argv = state.jobs[1].argv
+      H.eq(argv[1], "chafa", "driving chafa")
+      H.match(argv[2], "^%-%-size=%d+x%d+$", "at a computed size")
+      -- an argv element, so a path with spaces or parentheses needs no quoting
+      H.match(argv[3], "page%.png$", "with the rasterized page as the last argument")
+      H.eq(#argv, 3, "and nothing else")
+      H.eq(#state.errors, 0, "nothing is reported as an error")
+
+      -- the page is deleted when the job ends, exactly once
+      H.eq(vim.fn.filereadable(argv[3]), 1, "the page survives while the job runs")
+      state.jobs[1].opts.on_exit()
+      H.eq(vim.fn.filereadable(argv[3]), 0, "and is deleted on exit")
+      state.jobs[1].opts.on_exit()
     end)
 
     with_terminal({ kitten = true, chafa = true }, serve(), function(terminal, state)
       terminal.render({}, { path = "/docs/a.pdf", terminal_tool = "kitty" })
-      H.match(state.commands[1], "kitten icat ", "the kitty tool uses `kitten icat` when available")
+      H.eq_list(
+        { state.jobs[1].argv[1], state.jobs[1].argv[2] },
+        { "kitten", "icat" },
+        "kitty uses `kitten icat` when available"
+      )
     end)
 
     with_terminal({}, serve(), function(terminal, state)
       terminal.render({}, { path = "/docs/a.pdf", terminal_tool = "kitty" })
-      H.match(state.commands[1], "kitty icat ", "falling back to the `kitty` binary itself")
+      H.eq_list(
+        { state.jobs[1].argv[1], state.jobs[1].argv[2] },
+        { "kitty", "icat" },
+        "falling back to the `kitty` binary itself"
+      )
     end)
 
     with_terminal({}, serve(), function(terminal, state)
       terminal.render({}, { path = "/docs/a.pdf", terminal_tool = "imgcat" })
-      H.match(state.commands[1], "^split | terminal imgcat ", "and imgcat is invoked bare")
+      H.eq(state.jobs[1].argv[1], "imgcat", "imgcat is invoked bare")
+      H.eq(#state.jobs[1].argv, 2, "with just the page")
+    end)
+
+    -- a job that cannot start must not leak the page
+    with_terminal({ chafa = true }, serve(), function(terminal, state)
+      state.job_id = 0
+      terminal.render({}, { path = "/docs/a.pdf" })
+      H.eq(#state.errors, 1, "a job that does not start is reported")
+      H.eq(vim.fn.filereadable(state.jobs[1].argv[3]), 0, "and its page is deleted at once")
     end)
 
     -- chafa named explicitly but not installed: warn rather than opening a
     -- terminal that immediately prints "command not found".
     with_terminal({}, serve(), function(terminal, state)
       terminal.render({}, { path = "/docs/a.pdf", terminal_tool = "chafa" })
-      H.eq(#state.commands, 0, "a missing chafa opens no terminal")
+      H.eq(#state.jobs, 0, "a missing chafa starts no job")
       H.eq(#state.warnings, 1, "but warns")
       H.match(state.warnings[1], "chafa not installed", "naming it")
     end)
 
     with_terminal({}, serve(), function(terminal, state)
       terminal.render({}, { path = "/docs/a.pdf" })
-      H.eq(#state.commands, 0, "with no image tool at all, nothing is opened")
+      H.eq(#state.jobs, 0, "with no image tool at all, nothing is started")
       H.eq(#state.errors, 1, "and the failure is reported")
       H.match(state.errors[1], "no image renderer", "pointing at what to install")
     end)
@@ -327,7 +358,7 @@ return function(H)
       cb(nil, "pdftoppm exited 1: no such page")
     end, function(terminal, state)
       terminal.render({}, { path = "/docs/a.pdf" })
-      H.eq(#state.commands, 0, "a failed rasterize opens no terminal")
+      H.eq(#state.jobs, 0, "a failed rasterize starts no job")
       H.eq_list(state.errors, { "pdftoppm exited 1: no such page" }, "and surfaces the error as-is")
     end)
 
@@ -340,7 +371,7 @@ return function(H)
 
     with_terminal({ chafa = true }, serve(), function(terminal, state)
       terminal.render({}, {})
-      H.eq(#state.commands, 0, "no path renders nothing")
+      H.eq(#state.jobs, 0, "no path renders nothing")
       H.match(state.errors[1], "no path provided", "and says so")
     end)
 
@@ -358,7 +389,7 @@ return function(H)
       })
       H.eq(seen_dpi, 300, "terminal_dpi reaches the rasterizer")
       H.eq(seen_page, 1, "and with no page list, page 1 is rendered")
-      local w, h = state.commands[1]:match("%-%-size=(%d+)x(%d+)")
+      local w, h = state.jobs[1].argv[2]:match("%-%-size=(%d+)x(%d+)")
       H.eq(
         tonumber(w),
         math.floor(vim.o.columns * 0.5),
@@ -381,7 +412,7 @@ return function(H)
         terminal_size_ratio = { width = "bad", height = 0.8 },
       })
       H.eq(#state.errors, 0, "a non-numeric width does not crash the renderer")
-      local w = state.commands[1]:match("%-%-size=(%d+)x")
+      local w = state.jobs[1].argv[2]:match("%-%-size=(%d+)x")
       H.eq(
         tonumber(w),
         math.floor(vim.o.columns * 0.9),
@@ -394,7 +425,7 @@ return function(H)
         path = "/docs/a.pdf",
         terminal_size_ratio = { width = 0.5, height = -1 },
       })
-      local _, h = state.commands[1]:match("%-%-size=(%d+)x(%d+)")
+      local _, h = state.jobs[1].argv[2]:match("%-%-size=(%d+)x(%d+)")
       H.eq(
         tonumber(h),
         math.floor(vim.o.lines * 0.8),
