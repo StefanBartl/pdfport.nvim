@@ -4,7 +4,7 @@
 --- Rasterizes pages via pdftoppm (delegated to core/rasterize.lua, shared
 --- with the public pdfport.render_page() API) then displays via chafa,
 --- kitty icat, or imgcat. Unlike render_page(), the PNG here is a
---- throwaway tempname() deleted shortly after display.
+--- throwaway tempname() deleted when the display job exits.
 
 local M = {}
 local platform = require("pdfport.platform")
@@ -58,6 +58,40 @@ local function wait_for_file(path, interval_ms, max_attempts, callback)
 end
 
 ---@internal
+---Runs `argv` in a fresh terminal split without a shell command line (no
+---quoting rules to get wrong on pwsh/cmd) and deletes `png_path` exactly
+---once, when the job ends -- or at once if it could not be started.
+---@param argv string[]
+---@param png_path string
+---@return nil
+local function run_in_terminal(argv, png_path)
+  local cleaned = false
+  local function cleanup()
+    if cleaned then return end
+    cleaned = true
+    vim.fn.delete(png_path)
+  end
+
+  vim.cmd("new")
+  local opts = {
+    on_exit = function()
+      cleanup()
+    end,
+  }
+  local job
+  if vim.fn.has("nvim-0.11") == 1 then
+    opts.term = true
+    job = vim.fn.jobstart(argv, opts)
+  else
+    job = vim.fn.termopen(argv, opts) ---@diagnostic disable-line: deprecated
+  end
+  if type(job) ~= "number" or job <= 0 then
+    notify.error("could not start " .. tostring(argv[1]))
+    cleanup()
+  end
+end
+
+---@internal
 ---@param png_path string
 ---@param tool "chafa"|"kitty"|"imgcat"|nil
 ---@param size_ratio { width: number, height: number }
@@ -77,32 +111,26 @@ local function display_png(png_path, tool, size_ratio)
     end
 
     local ratio = sanitize_size_ratio(size_ratio)
-    local escaped = vim.fn.shellescape(png_path)
     local width = math.floor(vim.o.columns * ratio.width)
     local height = math.floor(vim.o.lines * ratio.height)
 
+    local argv
     if tool == "chafa" then
       if not platform.has("chafa") then
         notify.warn("chafa not installed")
         vim.fn.delete(png_path)
         return
       end
-      vim.cmd("split | terminal " .. string.format("chafa --size=%dx%d %s", width, height, escaped))
-      vim.defer_fn(function()
-        vim.fn.delete(png_path)
-      end, 2000)
+      argv = { "chafa", string.format("--size=%dx%d", width, height), png_path }
     elseif tool == "kitty" then
-      local exe = platform.has("kitten") and "kitten" or "kitty"
-      vim.cmd("split | terminal " .. exe .. " icat " .. escaped)
-      vim.defer_fn(function()
-        vim.fn.delete(png_path)
-      end, 2000)
+      argv = { platform.has("kitten") and "kitten" or "kitty", "icat", png_path }
     elseif tool == "imgcat" then
-      vim.cmd("split | terminal imgcat " .. escaped)
-      vim.defer_fn(function()
-        vim.fn.delete(png_path)
-      end, 2000)
+      argv = { "imgcat", png_path }
+    else
+      vim.fn.delete(png_path)
+      return
     end
+    run_in_terminal(argv, png_path)
   end)
 end
 
