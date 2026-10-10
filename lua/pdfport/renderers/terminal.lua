@@ -72,22 +72,31 @@ local function run_in_terminal(argv, png_path)
     vim.fn.delete(png_path)
   end
 
+  local prev_win = vim.api.nvim_get_current_win()
   vim.cmd("new")
+  local win = vim.api.nvim_get_current_win()
   local opts = {
     on_exit = function()
       cleanup()
     end,
   }
-  local job
-  if vim.fn.has("nvim-0.11") == 1 then
-    opts.term = true
-    job = vim.fn.jobstart(argv, opts)
-  else
-    job = vim.fn.termopen(argv, opts) ---@diagnostic disable-line: deprecated
-  end
-  if type(job) ~= "number" or job <= 0 then
-    notify.error("could not start " .. tostring(argv[1]))
+  -- jobstart() raises (E475) for a program that is not executable instead of
+  -- returning 0/-1, so the failure has to be caught to clean up after it.
+  local started, job = pcall(function()
+    if vim.fn.has("nvim-0.11") == 1 then
+      opts.term = true
+      return vim.fn.jobstart(argv, opts)
+    end
+    return vim.fn.termopen(argv, opts) ---@diagnostic disable-line: deprecated
+  end)
+  if not started or type(job) ~= "number" or job <= 0 then
+    notify.error(
+      "could not start " .. tostring(argv[1]) .. (started and "" or (": " .. tostring(job)))
+    )
     cleanup()
+    if win ~= prev_win and vim.api.nvim_win_is_valid(win) then
+      pcall(vim.api.nvim_win_close, win, true)
+    end
   end
 end
 
