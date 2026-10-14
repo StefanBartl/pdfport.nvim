@@ -7,6 +7,7 @@
 
 local platform = require("pdfport.platform")
 local spawn_capture = require("lib.nvim.cross.uv.spawn_capture")
+local globbable = require("lib.nvim.fs.globbable")
 
 --- See the note on `Backend` in `@types/init.lua`: declared as a class so
 --- the methods defined below the literal count as implementing it.
@@ -107,12 +108,13 @@ function M.extract(path, opts)
     local md_path = tmp_dir .. "/" .. stem .. "/" .. stem .. ".md"
 
     if vim.fn.filereadable(md_path) ~= 1 then
-      local pattern = tmp_dir:gsub("\\", "/") .. "/**/*.md"
-      local found = vim.fn.glob(pattern, false, true)
+      -- glob reads its argument as a pattern: `[`, `*`, `~` in the path must not be read as one (lib.nvim.fs.globbable)
+      local glob_dir = globbable((tmp_dir:gsub("\\", "/")))
+      local found = vim.fn.glob(glob_dir .. "/**/*.md", false, true)
       if #found > 0 then
         md_path = found[1]
       else
-        local all = vim.fn.glob(tmp_dir:gsub("\\", "/") .. "/**/*", false, true)
+        local all = vim.fn.glob(glob_dir .. "/**/*", false, true)
         vim.fn.delete(tmp_dir, "rf")
         local result = {
           status = "error",
