@@ -45,5 +45,86 @@ return {
   -- Environment variables the specs read; a child editor inherits an allowlist only (never secrets).
   env_allow = { "MAGICK_*" },
   -- gated: a failed conformance check makes `scripts/test.sh conformance` exit 1 (docs/CONFORMANCE.md of testing.nvim)
-  conformance = { gate = true },
+  conformance = {
+    gate = true,
+    waivers = {
+      {
+        check = "K6",
+        level = "warn",
+        text = "API_KEY not set",
+        reason = "optional LLM backend: its API key is not set in the minimal editor (the backend is opt-in and reports itself unavailable by design)",
+        expires = "2027-04-14",
+      },
+      {
+        check = "K6",
+        level = "warn",
+        text = "WARNING claude",
+        reason = "optional LLM backend: its API key is not set in the minimal editor (the backend is opt-in and reports itself unavailable by design)",
+        expires = "2027-04-14",
+      },
+      {
+        check = "K6",
+        level = "warn",
+        text = "WARNING gemini",
+        reason = "optional LLM backend: its API key is not set in the minimal editor (the backend is opt-in and reports itself unavailable by design)",
+        expires = "2027-04-14",
+      },
+      {
+        check = "K6",
+        level = "warn",
+        text = "WARNING ollama",
+        reason = "optional ollama backend: no ollama daemon runs in the minimal editor, the health check correctly reports it unavailable",
+        expires = "2027-04-14",
+      },
+      {
+        check = "K6",
+        level = "warn",
+        text = "WARNING docling",
+        reason = "optional Python converter (not installed in the minimal editor/CI image): the health check correctly reports the missing module",
+        expires = "2027-04-14",
+      },
+      {
+        check = "K6",
+        level = "warn",
+        text = "WARNING pdfplumber",
+        reason = "optional Python converter (not installed in the minimal editor/CI image): the health check correctly reports the missing module",
+        expires = "2027-04-14",
+      },
+      {
+        check = "K6",
+        level = "warn",
+        text = "WARNING img2pdf",
+        reason = "optional external PDF tool not on PATH in the minimal editor/CI image: the health check correctly reports the missing producer",
+        expires = "2027-04-14",
+      },
+      {
+        check = "K6",
+        level = "warn",
+        text = "WARNING pandoc",
+        reason = "optional external PDF tool not on PATH in the minimal editor/CI image: the health check correctly reports the missing producer",
+        expires = "2027-04-14",
+      },
+      {
+        check = "K6",
+        level = "warn",
+        text = "WARNING pdftk",
+        reason = "optional external PDF tool not on PATH in the minimal editor/CI image: the health check correctly reports the missing producer",
+        expires = "2027-04-14",
+      },
+      {
+        check = "K6",
+        level = "warn",
+        text = "WARNING qpdf",
+        reason = "optional external PDF tool not on PATH in the minimal editor/CI image: the health check correctly reports the missing producer",
+        expires = "2027-04-14",
+      },
+      {
+        check = "K6",
+        level = "warn",
+        text = "WARNING weasyprint",
+        reason = "optional external PDF tool not on PATH in the minimal editor/CI image: the health check correctly reports the missing producer",
+        expires = "2027-04-14",
+      },
+    },
+  },
 }
