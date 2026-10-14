@@ -44,4 +44,6 @@ return {
   },
   -- Environment variables the specs read; a child editor inherits an allowlist only (never secrets).
   env_allow = { "MAGICK_*" },
+  -- gated: a failed conformance check makes `scripts/test.sh conformance` exit 1 (docs/CONFORMANCE.md of testing.nvim)
+  conformance = { gate = true },
 }
