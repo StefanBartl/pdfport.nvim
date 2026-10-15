@@ -15,6 +15,7 @@
 --- result to `req.output` itself.
 
 local uv = vim.uv or vim.loop
+local platform = require("pdfport.platform")
 local spawn_capture = require("lib.nvim.cross.uv.spawn_capture")
 
 --- See the note on `Producer` in `@types/init.lua`: declared as a class so
@@ -41,7 +42,10 @@ local M = {
 ---@return string|nil
 local function resolve_soffice()
   local ok, deps = pcall(require, "lib.nvim.deps")
-  if not ok then return nil end
+  if not ok then
+    -- a lib.nvim without `deps` (an old one): the PATH, as before this producer used the declared paths
+    return platform.has("soffice") and "soffice" or nil
+  end
   return deps.require_tool("pdfport.nvim", "soffice", { silent = true })
 end
 
