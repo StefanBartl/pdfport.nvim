@@ -102,11 +102,21 @@ function M.render_page(path, page, opts, callback)
     vim.list_extend({ "pdftoppm" }, args),
     { timeout_ms = timeout_ms },
     function(result)
+      local png = base .. ".png"
       if result.timed_out then
+        -- A kill that lands while pdftoppm is writing leaves a truncated PNG behind (seen on
+        -- Windows at high dpi). The caller gets no path for it, so nobody else would delete it,
+        -- and at a caller-chosen `output_path` it would pass a later "does the file exist" check.
+        vim.fn.delete(png)
         callback(nil, string.format("pdftoppm timed out after %d ms", timeout_ms))
         return
       end
-      local png = base .. ".png"
+      -- spawn_capture reports "could not start the child" as code -1 without a signal; a real
+      -- pdftoppm never exits with -1.
+      if result.code == -1 and result.signal == 0 and not result.ok then
+        callback(nil, string.format("failed to spawn pdftoppm: %s", result.stderr))
+        return
+      end
       if not result.ok or vim.fn.filereadable(png) ~= 1 then
         callback(nil, string.format("pdftoppm exited %d: %s", result.code, result.stderr))
         return

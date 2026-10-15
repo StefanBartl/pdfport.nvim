@@ -140,7 +140,8 @@ p.merge({
 -- display-and-delete): lets other plugins (e.g. images.nvim) show a PDF
 -- page as an image without depending on pdfport's terminal renderer.
 -- pdftoppm is killed after `timeout_ms` (default 30000) and the callback then
--- gets `nil, "pdftoppm timed out after N ms"`; it is called exactly once.
+-- gets `nil, "pdftoppm timed out after N ms"`; it is called exactly once, and
+-- a half-written PNG at the target path is deleted.
 p.render_page("/some/file.pdf", 1, { dpi = 216, timeout_ms = 30000 }, function(png_path, err)
   if err then return end
   -- png_path is real and caller-owned; delete it yourself when done
