@@ -15,45 +15,6 @@ local ok_platform, platform = pcall(require, "pdfport.platform")
 local ok_registry, registry = pcall(require, "pdfport.core.registry")
 
 ---@internal
---- This plugin's own `docs/install.json`, parsed once and cached. Backs
---- `check_soffice`'s (and, indirectly via `pdfport.producers.chromium`, the
---- browser check's) `paths` lookup, so a tool whose installer does not
---- extend PATH (soffice, chrome) is resolved the same way `:Lib deps show
---- pdfport.nvim` already does, rather than by a second, PATH-only
---- `check_exe` probe that would keep reporting it missing.
----@type Lib.Deps.ParseResult|nil
-local _own_spec = nil
-local _own_spec_loaded = false
-
----@internal
----@return Lib.Deps.ParseResult|nil
-local function own_spec()
-  if _own_spec_loaded then return _own_spec end
-  _own_spec_loaded = true
-  local ok_spec, spec = pcall(require, "lib.nvim.deps.spec")
-  if not ok_spec then return nil end
-  local path = spec.find("pdfport.nvim")
-  _own_spec = path and spec.load(path) or nil
-  return _own_spec
-end
-
----@internal
---- `bin`'s declared entry, or a bare stand-in when the spec can't be found
---- or does not declare it -- detection still runs (PATH only), just with no
---- `paths` fallback to widen it.
----@param bin string
----@return Lib.Deps.Tool
-local function declared_tool(bin)
-  local result = own_spec()
-  if result then
-    for _, tool in ipairs(result.tools) do
-      if tool.bin == bin then return tool end
-    end
-  end
-  return { bin = bin }
-end
-
----@internal
 ---@param name string     executable to probe on PATH
 ---@param required boolean  true reports missing as an error, false as a warning
 ---@return boolean found
@@ -342,8 +303,10 @@ local function check_producers()
     h_info("chromium producer: no Chromium-family browser found (optional html fallback)")
   end
 
-  if require("lib.nvim.deps.detect").found_as(declared_tool("soffice")) then
-    h_ok("soffice producer: ready (office -> PDF)")
+  local ok_soffice, soffice = pcall(require, "pdfport.producers.soffice")
+  local office = ok_soffice and soffice.resolved_binary()
+  if office then
+    h_ok("soffice producer: ready (office -> PDF, binary: " .. office .. ")")
   else
     h_warn("soffice producer: not found", { "install LibreOffice" })
   end
