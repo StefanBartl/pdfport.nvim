@@ -4,8 +4,10 @@
 ---@description
 --- The only realistic option for office formats. Heavyweight and slow on
 --- its first start (LibreOffice spins up a full user profile), but one
---- invocation covers docx/odt/xlsx/pptx alike. Install: LibreOffice
---- (soffice on PATH).
+--- invocation covers docx/odt/xlsx/pptx alike. Install: LibreOffice. The binary is
+--- resolved through `lib.nvim.deps` like the browser of the chromium producer: on the PATH,
+--- else at one of the `paths` that `docs/install.json` declares for `soffice` (the Windows
+--- installer does not put LibreOffice on the PATH).
 ---
 --- `--convert-to pdf --outdir <dir>` always writes `<stem>.pdf` next to the
 --- input inside `<dir>` — soffice does not accept an explicit output
@@ -13,7 +15,6 @@
 --- result to `req.output` itself.
 
 local uv = vim.uv or vim.loop
-local platform = require("pdfport.platform")
 local spawn_capture = require("lib.nvim.cross.uv.spawn_capture")
 
 --- See the note on `Producer` in `@types/init.lua`: declared as a class so
@@ -32,14 +33,46 @@ local M = {
   },
 }
 
+---@internal
+--- The binary, resolved through `lib.nvim.deps.require_tool`: this plugin's own `soffice` declaration in
+--- `docs/install.json` is the single source of truth that `M.available()`, `M.create()` and
+--- `pdfport.health` all resolve through. `silent`: a miss is reported by the callers (the result's
+--- `error`, `:checkhealth pdfport`).
+---@return string|nil
+local function resolve_soffice()
+  local ok, deps = pcall(require, "lib.nvim.deps")
+  if not ok then return nil end
+  return deps.require_tool("pdfport.nvim", "soffice", { silent = true })
+end
+
+--- The binary `M.create()` would run, or nil -- the same probe, not a second copy of it. Public so
+--- `:checkhealth pdfport` can name the exact binary this producer would use.
+---@return string|nil
+function M.resolved_binary()
+  return resolve_soffice()
+end
+
 ---@return boolean
 function M.available()
-  return platform.has("soffice")
+  return resolve_soffice() ~= nil
 end
 
 ---@param req PdfPort.InternalCreateOpts
 ---@return PdfPort.CreateResult|nil
 function M.create(req)
+  local binary = resolve_soffice()
+  if not binary then
+    local result = {
+      status = "error",
+      path = nil,
+      producer = "soffice",
+      pages = nil,
+      error = "soffice: LibreOffice not found (soffice on the PATH, or installed in its default folder)",
+    }
+    if type(req.__callback) == "function" then req.__callback(result) end
+    return nil
+  end
+
   local input = req.inputs[1]
   local stem = vim.fn.fnamemodify(input, ":t:r")
 
@@ -47,7 +80,7 @@ function M.create(req)
   vim.fn.mkdir(outdir, "p")
 
   local argv = {
-    "soffice",
+    binary,
     "--headless",
     "--convert-to",
     "pdf",

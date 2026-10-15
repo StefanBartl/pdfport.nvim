@@ -303,11 +303,11 @@ return function(H)
 
   -- chromium resolves its browser through lib.nvim.deps rather than a
   -- hand-rolled PATH walk, so the seam here is `deps.detect.found_as`.
-  local function chromium_deps(browser)
+  local function tool_deps(bin, resolved, paths)
     return {
       ["lib.nvim.deps.detect"] = {
         found_as = function()
-          return browser
+          return resolved
         end,
       },
       ["lib.nvim.deps.spec"] = {
@@ -315,10 +315,20 @@ return function(H)
           return "/fake/docs/install.json"
         end,
         load = function()
-          return { tools = { { bin = "chrome", paths = { "/opt/chrome" } } } }
+          return { tools = { { bin = bin, paths = paths } } }
         end,
       },
     }
+  end
+
+  local function chromium_deps(browser)
+    return tool_deps("chrome", browser, { "/opt/chrome" })
+  end
+
+  -- soffice resolves the same way: the PATH, else the `paths` its `docs/install.json` entry declares
+  -- (the Windows installer does not put LibreOffice on the PATH)
+  local function soffice_deps(binary)
+    return tool_deps("soffice", binary, { "$PROGRAMFILES/LibreOffice/program/soffice.exe" })
   end
 
   with_producer("pdfport.producers.chromium", {}, function(producer, rec)
@@ -368,8 +378,8 @@ return function(H)
   local soffice_dir = vim.fn.stdpath("cache") .. "/pdfport_spec_soffice"
   vim.fn.mkdir(soffice_dir, "p")
 
-  with_producer("pdfport.producers.soffice", { soffice = true }, function(producer, rec)
-    H.ok(producer.available(), "soffice is available when installed")
+  with_producer("pdfport.producers.soffice", {}, function(producer, rec)
+    H.ok(producer.available(), "soffice is available when deps resolves it, also off the PATH")
     H.eq_list(producer.accepts, { "office" }, "soffice accepts office documents")
 
     local output = soffice_dir .. "/renamed.pdf"
@@ -383,7 +393,11 @@ return function(H)
     local got = create(producer, { inputs = { "/office/report.docx" }, output = output })
 
     local argv = H.last_argv(rec)
-    H.eq(argv[1], "soffice", "soffice: the tool comes first")
+    H.eq(
+      argv[1],
+      "/opt/lo/program/soffice",
+      "soffice: the RESOLVED binary comes first, not the bare name"
+    )
     H.ok(H.index_of(argv, "--headless"), "headless")
     local conv = H.index_of(argv, "--convert-to")
     H.eq(argv[conv + 1], "pdf", "converting to pdf")
@@ -402,9 +416,9 @@ return function(H)
     H.eq(got.path, output, "and the file has been renamed to the requested output")
     H.eq(vim.fn.filereadable(output), 1, "which now exists on disk")
     H.eq(vim.fn.isdirectory(argv[outdir + 1]), 0, "while the scratch dir is cleaned up again")
-  end)
+  end, soffice_deps("/opt/lo/program/soffice"))
 
-  with_producer("pdfport.producers.soffice", { soffice = true }, function(producer, rec)
+  with_producer("pdfport.producers.soffice", {}, function(producer, rec)
     -- Exit 0 but nothing written: soffice reports success for inputs it
     -- silently declines, so the producer has to check rather than trust it.
     local got = create(producer, {
@@ -415,11 +429,22 @@ return function(H)
     H.match(got.error, "no output file", "and says exactly that")
     local argv = H.last_argv(rec)
     H.eq(vim.fn.isdirectory(argv[H.index_of(argv, "--outdir") + 1]), 0, "scratch dir cleaned up")
-  end)
+  end, soffice_deps("/opt/lo/program/soffice"))
 
-  assert_failure_branches("pdfport.producers.soffice", { soffice = true }, "soffice", function()
+  -- nothing resolves: unavailable, and create() says so instead of starting a bare "soffice"
+  with_producer("pdfport.producers.soffice", {}, function(producer, rec)
+    H.falsy(producer.available(), "soffice is unavailable when deps finds no LibreOffice")
+    H.eq(producer.resolved_binary(), nil, "and names no binary")
+    local got =
+      create(producer, { inputs = { "/office/a.docx" }, output = soffice_dir .. "/none.pdf" })
+    H.eq(got.status, "error")
+    H.match(got.error, "LibreOffice not found", "the error says what is missing")
+    H.eq(#rec.calls, 0, "and no process was started")
+  end, soffice_deps(nil))
+
+  assert_failure_branches("pdfport.producers.soffice", {}, "soffice", function()
     return { inputs = { "/office/a.docx" }, output = soffice_dir .. "/a.pdf" }
-  end)
+  end, soffice_deps("/opt/lo/program/soffice"))
 
   pcall(vim.fn.delete, soffice_dir, "rf")
 
