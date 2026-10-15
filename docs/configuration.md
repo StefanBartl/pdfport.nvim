@@ -133,7 +133,7 @@ The reverse direction: something → PDF, via `pdfport.create()`/`:PdfPort creat
 | pandoc      | markdown, text   | `pandoc` + one PDF engine          | Engine auto-detected: tectonic → typst → xelatex → lualatex → pdflatex, or pin one via `pdf_engine` |
 | weasyprint  | html             | `pip install weasyprint`           | First choice for HTML: CSS Paged Media |
 | chromium    | html             | a Chromium-family browser on PATH  | Fallback: chromium/chromium-browser/google-chrome/chrome/msedge |
-| soffice     | office           | LibreOffice (`soffice` on PATH)    | docx/odt/xlsx/pptx in one call     |
+| soffice     | office           | LibreOffice (`soffice` on PATH, or in its default install folder) | docx/odt/xlsx/pptx in one call     |
 | qpdf        | pdf (merge)      | `qpdf` on PATH                     | First choice for `pdfport.merge()` |
 | pdftk       | pdf (merge)      | `pdftk` on PATH                    | Merge fallback #2                  |
 | ghostscript | pdf (merge)      | `gs`/`gswin64c`/`gswin32c` on PATH | Merge fallback #3, last resort     |
