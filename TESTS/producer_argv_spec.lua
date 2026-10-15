@@ -442,6 +442,24 @@ return function(H)
     H.eq(#rec.calls, 0, "and no process was started")
   end, soffice_deps(nil))
 
+  -- a lib.nvim without `deps`: soffice on the PATH is still found (review of 91d2a4a)
+  do
+    local saved_preload = package.preload["lib.nvim.deps"]
+    package.preload["lib.nvim.deps"] = function()
+      error("module 'lib.nvim.deps' not found: simulated old lib.nvim", 0)
+    end
+    with_producer("pdfport.producers.soffice", { soffice = true }, function(producer, rec)
+      H.ok(producer.available(), "soffice on the PATH is available without lib.nvim.deps")
+      H.eq(producer.resolved_binary(), "soffice", "and is the bare name")
+      create(producer, { inputs = { "/office/a.docx" }, output = soffice_dir .. "/old.pdf" })
+      H.eq(H.last_argv(rec)[1], "soffice", "which is what runs")
+    end, { ["lib.nvim.deps"] = H.UNLOAD })
+    with_producer("pdfport.producers.soffice", {}, function(producer)
+      H.falsy(producer.available(), "and without it on the PATH nothing is found")
+    end, { ["lib.nvim.deps"] = H.UNLOAD })
+    package.preload["lib.nvim.deps"] = saved_preload
+  end
+
   assert_failure_branches("pdfport.producers.soffice", {}, "soffice", function()
     return { inputs = { "/office/a.docx" }, output = soffice_dir .. "/a.pdf" }
   end, soffice_deps("/opt/lo/program/soffice"))
