@@ -109,6 +109,7 @@
 
 ---@class PdfPort.RenderPageOpts
 ---@field dpi? integer          # Rasterization DPI passed to pdftoppm (default 216)
+---@field timeout_ms? integer     # Kill pdftoppm after this many ms and call back with `nil, "pdftoppm timed out after N ms"` (default 30000)
 ---@field output_path? string   # Base path for the PNG (".png" appended/stripped as needed); default a fresh vim.fn.tempname()
 ---@field crop? PdfPort.RenderPageCrop # Rasterize only this window of the page (pdftoppm's `-x -y -W -H`) instead of the whole page. **Cost, not convenience:** a consumer magnifying a page raises `dpi` to get real detail, and a full page then grows with the square of it — measured on a dense A4 text page, 176 ms at 216 dpi against 2 653 ms at 1 094 dpi. Asking for a window the size of the *original* page keeps the work, the PNG and the wait flat instead: 120–600 ms at every one of those dpi values, because the number of pixels produced never changes and only the resolution they are sampled from does. Coordinates are in the coordinate system of the page at `dpi`, so a caller stepping dpi up scales them by the same factor.
 

@@ -10,9 +10,12 @@
 --- does not).
 
 local platform = require("pdfport.platform")
-local uv = vim.uv or vim.loop
 
 local M = {}
+
+---How long pdftoppm may run before it is killed (ms), when the caller gives no `timeout_ms`.
+---@type integer
+M.DEFAULT_TIMEOUT_MS = 30000
 
 ---The pdftoppm argument list for one page.
 ---
@@ -92,44 +95,25 @@ function M.render_page(path, page, opts, callback)
 
   local args = M.args(path, page, dpi, base, opts.crop)
 
-  local stderr = uv.new_pipe(false)
-  if not stderr then
-    callback(nil, "failed to create stderr pipe")
-    return
-  end
-
-  local stderr_chunks = {}
-
-  -- luv's meta declares every uv.spawn option required (cwd, env, uid, gid,
-  -- verbatim, detached, hide), which no real caller passes.
-  ---@diagnostic disable-next-line: missing-fields
-  local handle, spawn_err = uv.spawn("pdftoppm", {
-    args = args,
-    stdio = { nil, nil, stderr },
-  }, function(code, _)
-    if stderr and not stderr:is_closing() then stderr:close() end
-    vim.schedule(function()
+  -- spawn_capture owns the process: a timer kills pdftoppm at the limit and the
+  -- callback below runs exactly once, whichever of exit and timeout comes first.
+  local timeout_ms = opts.timeout_ms or M.DEFAULT_TIMEOUT_MS
+  require("lib.nvim.cross.uv.spawn_capture")(
+    vim.list_extend({ "pdftoppm" }, args),
+    { timeout_ms = timeout_ms },
+    function(result)
+      if result.timed_out then
+        callback(nil, string.format("pdftoppm timed out after %d ms", timeout_ms))
+        return
+      end
       local png = base .. ".png"
-      if code ~= 0 or vim.fn.filereadable(png) ~= 1 then
-        callback(nil, string.format("pdftoppm exited %d: %s", code, table.concat(stderr_chunks)))
+      if not result.ok or vim.fn.filereadable(png) ~= 1 then
+        callback(nil, string.format("pdftoppm exited %d: %s", result.code, result.stderr))
         return
       end
       callback(png, nil)
-    end)
-  end)
-
-  -- uv.spawn returns nil instead of raising when it cannot start the child
-  -- (ENOENT, EACCES, fd exhaustion); without this check the exit callback
-  -- above never runs and the caller's callback is never settled.
-  if not handle then
-    if not stderr:is_closing() then stderr:close() end
-    callback(nil, string.format("failed to spawn pdftoppm: %s", spawn_err or "unknown error"))
-    return
-  end
-
-  stderr:read_start(function(_, data)
-    if data then stderr_chunks[#stderr_chunks + 1] = data end
-  end)
+    end
+  )
 end
 
 return M

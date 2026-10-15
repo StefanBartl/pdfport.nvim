@@ -44,6 +44,7 @@ local specs = {
   "install_spec_spec.lua",
   "page_range_spec.lua",
   "rasterize_args_spec.lua",
+  "rasterize_timeout_spec.lua",
   "registry_spec.lua",
   "resolver_spec.lua",
   -- Pure: it calls the dispatcher's cache-key helper directly and loads

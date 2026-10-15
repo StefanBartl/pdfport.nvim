@@ -139,7 +139,9 @@ p.merge({
 -- primitive the `terminal` renderer uses internally, without the
 -- display-and-delete): lets other plugins (e.g. images.nvim) show a PDF
 -- page as an image without depending on pdfport's terminal renderer.
-p.render_page("/some/file.pdf", 1, { dpi = 216 }, function(png_path, err)
+-- pdftoppm is killed after `timeout_ms` (default 30000) and the callback then
+-- gets `nil, "pdftoppm timed out after N ms"`; it is called exactly once.
+p.render_page("/some/file.pdf", 1, { dpi = 216, timeout_ms = 30000 }, function(png_path, err)
   if err then return end
   -- png_path is real and caller-owned; delete it yourself when done
 end)

@@ -75,8 +75,9 @@ end
 ---chain (`process_next`), so nothing else had to change shape.
 ---@param pdf_path string
 ---@param page integer
----@param cb fun(png_path: string|nil)
-local function rasterize(pdf_path, page, cb)
+---@param timeout_ms integer  pdftoppm is killed after this long
+---@param cb fun(png_path: string|nil, timed_out: boolean)
+local function rasterize(pdf_path, page, timeout_ms, cb)
   local tmp = vim.fn.tempname()
   local args = {
     "-png",
@@ -92,9 +93,9 @@ local function rasterize(pdf_path, page, cb)
   }
   local cmd = vim.list_extend({ "pdftoppm" }, args)
 
-  local function done()
+  local function done(timed_out)
     local png = tmp .. ".png"
-    cb(vim.fn.filereadable(png) == 1 and png or nil)
+    cb(vim.fn.filereadable(png) == 1 and png or nil, timed_out == true)
   end
 
   if not vim.system then
@@ -103,10 +104,13 @@ local function rasterize(pdf_path, page, cb)
     return
   end
 
-  vim.system(cmd, spawn_env.opts(), function()
+  -- `timeout` makes vim.system kill the child and report exit code 124.
+  vim.system(cmd, spawn_env.opts({ timeout = timeout_ms }), function(res)
     -- vim.system callbacks run off the main loop; filereadable and everything
     -- the caller does next need the main loop.
-    vim.schedule(done)
+    vim.schedule(function()
+      done(res ~= nil and res.code == 124)
+    end)
   end)
 end
 
@@ -245,7 +249,11 @@ function M.extract(path, opts)
     end
 
     if is_vision then
-      rasterize(path, page, function(png)
+      rasterize(path, page, opts.timeout_ms or 30000, function(png, timed_out)
+        if timed_out then
+          fail(string.format("ollama: rasterizing page %d timed out", page))
+          return
+        end
         if not png then
           fail(string.format("ollama: failed to rasterize page %d", page))
           return
