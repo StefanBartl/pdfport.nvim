@@ -95,7 +95,13 @@ local function rasterize(pdf_path, page, timeout_ms, cb)
 
   local function done(timed_out)
     local png = tmp .. ".png"
-    cb(vim.fn.filereadable(png) == 1 and png or nil, timed_out == true)
+    if timed_out == true then
+      -- A kill mid-write leaves a truncated PNG nobody else knows the name of.
+      vim.fn.delete(png)
+      cb(nil, true)
+      return
+    end
+    cb(vim.fn.filereadable(png) == 1 and png or nil, false)
   end
 
   if not vim.system then

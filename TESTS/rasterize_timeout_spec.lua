@@ -77,4 +77,69 @@ return function(H)
   })
   H.eq(png, nil, "exit 0 but no file: no PNG")
   H.match(err, "pdftoppm exited 0", "...and an error")
+
+  -- A kill that lands mid-write leaves a truncated PNG: it must not survive the timeout -------
+  local partial = vim.fn.tempname() .. ".png"
+  vim.fn.writefile({ "truncated" }, partial)
+  png = run(
+    { ok = false, code = -1, signal = 0, stdout = "", stderr = "", timed_out = true },
+    { output_path = partial, timeout_ms = 5 }
+  )
+  H.eq(png, nil, "timeout with a partial file: no PNG")
+  H.eq(vim.fn.filereadable(partial), 0, "timeout: the truncated PNG is deleted")
+  vim.fn.delete(partial)
+
+  -- A pdftoppm that could not be started keeps naming the spawn, not an exit code ------------
+  png, err = run({
+    ok = false,
+    code = -1,
+    signal = 0,
+    stdout = "",
+    stderr = "failed to spawn: pdftoppm",
+    timed_out = false,
+  })
+  H.eq(png, nil, "spawn failure: no PNG")
+  H.match(err, "failed to spawn pdftoppm", "spawn failure: the message says it did not start")
+
+  -- The ollama vision path: a timed-out rasterize also deletes its partial PNG ----------------
+  local real_system = vim.system
+  local real_ai = package.loaded["ai"]
+  local real_ollama = package.loaded["pdfport.backends.ollama"]
+  local partial_png
+  package.loaded["ai"] = {
+    ask = function() end,
+  }
+  package.loaded["pdfport.backends.ollama"] = nil
+  ---@diagnostic disable-next-line: duplicate-set-field
+  vim.system = function(cmd, sys_opts, on_exit)
+    seen = { argv = cmd, opts = sys_opts }
+    partial_png = cmd[#cmd] .. ".png"
+    vim.fn.writefile({ "truncated" }, partial_png)
+    on_exit({ code = 124, signal = 15, stdout = "", stderr = "" })
+    return {}
+  end
+  local ollama = require("pdfport.backends.ollama")
+  ollama._set_config({ ollama_model = "llava" })
+  local got
+  local started_ok, started_err = pcall(ollama.extract, "/tmp/doc.pdf", {
+    pages = { 2 },
+    timeout_ms = 7,
+    __callback = function(result)
+      got = result
+    end,
+  })
+  vim.wait(2000, function()
+    return got ~= nil
+  end, 10)
+  vim.system = real_system
+  package.loaded["ai"] = real_ai
+  package.loaded["pdfport.backends.ollama"] = real_ollama
+
+  H.ok(started_ok, "ollama.extract does not raise: " .. tostring(started_err))
+  H.ok(got, "ollama: the timed-out run settles")
+  H.eq(seen.opts.timeout, 7, "ollama: opts.timeout_ms reaches vim.system as `timeout`")
+  H.eq(got.status, "error", "ollama: a timeout is an error result")
+  H.eq(got.error, "ollama: rasterizing page 2 timed out", "ollama: the message names the page")
+  H.eq(vim.fn.filereadable(partial_png), 0, "ollama: the truncated PNG is deleted")
+  vim.fn.delete(partial_png)
 end
