@@ -217,7 +217,7 @@
 ---@field auto_open_on_read? boolean  # Opt-in BufReadCmd *.pdf that auto-invokes the mode picker on `:e file.pdf` (default false)
 ---@field progress_style? "auto"|"notify"|"statusline"|"fidget"|"float"|"kit"  # Indicator while a backend extracts; needs lib.nvim, no-op without it (default "auto")
 ---@field deps_popup? boolean  # Show the lib.nvim.deps "declared tools" popup once, ever, on first setup() after install (default true; needs lib.nvim.deps — a no-op without it)
----@field debug? boolean
+---@field debug? boolean  # one debug line per dispatch and per create (path, chain, backend or producer, cache hit or miss, status, ms)
 
 -- #############################################################################
 -- Integration types

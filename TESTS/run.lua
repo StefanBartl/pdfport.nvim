@@ -65,6 +65,7 @@ local specs = {
   "config_util_spec.lua",
   "tmpfile_cache_spec.lua",
   "dispatcher_spec.lua",
+  "trace_spec.lua",
   "picker_batch_spec.lua",
   "renderers_spec.lua",
   "bindings_spec.lua",

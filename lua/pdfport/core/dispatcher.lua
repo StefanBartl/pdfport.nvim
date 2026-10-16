@@ -78,6 +78,30 @@ local function validate_path(path)
   return true, nil
 end
 
+---@internal
+---The debug line of one dispatch: path, the chain that was asked for, the backend that answered,
+---cache hit or miss, the result status of a miss, and the time. Nothing is built without `debug`.
+---@param path string
+---@param requested string|nil
+---@param backend_id string
+---@param cache "hit"|"miss"
+---@param t0 integer  `uv.hrtime()` at the start of the dispatch
+---@param result? PdfPort.Result
+local function trace_dispatch(path, requested, backend_id, cache, t0, result)
+  local trace = require("pdfport.util.trace")
+  trace.emit(_config, function()
+    return string.format(
+      "dispatch %s: chain [%s] -> %s, cache %s%s, %.1f ms",
+      trace.short(path),
+      table.concat(resolver.chain(requested), ", "),
+      backend_id,
+      cache,
+      result and (", " .. tostring(result.status)) or "",
+      trace.ms_since(t0)
+    )
+  end)
+end
+
 ---@see pdfport.core.resolver.resolve  Backend selection happens here before extraction
 ---@param opts PdfPort.OpenOpts|PdfPort.InternalExtractOpts
 ---@param callback fun(result: PdfPort.Result): nil
@@ -210,6 +234,7 @@ function M.dispatch(opts, callback)
     return
   end
 
+  local t0 = uv.hrtime()
   local backend, resolve_err = resolver.resolve(opts.backend_id)
   if not backend then
     vim.schedule(function()
@@ -239,6 +264,7 @@ function M.dispatch(opts, callback)
   if cache_enabled then
     local cached = require("pdfport.util.cache").get(path, backend_id, variant)
     if cached then
+      trace_dispatch(path, opts.backend_id, backend_id, "hit", t0)
       vim.schedule(function()
         callback(cached)
       end)
@@ -264,6 +290,15 @@ function M.dispatch(opts, callback)
           progress:finish(string.format("%s done", backend_id))
         end
       end
+      inner_callback(result)
+    end
+  end
+
+  -- One debug line per extraction, written when it settles; installed only with `debug` on.
+  if _config and _config.debug then
+    local inner_callback = callback
+    callback = function(result)
+      trace_dispatch(path, opts.backend_id, backend_id, "miss", t0, result)
       inner_callback(result)
     end
   end

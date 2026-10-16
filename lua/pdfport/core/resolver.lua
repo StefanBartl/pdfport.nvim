@@ -52,6 +52,13 @@ local function build_chain(requested)
   return require("lib.lua.tables").dedup_list(chain)
 end
 
+---The ordered list of backend ids `resolve` tries for `requested` (for the debug trace).
+---@param requested PdfPort.BackendId|"auto"|nil
+---@return PdfPort.BackendId[]
+function M.chain(requested)
+  return build_chain(requested)
+end
+
 ---@param requested PdfPort.BackendId|"auto"|nil
 ---@return PdfPort.Backend|nil backend
 ---@return string|nil error_msg

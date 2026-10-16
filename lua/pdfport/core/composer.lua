@@ -138,6 +138,14 @@ local function build_chain(kind, requested)
   return chain
 end
 
+---The ordered list of producer ids `resolve` tries for `kind` (for the debug trace).
+---@param kind PdfPort.InputKind
+---@param requested? PdfPort.ProducerId
+---@return PdfPort.ProducerId[]
+function M.chain(kind, requested)
+  return build_chain(kind, requested)
+end
+
 ---@param kind PdfPort.InputKind
 ---@param requested? PdfPort.ProducerId
 ---@return PdfPort.Producer|nil producer
@@ -247,6 +255,28 @@ function M.create(opts, callback)
       callback(err_result(resolve_err or "pdfport: no producer resolved"))
     end)
     return
+  end
+
+  -- One debug line per create, written when the call settles. The wrapper is only installed with
+  -- `debug` on, so a normal run pays nothing for it.
+  if _config and _config.debug then
+    local trace = require("pdfport.util.trace")
+    local t0 = uv.hrtime()
+    local inner_callback = callback
+    callback = function(result)
+      trace.emit(_config, function()
+        return string.format(
+          "create %s: kind %s, chain [%s] -> %s, %s, %.1f ms",
+          trace.short(inputs[1]),
+          kind,
+          table.concat(M.chain(kind, opts.producer_id), ", "),
+          producer.id,
+          (result and result.status) or "?",
+          trace.ms_since(t0)
+        )
+      end)
+      inner_callback(result)
+    end
   end
 
   local output, conflict_err, claimed =
