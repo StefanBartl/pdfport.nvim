@@ -45,7 +45,7 @@ require("pdfport").setup({
   ollama_model   = "llava",
   auto_open_on_read = false,        -- opt-in BufReadCmd *.pdf: `:e file.pdf` invokes the mode picker
   progress_style = "auto",          -- indicator while a backend extracts; see below
-  debug          = false,
+  debug          = false,          -- one trace line per dispatch and per create: path, backend or producer chain, answer, cache hit or miss, ms
 
   -- One-time "which CLI tools does this plugin want, and why" popup on first
   -- setup() after install (via lib.nvim.deps). false disables it here, in the
