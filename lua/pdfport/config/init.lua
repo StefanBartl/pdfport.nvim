@@ -8,13 +8,6 @@ local M = {}
 local defaults = require("pdfport.config.DEFAULTS")
 local notify = require("pdfport.util.notify").create("[pdfport.config]")
 
----@type PdfPort.Config
-local _cfg = nil
-
----What the last `setup()` had to ignore, for `:checkhealth`.
----@type string[]
-local _issues = {}
-
 ---@internal
 ---@param value any
 ---@return boolean ok
@@ -203,23 +196,50 @@ local function sanitize(opts, known, spec_defaults, prefix)
   return clean, issues
 end
 
+--- To the schema that `lib.lua.config` infers from the defaults, the sections and values `KNOWN`
+--- checks (or deliberately leaves unchecked) are open: it does not second-guess a value `KNOWN` has
+--- accepted. Unknown top-level keys are still caught there. The two API keys are `nil` by default,
+--- so they are declared by hand.
+local ANY = "boolean|number|string|table|function"
+---@type table<string, string|table>
+local SCHEMA = {}
+for key, spec in pairs(KNOWN) do
+  SCHEMA[key] = (type(spec) == "table" and { "table" }) or ANY
+end
+
+local cfg = require("lib.lua.config").new(defaults(), {
+  name = "pdfport",
+  schema = SCHEMA,
+  optional = { claude_api_key = ANY, gemini_api_key = ANY },
+  -- The checks of KNOWN, before the merge: a wrong value is dropped so the default underneath
+  -- applies. `opts` is a private copy, so it is rewritten in place.
+  normalize = function(opts, issues)
+    local clean, found = sanitize(opts, KNOWN, defaults(), "")
+    for key in pairs(opts) do
+      opts[key] = nil
+    end
+    for key, value in pairs(clean) do
+      opts[key] = value
+    end
+    vim.list_extend(issues, found)
+  end,
+  notify = function(message)
+    notify.warn(message)
+  end,
+})
+
 ---Unknown keys, mistyped option tables, and out-of-range values are
 ---reported once here and again by `:checkhealth pdfport` (see `M.issues()`);
----none of them reach the merge.
+---none of them reach the merge. Every call starts from the defaults.
 ---@param opts? PdfPort.Config
 ---@return nil
 function M.setup(opts)
-  local clean, issues = sanitize(type(opts) == "table" and opts or {}, KNOWN, defaults(), "")
-  table.sort(issues)
-  _issues = issues
-  if #issues > 0 then notify.warn("ignored config: " .. table.concat(issues, "; ")) end
-
-  _cfg = vim.tbl_deep_extend("force", defaults(), clean)
+  cfg.setup(type(opts) == "table" and opts or nil)
 end
 
 ---@return PdfPort.Config
 function M.get()
-  return _cfg or defaults()
+  return cfg.get()
 end
 
 ---What the last `setup()` ignored: unknown keys and option tables of the
@@ -227,7 +247,7 @@ end
 ---accepted (or `setup()` has not run yet).
 ---@return string[]
 function M.issues()
-  return vim.list_extend({}, _issues)
+  return cfg.issues()
 end
 
 return M
