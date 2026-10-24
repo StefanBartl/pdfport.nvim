@@ -122,7 +122,7 @@ end
 ---Ask the user how to open `path`, then open it that way. This is the same
 ---picker `:PdfPort` and every file-tree integration in this plugin use — the
 ---public entry point so OTHER plugins that embed pdfport.nvim (filetree.nvim,
----gopath.nvim, markdown.nvim, documentation.nvim, …) can offer one consistent
+---gopath.nvim, markdown.nvim, docmap.nvim, …) can offer one consistent
 ---picker instead of each hand-rolling its own two/three-item dialog.
 ---
 ---"System application" is always one of the choices (see

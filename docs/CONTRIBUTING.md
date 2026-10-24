@@ -40,7 +40,7 @@ cheapest one to install and the one most specs assume.
   labels and in whether "system application" was offered at all. There is one
   canonical list now, it always appends "system application" when a caller's
   list omits it, and embedding plugins — filetree.nvim, gopath.nvim,
-  markdown.nvim, documentation.nvim — call it instead of building their own.
+  markdown.nvim, docmap.nvim — call it instead of building their own.
   Do not add a second prompt anywhere.
 - **The cache is keyed on mtime.** A successful extraction persists across
   restarts and is invalidated when the PDF changes. A cache hit deliberately
